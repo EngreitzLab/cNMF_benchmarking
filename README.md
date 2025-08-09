@@ -1,11 +1,23 @@
 # Assessing difference between different NMF methods 
 
 
-Gene programs inferred from single-cell genomic data (scRNASeq., scATACseq., multi-omics and Perturb-seq.) are useful in discovering contextual biological mechanisms. These programs can be viewed as data-driven hypotheses of gene interactions. We aim to implement a flexible framework to evaluate the plausibility of programs inferred by computational methods. The assessment is broken down into themes such as goodness if fit (ability to explain the data), co-regulation, mechanistic interactions etc. Under each theme, multiple evaluation tasks are conceptualised and implemented using appropriate statistical tests.
+Gene programs inferred from single-cell genomic data (scRNASeq., scATACseq., multi-omics and Perturb-seq.) are useful in discovering contextual biological mechanisms. These programs can be viewed as data-driven hypotheses of gene interactions. We aim to implement a flexible framework to evaluate the plausibility of programs inferred by computational methods. 
+
+We break down the accessment into vanilla NMF methods and cNMF methods. The former focuses on basic metric benchmarking and stability evaluation. The latter is broken down into themes such as goodness if fit (ability to explain the data), co-regulation, mechanistic interactions etc. Under each theme, multiple evaluation tasks are conceptualised and implemented using appropriate statistical tests.
 
 
 ## NMF benchmarking
+
 Understand the difference amoung vanilla NMF methods. 
+
+### Inference
+Running replicates of different NMF methods, currently tested:
+* [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
+* [NMF-Torch]([https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html](https://github.com/lilab-bcb/nmf-torch))
+* [pytorch-NMF](https://github.com/yoyolicoris/pytorch-NMF/tree/master)
+* [pyDNMFk](https://github.com/lanl/pyDNMFk)
+
+### Evaluation
 * Basic metric evaluation:
   * Speed
   * Memory usage
@@ -14,10 +26,16 @@ Understand the difference amoung vanilla NMF methods.
   * Correlation clustermap
   * Top 300 gene clustermap  
 
-
 ## cNMF benchmarking
+
 Understand the difference amoung cNMF methods implemented with different NMF. 
 
+### Inference
+Running different cNMF methods, currently tested:
+* [sk-cNMF](https://github.com/dylkot/cNMF/tree/main)
+* [NMF-Torch-cNMF)[https://github.com/ymo6/torch_based_cNMF]
+
+### Evaluation
 
 #### Evaluation criteria:
 | Criterion    | Implementation | External resource | Interpretation | Caveats |
