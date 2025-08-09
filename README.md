@@ -13,7 +13,7 @@ Understand the difference amoung vanilla NMF methods.
 ### Inference
 Running replicates of different NMF methods, currently tested:
 * [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
-* [NMF-Torch]([https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html](https://github.com/lilab-bcb/nmf-torch)
+* [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
 * [pytorch-NMF](https://github.com/yoyolicoris/pytorch-NMF/tree/master)
 * [pyDNMFk](https://github.com/lanl/pyDNMFk)
 
@@ -37,7 +37,6 @@ Running different cNMF methods, currently tested:
 
 ### Evaluation
 
-#### Evaluation criteria:
 | Criterion    | Implementation | External resource | Interpretation | Caveats |
 | -------- | ------- | -------- | ------- | ------- |
 | Goodness of fit  | [Explained variance](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.explained_variance_score.html) per program | None | A program explaining more variance in the data might represent dominant biological variation. | Technical variation might be the highest source of variance (e.g. batch effects). |
