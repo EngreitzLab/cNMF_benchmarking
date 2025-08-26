@@ -5,6 +5,7 @@ from IPython.display import Image
 from matplotlib import gridspec
 import scanpy as sc
 from pathlib import Path
+from tqdm.auto import tqdm
 import scanpy as sc
 import anndata
 import muon 
@@ -93,7 +94,7 @@ if __name__ == '__main__':
     parser.add_argument('--numiter', type = int, default = 10)
     parser.add_argument('--numhvgenes', type = int, default = 5451)
     parser.add_argument('--seed', type = int, default = 14)
-    parser.add_argument('--K', type = list, default = [30, 50, 60, 80, 100, 200, 250, 300])
+    parser.add_argument('--K', nargs='*', type=int, default=None) # allow zero input 
     parser.add_argument('--init', type = str, default = 'random')
     parser.add_argument('--n_iter', type = int, default = 10)
     parser.add_argument('--loss', default = 'frobenius')
@@ -104,13 +105,19 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # running 
+    # either change the array here or run each component in parallel
+    if args.K is None:
+        k_value = [30, 50, 60, 80, 100, 200, 250, 300]
+    else:
+        k_value = [int(args.K)]
+
+
+    # running cnmf 
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
 
-
-    cnmf_obj.prepare(counts_fn= args.counts_fn, components= args.K, n_iter= args.numiter,  densify=False, tpm_fn=None, seed= args.seed,
-                    beta_loss = args.loss,num_highvar_genes=args.numhvgenes, genes_file=None,
-                     alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=margs.ax_NMF_iter, algo = args.algo)
+    cnmf_obj.prepare(counts_fn= args.counts_fn, components= k_value, n_iter= args.numiter,  densify=False, tpm_fn=None, seed= args.seed,
+                     beta_loss = args.loss,num_highvar_genes=args.numhvgenes, genes_file=None,
+                     alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=args.max_NMF_iter, algo = args.algo)
 
 
     cnmf_obj.factorize(total_workers = 1)

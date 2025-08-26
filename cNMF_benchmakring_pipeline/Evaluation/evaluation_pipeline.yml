@@ -33,7 +33,7 @@ gene_set_enrichment:
   n_top: 500
   low_cutoff: 0.0
   n_jobs: -1
-  inplace: false
+  inplace: True
   user_geneset: null
   max_size: 500
   min_size: 5
