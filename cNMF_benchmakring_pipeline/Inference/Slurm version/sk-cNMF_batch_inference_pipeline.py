@@ -69,6 +69,8 @@ def compile_results(output_directory, run_name, sel_thresh = 2.0, components = [
               prog_data.varm['loadings'] = loadings.values
               prog_data.uns['var_names'] = loadings.columns.values
 
+
+             # Make adata
               os.makedirs((f'{output_directory}/{run_name}/prog_data'), exist_ok=True)
               prog_data.write(f'{output_directory}/{run_name}/cNMF_{k}_{sel_thresh}.h5ad')
 
@@ -76,7 +78,7 @@ def compile_results(output_directory, run_name, sel_thresh = 2.0, components = [
               mdata = muon.MuData({'rna': adata_, 'cNMF': prog_data})
 
               os.makedirs((f'{output_directory}/{run_name}/adata'), exist_ok=True)
-              mdata.write('{output_directory}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(
+              mdata.write(f'{output_directory}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(
                                                                                     output_directory=output_directory,
                                                                                     run_name = run_name,
                                                                                     k=k,
@@ -109,7 +111,7 @@ if __name__ == '__main__':
     if args.K is None:
         k_value = [30, 50, 60, 80, 100, 200, 250, 300]
     else:
-        k_value = [int(args.K)]
+        k_value = args.K
 
 
     # running cnmf 
@@ -122,14 +124,14 @@ if __name__ == '__main__':
 
     cnmf_obj.factorize(total_workers = 1)
 
-    cnmf_obj.combine()
+    #cnmf_obj.combine()
 
-    cnmf_obj.k_selection_plot()
+    #cnmf_obj.k_selection_plot()
 
     # Consensus plots with all k to choose thresh
-    run_cnmf_consensus(cnmf_obj, 
-                    components=args.K, 
-                    density_thresholds=args.sel_thresh)
+    #run_cnmf_consensus(cnmf_obj, 
+    #                    components=k_value, 
+    #                    density_thresholds=args.sel_thresh)
 
     # Save all cNMF scores in separate mudata objects
-    compile_results(args.output_directory, args.run_name)
+    #compile_results(args.output_directory, args.run_name)
