@@ -38,6 +38,8 @@ if __name__ == '__main__':
     parser.add_argument('--K', default = [30, 60, 80, 100, 200, 250, 300])
     parser.add_argument('--thre', default = '2_0')
 
+    args = parser.parse_args()
+
 
     for k in args.K:  
 
