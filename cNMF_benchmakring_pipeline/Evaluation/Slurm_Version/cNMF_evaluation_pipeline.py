@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--input_folder', type=str, required=True)  
     parser.add_argument('--mdata_guide', type=str, default="/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Resources/mdata_guide.h5mu")
-    parser.add_argument('--K', default = [30, 60, 80, 100, 200, 250, 300])
+    parser.add_argument('--K', default = [30, 50, 60, 80, 100, 200, 250, 300])
     parser.add_argument('--thre', default = '2.0')
 
     # running different tests
