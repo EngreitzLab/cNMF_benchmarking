@@ -50,3 +50,8 @@ Versions of cNMF:
 
 ### Plotting
 Visual representations of the evaluation metrics. 
+
+
+## NMF benchmarking
+
+Understand the difference between different NMF methods. 
