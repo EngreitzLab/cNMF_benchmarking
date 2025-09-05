@@ -8,7 +8,7 @@ We break down the accessment into vanilla NMF methods and cNMF methods. The form
 
 ## cNMF benchmarking
 
-Understand the difference between different cNMF methods. Both Jupyter Notebook version and Slurm version are avalible to run inference, evaluation, and plotting. 
+Understand the difference between different cNMF methods. Both Jupyter Notebook version and Slurm version are avalible to run inference, evaluation, and plotting seperately and all-together. 
 
 ### Inference
 Versions of cNMF:
