@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=torch-cNMF-100k                # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_mu_online/logs/torch-cNMF-100k_%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_mu_online/logs/torch-cNMF-100squeuek_%j.err       # Error file
+#SBATCH --job-name=090425_100k_cells_10iter_torch_halsvar_online             # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/090425_100k_cells_10iter_torch_halsvar_online/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/090425_100k_cells_10iter_torch_halsvar_online/logs/%j.err       # Error file
 #SBATCH --partition=gpu                # partition name
-#SBATCH --time=05:00:00                # Time limit 
+#SBATCH --time=07:00:00                # Time limit 
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
@@ -31,7 +31,7 @@ echo "Working directory: $(pwd)"
 
 
 # Configuration - Set your log directory here
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_mu_online"
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/090425_100k_cells_10iter_torch_halsvar_online"
 
 # Create logs directory if it doesn't exist
 mkdir -p "$LOG_DIR"
@@ -89,8 +89,8 @@ echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_batch_inference_pipeline.py\
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad"\
         --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation"\
-        --run_name "100k_cells_10iter_torch_mu_online"\
-        --algo "mu"\
+        --run_name "090425_100k_cells_10iter_torch_halsvar_online"\
+        --algo "halsvar"\
         --mode "online"
 
 

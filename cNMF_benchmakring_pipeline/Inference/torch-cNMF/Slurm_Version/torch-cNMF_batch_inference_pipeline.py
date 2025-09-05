@@ -110,7 +110,7 @@ if __name__ == '__main__':
     parser.add_argument('--tol', type = int, default = 1e-4)
     parser.add_argument('--n_jobs', type = int, default = -1)
     parser.add_argument('--seed', type = int, default = 14)
-    parser.add_argument('--use_gpu', type = bool, default = True)
+    parser.add_argument('--use_gpu', action="store_true") # put use_gpu for false | put nothing for true
     parser.add_argument('--alpha_usage', type = int, default = 0.0)
     parser.add_argument('--alpha_spectra', type = int, default = 0.0)
     parser.add_argument('--l1_ratio_usage', type = int, default = 0.0)
@@ -142,7 +142,7 @@ if __name__ == '__main__':
 
     cnmf_obj.prepare(counts_fn=args.counts_fn, components=k_value, n_iter=args.numiter, densify=args.densify, tpm_fn=args.tpm_fn, num_highvar_genes=args.numhvgenes, genes_file=args.genes_file,
                 init = args.init,  beta_loss = args.loss, 
-                algo = args.algo, mode = args.mode, tol=args.tol, total_workers=args.n_jobs, 
+                algo = args.algo, mode = args.mode, tol=args.tol, n_jobs=args.n_jobs, 
                 seed = args.seed,  use_gpu = args.use_gpu, 
                 alpha_usage = args.alpha_usage, alpha_spectra = args.alpha_spectra, 
                 l1_ratio_usage = args.l1_ratio_usage, l1_ratio_spectra = args.l1_ratio_spectra,
