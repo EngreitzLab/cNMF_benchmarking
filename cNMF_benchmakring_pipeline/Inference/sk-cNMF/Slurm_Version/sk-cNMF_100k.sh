@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=sk-cNMF-100k           # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/082525_100k_10iter_sk_mu_frobenius/logs/sk-cNMF-100k_%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/082525_100k_10iter_sk_mu_frobenius/logs/sk-cNMF-100k_%j.err       # Error file
+#SBATCH --job-name=090525_100k_10iter_1000batiter_sk_cd_frobenius          # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/logs/%A_%a.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/logs/%A_%a.err       # Error file
 #SBATCH --partition=engreitz           # partition name
-#SBATCH --array=1-3                    # Run parallel jobs (array indices 1-#)
-#SBATCH --time=35:00:00                # Time limit (5 minutes)
+#SBATCH --array=1-8                    # Run parallel jobs (array indices 1-#)
+#SBATCH --time=35:00:00                # Time limit
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
@@ -19,14 +19,14 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/082525_100k_10iter_sk_mu_frobenius"
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius"
 
 # Store start time
 START_TIME=$(date +%s)
 
 
 # Define K values array
-K_VALUES=(200 250 300)
+K_VALUES=(30 50 60 80 100 200 250 300)
 
 # Get K value for this array task
 K=${K_VALUES[$((SLURM_ARRAY_TASK_ID-1))]}
@@ -42,7 +42,7 @@ echo "Log directory: $LOG_DIR"
 
 
 # Create logs directory if it doesn't exist
-mkdir -p "$LOG_DIR/Eval/logs"
+mkdir -p "$LOG_DIR/logs"
 
 # Activate conda base environment
 echo "Activating conda base environment..."
@@ -58,9 +58,10 @@ echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Inference/Slurm_Version/sk-cNMF_batch_inference_pipeline.py \
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad" \
         --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation" \
-        --run_name "082525_100k_10iter_sk_cd_frobenius_test_${K}"\
-        --algo "cd"\
-        --K $K
+        --run_name "090525_100k_10iter_1000batiter_sk_cd_frobenius_${K}" \
+        --algo "cd" \
+        --K $K \
+        --max_NMF_iter 1000
 
 
 
