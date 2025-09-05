@@ -6,36 +6,37 @@ Gene programs inferred from single-cell genomic data (scRNASeq., scATACseq., mul
 We break down the accessment into vanilla NMF methods and cNMF methods. The former focuses on basic metric benchmarking and stability evaluation. The latter is broken down into themes such as goodness if fit (ability to explain the data), co-regulation, mechanistic interactions etc. Under each theme, multiple evaluation tasks are conceptualised and implemented using appropriate statistical tests.
 
 
-## NMF benchmarking
-
-Understand the difference amoung vanilla NMF methods. 
-
-### Inference
-Running replicates of different NMF methods, currently tested:
-* [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
-* [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
-* [pytorch-NMF](https://github.com/yoyolicoris/pytorch-NMF/tree/master)
-* [pyDNMFk](https://github.com/lanl/pyDNMFk)
-
-### Evaluation
-* Basic metric evaluation:
-  * Speed
-  * Memory usage
-  * Explained Variances
-* Stability evaluation:
-  * Correlation clustermap
-  * Top 300 gene clustermap  
-
 ## cNMF benchmarking
 
-Understand the difference amoung cNMF methods implemented with different NMF. 
+Understand the difference between different cNMF methods. Both Jupyter Notebook version and Slurm version are avalible to run inference, evaluation, and plotting. 
 
 ### Inference
-Running different cNMF methods, currently tested:
-* [sk-cNMF](https://github.com/dylkot/cNMF/tree/main)
-* [NMF-Torch-cNMF](https://github.com/ymo6/torch_based_cNMF)
+Versions of cNMF:
+
+1. CPU powered cNMF
+  * NMF inference using: [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
+  * Solver choice: multiplicative update, coordinate descent
+  * Mode: batch
+
+2.  GPU powered cNMF
+  * NMF inference using: [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
+  * Solver choice: multiplicative update, hierarchical alternative least square
+  * Mode: batch, mini-batch (online) 
+
 
 ### Evaluation
+#### Basic metric evaluation:
+  * Speed
+  * Memory usage
+
+#### Statisitical evaluation:
+  * Reconstructive error
+  * Stability with silhouette score
+  * Euclidean distance clustermap 
+  * Correlation clustermap
+  * Top 300 gene overlap clustermap
+
+#### Biologcoal metrics: 
 
 | Criterion    | Implementation | External resource | Interpretation | Caveats |
 | -------- | ------- | -------- | ------- | ------- |
@@ -46,3 +47,6 @@ Running different cNMF methods, currently tested:
 | Trait enrichment | [Fisher's exact test](https://en.wikipedia.org/wiki/Fisher%27s_exact_test) | OpenTargets database | If a program is significantly associated with a trait then it could explain the biological process the program represents | |
 | Perturbation sensitivity | Mann-Whitney U test of program scores between perturbed cells and non-targeted/reference cells | Perturbation data | Cell x programs score distribution shifts greater than expected due to the direct effect of perturbation on genes in the program could indicate hierarchical relationships b/w genes in the program | Expression of genes upstream of the perturbed gene are unlikely to be affected | 
 
+
+### Plotting
+Visual representations of the evaluation metrics. 
