@@ -55,3 +55,9 @@ Visual representations of the evaluation metrics.
 ## NMF benchmarking
 
 Understand the difference between different NMF methods. 
+
+Running replicates of different NMF methods, currently tested:
+* [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
+* [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
+* [pytorch-NMF](https://github.com/yoyolicoris/pytorch-NMF/tree/master) -> no longer considered
+* [pyDNMFk](https://github.com/lanl/pyDNMFk) > no longer considered
