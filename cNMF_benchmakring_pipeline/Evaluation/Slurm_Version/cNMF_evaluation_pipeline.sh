@@ -1,18 +1,14 @@
 #!/bin/bash
 
-# Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/082525_100k_10iter_sk_mu_frobenius"
-
-
 # SLURM job configuration
-#SBATCH --job-name=cNMF_evaluation                                # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/082525_100k_10iter_sk_mu_frobenius/Eval/logs/cNMF_evaluation_%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/082525_100k_10iter_sk_mu_frobenius/Eval/logs/cNMF_evaluation_%j.err       # Error file
-#SBATCH --partition=service              # partition name
-#SBATCH --time=25:00:00                 # Time limit (5 minutes)
+#SBATCH --job-name=100k_cells_10iter_torch_halsvar_batch             # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_halsvar_batch/Eval/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_halsvar_batch/Eval/logs/%j.err       # Error file
+#SBATCH --partition=engreitz              # partition name
+#SBATCH --time=05:00:00                 # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
-#SBATCH --cpus-per-task=10              # CPUs per task
+#SBATCH --cpus-per-task=1               # CPUs per task
 #SBATCH --mem=32G                       # Memory per node
 
 # Email notifications
@@ -20,6 +16,9 @@ LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-
 #SBATCH --mail-type=END                # Send email when job ends
 #SBATCH --mail-type=FAIL               # Send email if job fails
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
+
+# Define the cNMF case
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_halsvar_batch"
 
 
 # Store start time
@@ -51,12 +50,11 @@ echo "Python path: $(which python)"
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py\
         --input_folder "$LOG_DIR"\
-        --Perform_categorical False\
-        --Perform_perturbation True\
-        --Perform_geneset False\
-        --Perform_trait False\
-        --Perform_explained_variance False\
-        --Perform_motif True
+        --Perform_categorical \
+        --Perform_perturbation \
+        --Perform_geneset \
+        --Perform_trait \
+
 
 
 # Calculate and print elapsed time at the end

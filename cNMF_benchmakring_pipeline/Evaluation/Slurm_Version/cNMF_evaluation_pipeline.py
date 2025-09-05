@@ -39,12 +39,12 @@ if __name__ == '__main__':
     parser.add_argument('--thre', default = '2.0')
 
     # running different tests
-    parser.add_argument('--Perform_categorical', type=bool, default = True)
-    parser.add_argument('--Perform_perturbation', type=bool, default = True)
-    parser.add_argument('--Perform_geneset', type=bool, default = True)
-    parser.add_argument('--Perform_trait', type=bool, default = True)
-    parser.add_argument('--Perform_explained_variance', type=bool, default = True)
-    parser.add_argument('--Perform_motif', type=bool, default = True)
+    parser.add_argument('--Perform_categorical', action="store_true")
+    parser.add_argument('--Perform_perturbation', action="store_true")
+    parser.add_argument('--Perform_geneset', action="store_true")
+    parser.add_argument('--Perform_trait', action="store_true")
+    parser.add_argument('--Perform_explained_variance', action="store_true")
+    parser.add_argument('--Perform_motif', action="store_true")
 
 
     args = parser.parse_args()
