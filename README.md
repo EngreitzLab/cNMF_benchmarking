@@ -1,4 +1,4 @@
-# Assessing difference between different NMF methods 
+# Assessing difference between different NMF and cNMF methods 
 
 
 Gene programs inferred from single-cell genomic data (scRNASeq., scATACseq., multi-omics and Perturb-seq.) are useful in discovering contextual biological mechanisms. These programs can be viewed as data-driven hypotheses of gene interactions. We aim to implement a flexible framework to evaluate the plausibility of programs inferred by computational methods. 
