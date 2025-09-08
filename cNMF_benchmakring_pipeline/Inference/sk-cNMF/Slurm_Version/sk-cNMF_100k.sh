@@ -6,7 +6,7 @@
 #SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/logs/%A_%a.err       # Error file
 #SBATCH --partition=engreitz           # partition name
 #SBATCH --array=1-8                    # Run parallel jobs (array indices 1-#)
-#SBATCH --time=35:00:00                # Time limit
+#SBATCH --time=40:00:00                # Time limit
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
@@ -55,9 +55,9 @@ echo "Python path: $(which python)"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Inference/Slurm_Version/sk-cNMF_batch_inference_pipeline.py \
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Inference/sk-cNMF/Slurm_Version/sk-cNMF_batch_inference_pipeline.py \
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad" \
-        --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation" \
+        --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius" \
         --run_name "090525_100k_10iter_1000batiter_sk_cd_frobenius_${K}" \
         --algo "cd" \
         --K $K \
