@@ -24,7 +24,7 @@
     | mode | str | "batch" | Learning mode: "batch" or "online". Online only works when beta=2.0 |
     | batch_size | int | 5000 | Batch size for online NMF learning |
     | max_NMF_iter | int | 1000 | Maximum number of iterations per individual NMF run |
-    | solver | str | "halsvar" | Algorithm choice: "mu", "halsvar" |
+    | algo | str | "halsvar" | Algorithm choice: "mu", "halsvar" |
     | init | str | "nndsvdar" | Initialization method: "random", "nndsvd", "nndsvda", "nndsvdar" |
     | tol | float | 1e-4 | Tolerance used for convergence check |
     | n_jobs | int | -1 | Number of CPU threads to use. If -1, use PyTorch's default |
@@ -38,5 +38,5 @@
     | online_chunk_size | int | 5000 | Chunk/mini-batch size for online learning |
     | online_chunk_max_iter | int | 200 | Maximum iterations for updating H or W in online learning |
     | online_usage_tol | float | 0.05 | Tolerance for updating W in each chunk during online learning |
-    | sel_thresh | Threshold for filtering NMF runs during consensus step |
+    | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
 

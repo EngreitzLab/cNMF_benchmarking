@@ -14,11 +14,13 @@
     | densify | bool | False | Convert sparse data to dense |
     | tpm_fn | str or None | None | If provided, load TPM data from file. Otherwise will compute it from the counts file |
     | seed | int or None | None | Seed for sklearn random state |
-    | beta_loss | str or None | 'frobenius' | Beta loss function for NMF |
+    | beta_loss | str or float | "frobenius" | Beta loss metric for approximation. Options: "frobenius" (L2), "kullback-leibler" (KL), "itakura-saito" (IS), or float value |
     | num_highvar_genes | int or None | 2000 | Number of highly variable genes to use for factorization if genes_file is None |
     | genes_file | str or None | None | Load high-variance genes from a list file |
     | alpha_usage | float | 0.0 | Regularization parameter for NMF corresponding to alpha_W in scikit-learn |
     | alpha_spectra | float | 0.0 | Regularization parameter for NMF corresponding to alpha_H in scikit-learn |
     | max_NMF_iter | int | 1000 | Maximum number of iterations per individual NMF run |
-    | sel_thresh | Threshold for filtering NMF runs during consensus step |
+    | algo | str | "halsvar" | Algorithm choice: "mu", "halsvar" |
+    | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
+
 
