@@ -48,7 +48,7 @@ echo "Python path: $(which python)"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py\
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py\
         --input_folder "$LOG_DIR"\
         --Perform_categorical \
         --Perform_perturbation \

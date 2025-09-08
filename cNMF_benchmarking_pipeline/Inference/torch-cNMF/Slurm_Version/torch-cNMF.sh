@@ -86,7 +86,7 @@ nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_batch_inference_pipeline.py\
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_batch_inference_pipeline.py\
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad"\
         --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation"\
         --run_name "090425_100k_cells_10iter_torch_halsvar_online"\

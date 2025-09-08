@@ -7,7 +7,7 @@ import pandas as pd
 import argparse
 
 # Change path to wherever you have repo locally
-sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline')
+sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
 
 from Evaluation.src import (
     compute_categorical_association,
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--input_folder', type=str, required=True)  
-    parser.add_argument('--mdata_guide', type=str, default="/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Resources/mdata_guide.h5mu")
+    parser.add_argument('--mdata_guide', type=str, default="/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/mdata_guide.h5mu")
     parser.add_argument('--K', default = [30, 50, 60, 80, 100, 200, 250, 300])
     parser.add_argument('--thre', default = '2.0')
 
@@ -103,7 +103,7 @@ if __name__ == '__main__':
 
         # Run trait enrichment
         if args.Perform_trait:
-            pre_res_trait = compute_trait_enrichment(mdata, gwas_data='/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Resources/OpenTargets_L2G_Filtered.csv.gz', 
+            pre_res_trait = compute_trait_enrichment(mdata, gwas_data='/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/OpenTargets_L2G_Filtered.csv.gz', 
                                                     prog_key='cNMF', prog_nam=None, data_key='rna', 
                                                     library='OT_GWAS', n_jobs=-1, inplace=False, 
                                                     key_column='trait_efos', gene_column='gene_name', 
@@ -125,13 +125,13 @@ if __name__ == '__main__':
                 for class_, thresh in [('enhancer', fimo_thresh_enhancer), 
                                     ('promoter', fimo_thresh_promoter)]:
 
-                    loci_file = '/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Resources/scE2G_links/EnhancerPredictionsAllPutative.ForVariantOverlap.shrunk150bp_D{}_{}.tsv'.format(i, class_)
+                    loci_file = '/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/scE2G_links/EnhancerPredictionsAllPutative.ForVariantOverlap.shrunk150bp_D{}_{}.tsv'.format(i, class_)
                     motif_match_df, motif_count_df, motif_enrichment_df = compute_motif_enrichment(
                         mdata, 
                         prog_key='cNMF',
                         data_key='rna',
-                        motif_file='/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Resources/hocomoco_meme.meme',
-                        seq_file='/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Resources/hg38.fa',
+                        motif_file='/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/hocomoco_meme.meme',
+                        seq_file='/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/hg38.fa',
                         loci_file=loci_file,
                         window=1000,
                         sig=thresh,

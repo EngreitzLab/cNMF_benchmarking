@@ -31,7 +31,7 @@ mkdir -p logs
 
 # Activate conda base environment
 echo "Activating conda base environment..."
-source activate torch-cNMF
+source activate sk-cNMF
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"
@@ -40,7 +40,7 @@ echo "Python path: $(which python)"
 
 # Run the Inference script
 echo "Running Inference script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Inference/Slurm_Version/sk-cNMF_batch_inference_pipeline.py 
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/Slurm_Version/sk-cNMF_batch_inference_pipeline.py 
 
 echo "Inference completed at: $(date)"
 
@@ -48,7 +48,7 @@ echo "Inference completed at: $(date)"
 
 # Run the Evaluation script
 echo "Running Evaluation script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmakring_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py\
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py\
         --input_folder "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/082525_100k_10iter_sk_mu_frobenius"
 
 echo "Evaluation completed at: $(date)"
