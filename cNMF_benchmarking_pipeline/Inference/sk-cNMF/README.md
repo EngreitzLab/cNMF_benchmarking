@@ -2,7 +2,7 @@
 
 * Individual NMF inference using: [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
 * consensus NMF using [sk-cNMF](https://github.com/EngreitzLab/sk_cNMF) which is a slightly modified version from the [Orginal cNMF](https://github.com/dylkot/cNMF/tree/main) with more flexiblity to choose solver and loss function. 
-* To run sk-cNMF, create a new conda enviornment, then run `pip install git+https://github.com/EngreitzLab/sk_cNMF.git` in the terminal
+* To run sk-cNMF, create a new conda environment with `conda env create -f environment.yml --name sk-cNMF` with the provided yml file, then run `pip install git+https://github.com/EngreitzLab/sk_cNMF.git` in the terminal
 
 
     | Parameter | Type | Default | Description |
