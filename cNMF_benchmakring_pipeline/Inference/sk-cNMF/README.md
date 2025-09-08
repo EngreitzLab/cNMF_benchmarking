@@ -1,7 +1,7 @@
 # sk-cNMF
 
-* Slightly modified version from the orginal cNMF (https://github.com/dylkot/cNMF/tree/main) with more flexiblity to choose solver and loss function choices. 
-* To run sk-cNMF, run 'pip install git+https://github.com/EngreitzLab/sk_cNMF.git' in the terminal
+* Slightly modified version from the orginal cNMF (https://github.com/dylkot/cNMF/tree/main) with more flexiblity to choose solver and loss function. 
+* To run sk-cNMF, run `pip install git+https://github.com/EngreitzLab/sk_cNMF.git` in the terminal
 
 
 | field | meaning |
