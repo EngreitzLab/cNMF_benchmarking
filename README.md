@@ -14,7 +14,7 @@ Understand the difference between different cNMF methods. Both Jupyter Notebook 
 Versions of cNMF:
 
 1. CPU powered cNMF
-  * * Slightly modified version from the orginal cNMF (https://github.com/dylkot/cNMF/tree/main) with more flexiblity to choose solver and loss function. 
+  * Slightly modified version from the orginal cNMF (https://github.com/dylkot/cNMF/tree/main) with more flexiblity to choose solver and loss function. 
   * NMF inference using: [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
   * Solver choice: multiplicative update, coordinate descent
   * Mode: batch
