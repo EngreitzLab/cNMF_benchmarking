@@ -14,13 +14,14 @@ Understand the difference between different cNMF methods. Both Jupyter Notebook 
 Versions of cNMF:
 
 1. CPU powered cNMF
-  * Slightly modified version from the orginal cNMF (https://github.com/dylkot/cNMF/tree/main) with more flexiblity to choose solver and loss function. 
-  * NMF inference using: [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
+  * Individual NMF inference using: [sklearn.decomposition.non_negative_factorization](https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.non_negative_factorization.html)
+  * consensus NMF using [sk-cNMF](https://github.com/EngreitzLab/sk_cNMF) which is a slightly modified version from the [Orginal cNMF](https://github.com/dylkot/cNMF/tree/main) with more flexiblity to choose solver and loss function. 
   * Solver choice: multiplicative update, coordinate descent
   * Mode: batch
 
 2.  GPU powered cNMF
-  * NMF inference using: [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
+  * Individual NMF inference using: [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
+  * consensus NMF using: [torch-cNMF](https://github.com/ymo6/torch_based_cNMF) 
   * Solver choice: multiplicative update, hierarchical alternative least square
   * Mode: batch, mini-batch (online) 
 
