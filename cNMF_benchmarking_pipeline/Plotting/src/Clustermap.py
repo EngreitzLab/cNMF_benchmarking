@@ -136,11 +136,11 @@ def graph_cluster(matrix, method = 'single', save = False, save_folder_name = No
         plt.show()
 
     if save:
-        g.savefig(f"{save_folder_name}/{save_file_name}.png")
+        g.savefig(f"{save_folder_name}/{save_file_name}.png", bbox_inches='tight', dpi=150)
     
     return g
 
-# graph heatmap base on the clustermap 
+# graph heatmap base on the clustermap -> TODOs: need more thinking in this
 def graph_heatmap(g, r, c, folder_name, file_name, num_gene = 300, sorted = False):
     # g = clustermap
     # r,c dimension of calculating averages
@@ -162,7 +162,8 @@ def graph_heatmap(g, r, c, folder_name, file_name, num_gene = 300, sorted = Fals
     sns.heatmap(block_means.reshape(10,10),annot=True, cmap='inferno_r',fmt='d')        
     plt.title("Heatmap for matching programs " + file_name)
 
-    g.savefig(f"{folder_name}/{file_name}.png")
+    if folder_name and file_name:
+        g.savefig(f"{folder_name}/{file_name}.png")
  
     plt.show()
 
@@ -179,10 +180,47 @@ def graph_heatmap(g, r, c, folder_name, file_name, num_gene = 300, sorted = Fals
         sns.heatmap(np.array(matrix).reshape(r,c),annot=True, cmap='inferno_r',fmt='d')        
         plt.title("Sorted Heatmap for matching programs " + file_name)
 
-        g.savefig(f"{folder_name}/{file_name}_sorted.png")
+        if folder_name and file_name:
+            g.savefig(f"{folder_name}/{file_name}_sorted.png")
  
         plt.show()
 
+# graph pdf for 3 clustermap
+def graph_pdf_clustermap(cor, distance, overlap, save_path, filename):
+
+    with PdfPages(f"{save_path}/{filename}") as pdf:
+        
+
+        g1 = graph_cluster(cor, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_correlation")
+        g2 = graph_cluster(distance, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_Euclidean_distance")
+        g3 = graph_cluster(overlap, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_top_300_genes")
+
+        fig, axes = plt.subplots(1, 3, figsize=(30, 10))
+        fig.suptitle(filename, 
+                    fontsize=24, fontweight='bold', y=0.95)
+
+        img1 = plt.imread(f"{save_path}/ClusterMap_for_correlation.png")
+        axes[0].imshow(img1)
+        axes[0].axis('off')
+        
+        img2 = plt.imread(f"{save_path}/ClusterMap_for_Euclidean_distance.png") 
+        axes[1].imshow(img2)
+        axes[1].axis('off')
+
+        img3 = plt.imread(f"{save_path}/ClusterMap_for_top_300_genes.png") 
+        axes[2].imshow(img3)
+        axes[2].axis('off')
+        
+        plt.tight_layout()
+        pdf.savefig(fig,bbox_inches='tight')
+        plt.close()
+        
+        plt.close(g1.fig)
+        plt.close(g2.fig)
+        plt.close(g3.fig)
+        os.remove(f"{save_path}/ClusterMap_for_correlation.png")
+        os.remove(f"{save_path}/ClusterMap_for_Euclidean_distance.png")
+        os.remove(f"{save_path}/ClusterMap_for_top_300_genes.png")
 
 if __name__ == '__main__':
 
@@ -192,20 +230,24 @@ if __name__ == '__main__':
     parser.add_argument('--counts_fn', type=str, required=True)  
     parser.add_argument('--output_directory', type=str, required=True)
     parser.add_argument('--run_name', type=str, required=True)
+    parser.add_argument('--image_directory', type=str, required=True)
+    parser.add_argument('--image_name', type=str, required=True)
 
-    parser.add_argument('--K', nargs='*', type=int) # allow zero input 
+    parser.add_argument('--K', type=int) 
+    parser.add_argument('--top_gene', type=int, default = 300) 
 
 
     args = parser.parse_args()
 
-
+    # combine all NMF runs
     cnmf_obj = cnmf.cNMF(output_dir = args.output_directory, name=args.run_name)
-
     program_gene_matrix = cnmf_obj.combine_nmf(args.K)
 
-    cor = program_corr(program_gene_matrix,program_gene_matrix)
-    distance = program_euclidean(program_gene_matrix,program_gene_matrix)
+    # calculate cor, distance, overlaps    
+    cor = program_corr(combined,combined)
+    distance = program_euclidean(combined,combined)
+    overlap = top_genes_overlap(combined,combined, args.top_gene)
 
-
-
+    # graph pdf
+    graph_pdf_clustermap(cor, distance, overlap, args.image_directory, args.image_name)
 
