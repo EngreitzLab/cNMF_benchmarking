@@ -104,8 +104,12 @@ if __name__ == '__main__':
     parser.add_argument('--n_iter', type = int, default = 10)
     parser.add_argument('--loss', default = 'frobenius')
     parser.add_argument('--algo', type = str, default = 'mu')
-    parser.add_argument('--sel_thresh', type = list , default = [2.0])
     parser.add_argument('--max_NMF_iter', type = int , default = 500)
+    parser.add_argument('--tol', type = float , default = 1e-4)
+
+
+    parser.add_argument('--sel_thresh', nargs='*', type=float, default=[2.0])  
+
 
 
     args = parser.parse_args()
@@ -122,7 +126,7 @@ if __name__ == '__main__':
 
     cnmf_obj.prepare(counts_fn= args.counts_fn, components= k_value, n_iter= args.numiter,  densify=False, tpm_fn=None, seed= args.seed,
                      beta_loss = args.loss,num_highvar_genes=args.numhvgenes, genes_file=None,
-                     alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=args.max_NMF_iter, algo = args.algo)
+                     alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=args.max_NMF_iter, algo = args.algo, tol = args.tol)
 
 
     cnmf_obj.factorize(total_workers = 1)
