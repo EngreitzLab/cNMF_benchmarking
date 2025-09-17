@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=090525_100k_10iter_1000batiter_sk_cd_frobenius          # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/logs/%A_%a.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/logs/%A_%a.err       # Error file
+#SBATCH --job-name=091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius          # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/logs/%A_%a.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/logs/%A_%a.err       # Error file
 #SBATCH --partition=engreitz           # partition name
 #SBATCH --array=1-8                    # Run parallel jobs (array indices 1-#)
-#SBATCH --time=40:00:00                # Time limit
+#SBATCH --time=48:00:00                # Time limit
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
@@ -19,7 +19,7 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius"
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius"
 
 # Store start time
 START_TIME=$(date +%s)
@@ -57,11 +57,13 @@ echo "Python path: $(which python)"
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/sk-cNMF/Slurm_Version/sk-cNMF_batch_inference_pipeline.py \
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad" \
-        --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius" \
-        --run_name "090525_100k_10iter_1000batiter_sk_cd_frobenius_${K}" \
+        --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius" \
+        --run_name "091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_${K}" \
         --algo "cd" \
         --K $K \
-        --max_NMF_iter 1000
+        --max_NMF_iter 1000 \
+        --tol 1e-5
+
 
 
 
