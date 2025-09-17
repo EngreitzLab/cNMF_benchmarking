@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=090425_100k_cells_10iter_torch_halsvar_online             # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/090425_100k_cells_10iter_torch_halsvar_online/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/090425_100k_cells_10iter_torch_halsvar_online/logs/%j.err       # Error file
+#SBATCH --job-name=091625_100k_cells_10iter_torch_halsvar_online_e8         # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091625_100k_cells_10iter_torch_halsvar_online_e8/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091625_100k_cells_10iter_torch_halsvar_online_e8/logs/%j.err       # Error file
 #SBATCH --partition=gpu                # partition name
-#SBATCH --time=07:00:00                # Time limit 
+#SBATCH --time=15:00:00                # Time limit 
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
-#SBATCH --mem=32G                      # Memory per node
-#SBATCH --gpus-per-node=1              # Request 1 GPU
-
+#SBATCH --mem=64G                      # Memory per node
+#SBATCH --gres=gpu:1                   # Request 1 GPU
+##SBATCH -C GPU_MEM:32GB                # With specific memory 
 
 # Email notifications
 #SBATCH --mail-type=BEGIN              # Send email when job starts
@@ -31,7 +31,7 @@ echo "Working directory: $(pwd)"
 
 
 # Configuration - Set your log directory here
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/090425_100k_cells_10iter_torch_halsvar_online"
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091625_100k_cells_10iter_torch_halsvar_online_e8"
 
 # Create logs directory if it doesn't exist
 mkdir -p "$LOG_DIR"
@@ -86,12 +86,24 @@ nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_batch_inference_pipeline.py\
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_inference_pipeline.py\
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad"\
         --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation"\
-        --run_name "090425_100k_cells_10iter_torch_halsvar_online"\
+        --run_name "091625_100k_cells_10iter_torch_halsvar_online_e8"\
         --algo "halsvar"\
-        --mode "online"
+        --mode "online"\
+        --tol 1e-8 \
+        --batch_max_iter 1000 \
+        --batch_hals_max_iter 1000 \
+        --batch_hals_tol 0.005 \
+        --use_gpu \
+        --densify \
+        --online_chunk_size 50000 \
+        --online_max_pass 1000 \
+        --online_chunk_max_iter 1000 \
+        --numiter 10 \
+        --online_usage_tol 0.005 \
+        --online_spectra_tol 0.005\
 
 
 # Record end time and calculate duration
@@ -117,6 +129,7 @@ nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 
 # Peak memory usage from SLURM
 echo "SLURM reported peak memory usage: $(sacct -j $SLURM_JOB_ID --format=MaxRSS --noheader | head -1 | tr -d ' ')" 2>/dev/null || echo "SLURM memory stats not available"
+#awk '/utilization\.memory \[%\]/ {getline; gsub(/%,/, "", $7); print $7}' resource_monitor_$SLURM_JOB_ID.log | sort -n | tail -1
 
 echo "Resource monitoring log saved to: $MONITOR_LOG"
 echo "Time output log saved to: logs/time_output_${SLURM_JOB_ID}.log"
