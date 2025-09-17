@@ -5,6 +5,8 @@ import logging
 import mudata
 import pandas as pd
 import argparse
+import mygene
+
 
 # Change path to wherever you have repo locally
 sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
@@ -14,7 +16,7 @@ from Evaluation.src import (
     compute_geneset_enrichment,
     compute_trait_enrichment,
     compute_perturbation_association,
-    compute_explained_variance_ratio,
+    #compute_explained_variance_ratio,
     compute_motif_enrichment
 )
 from Evaluation.src.enrichment_trait import process_enrichment_data
@@ -29,13 +31,30 @@ def assign_guide(mdatam,file):
     mdata['cNMF'].obsm["guide_assignment"] = mdata_guide["cNMF_100"].obsm["guide_assignment"]
 
 
+
+def rename_gene(mdata):
+
+    mg = mygene.MyGeneInfo()
+    gene_list = mdata['cNMF'].uns['var_names'].tolist()
+    annotations = mg.querymany(gene_list, scopes='ensembl.gene', fields='symbol', species='human')
+
+    # Process the results to create mapping
+    gene_dict = {}
+    
+    for item in annotations:
+        if 'symbol' in item:
+            gene_dict[item['query']] = item['symbol']
+
+    mdata['cNMF'].uns['var_names'] = [gene_dict.get(x, x) for x in mdata['cNMF'].uns['var_names']]
+
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--input_folder', type=str, required=True)  
     parser.add_argument('--mdata_guide', type=str, default="/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/mdata_guide.h5mu")
-    parser.add_argument('--K', default = [30, 50, 60, 80, 100, 200, 250, 300])
+    parser.add_argument('--K', nargs='*', type=int, default=None) # allow zero input 
     parser.add_argument('--thre', default = '2.0')
 
     # running different tests
@@ -49,14 +68,22 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # either change the array here or run each component in parallel
+    if args.K is None:
+        k_value = [30, 50, 60, 80, 100, 200, 250, 300]
+    else:
+        k_value = args.K
 
-    for k in args.K:  
+
+    for k in k_value:  
 
         os.makedirs(f"{args.input_folder}/Eval/{k}", exist_ok=True)
         output_folder = f"{args.input_folder}/Eval/{k}"
 
         # Load mdata
         mdata = mudata.read('{}/adata/cNMF_{}_{}.h5mu'.format(args.input_folder,k,args.thre))
+
+        
         
 
         # Run categorical assocation
@@ -118,8 +145,11 @@ if __name__ == '__main__':
 
         # Run motif analysis 
         if args.Perform_motif:
+
             fimo_thresh_enhancer = 1e-6
             fimo_thresh_promoter = 1e-4
+
+            rename_gene(mdata)
 
             for i in range(4):
                 for class_, thresh in [('enhancer', fimo_thresh_enhancer), 

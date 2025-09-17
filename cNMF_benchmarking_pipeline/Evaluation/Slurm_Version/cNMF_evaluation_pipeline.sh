@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=100k_cells_10iter_torch_halsvar_batch             # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_halsvar_batch/Eval/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_halsvar_batch/Eval/logs/%j.err       # Error file
+#SBATCH --job-name=091425_100k_cells_10iter_torch_bpp_batch_eval           # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091425_100k_cells_10iter_torch_bpp_batch/Eval/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091425_100k_cells_10iter_torch_bpp_batch/Eval/logs/%j.err       # Error file
 #SBATCH --partition=engreitz              # partition name
-#SBATCH --time=05:00:00                 # Time limit 
+#SBATCH --time=15:00:00                 # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
-#SBATCH --cpus-per-task=1               # CPUs per task
+#SBATCH --cpus-per-task=10               # CPUs per task
 #SBATCH --mem=32G                       # Memory per node
 
 # Email notifications
@@ -18,8 +18,7 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/100k_cells_10iter_torch_halsvar_batch"
-
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091425_100k_cells_10iter_torch_bpp_batch"
 
 # Store start time
 START_TIME=$(date +%s)
@@ -54,6 +53,9 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --Perform_perturbation \
         --Perform_geneset \
         --Perform_trait \
+        --K 30\
+        --Perform_motif 
+       
 
 
 
