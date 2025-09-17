@@ -31,7 +31,6 @@ def assign_guide(mdatam,file):
     mdata['cNMF'].obsm["guide_assignment"] = mdata_guide["cNMF_100"].obsm["guide_assignment"]
 
 
-
 def rename_gene(mdata):
 
     mg = mygene.MyGeneInfo()
