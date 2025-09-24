@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=091425_100k_cells_10iter_torch_bpp_batch_eval           # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091425_100k_cells_10iter_torch_bpp_batch/Eval/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091425_100k_cells_10iter_torch_bpp_batch/Eval/logs/%j.err       # Error file
+#SBATCH --job-name=090525_100k_10iter_1000batiter_sk_cd_frobenius_all_eval           # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/090525_100k_10iter_1000batiter_sk_cd_frobenius_all/Eval/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/090525_100k_10iter_1000batiter_sk_cd_frobenius_all/Eval/logs/%j.err       # Error file
 #SBATCH --partition=engreitz              # partition name
 #SBATCH --time=15:00:00                 # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
 #SBATCH --cpus-per-task=10               # CPUs per task
-#SBATCH --mem=32G                       # Memory per node
+#SBATCH --mem=80G                       # Memory per node
 
 # Email notifications
 #SBATCH --mail-type=BEGIN              # Send email when job starts
@@ -18,7 +18,9 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091425_100k_cells_10iter_torch_bpp_batch"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius"
+RUN_NAME="090525_100k_10iter_1000batiter_sk_cd_frobenius_all"
+LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
 START_TIME=$(date +%s)
@@ -48,15 +50,16 @@ echo "Python path: $(which python)"
 # Run the Python script
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py\
+        --X_normalized "$LOG_DIR/cnmf_tmp/$RUN_NAME.norm_counts.h5ad"\
+        --out_dir "$OUT_DIR" \
+        --run_name "$RUN_NAME"\
         --input_folder "$LOG_DIR"\
+        --Perform_explained_variance\
         --Perform_categorical \
         --Perform_perturbation \
         --Perform_geneset \
         --Perform_trait \
-        --K 30\
-        --Perform_motif 
-       
-
+        #--Perform_motif 
 
 
 # Calculate and print elapsed time at the end

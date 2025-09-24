@@ -4,8 +4,11 @@ import yaml
 import logging
 import mudata
 import pandas as pd
+import numpy as np
 import argparse
 import mygene
+import cnmf
+import scanpy as sc
 
 
 # Change path to wherever you have repo locally
@@ -16,7 +19,7 @@ from Evaluation.src import (
     compute_geneset_enrichment,
     compute_trait_enrichment,
     compute_perturbation_association,
-    #compute_explained_variance_ratio,
+    compute_explained_variance,
     compute_motif_enrichment
 )
 from Evaluation.src.enrichment_trait import process_enrichment_data
@@ -64,14 +67,26 @@ if __name__ == '__main__':
     parser.add_argument('--Perform_explained_variance', action="store_true")
     parser.add_argument('--Perform_motif', action="store_true")
 
+    parser.add_argument('--X_normalized', type=str,  help='path to normalized input cell x gene matrix from cNMF pipeline', required=True)
+    parser.add_argument('--out_dir', help='path to make cnmf object', type=str, required=True)  
+    parser.add_argument('--run_name', help='name of cnmf obj',type=str, required=True)  
+    
 
     args = parser.parse_args()
+
+
+
 
     # either change the array here or run each component in parallel
     if args.K is None:
         k_value = [30, 50, 60, 80, 100, 200, 250, 300]
     else:
         k_value = args.K
+
+    # defind objects used in explained variance
+    cnmf_obj = cnmf.cNMF(output_dir=args.out_dir, name=args.run_name)
+    X_norm = sc.read_h5ad(args.X_normalized)
+    X = X_norm.X
 
 
     for k in k_value:  
@@ -82,8 +97,6 @@ if __name__ == '__main__':
         # Load mdata
         mdata = mudata.read('{}/adata/cNMF_{}_{}.h5mu'.format(args.input_folder,k,args.thre))
 
-        
-        
 
         # Run categorical assocation
         if args.Perform_categorical: 
@@ -136,11 +149,6 @@ if __name__ == '__main__':
                                                     method='fisher', loading_rank_thresh=300)
             pre_res_trait.to_csv('{}/{}_trait_enrichment.txt'.format(output_folder,k), sep='\t', index=False)
 
-        
-        # Run explained variance
-        if args.Perform_explained_variance:
-            pass
-
 
         # Run motif analysis 
         if args.Perform_motif:
@@ -148,7 +156,7 @@ if __name__ == '__main__':
             fimo_thresh_enhancer = 1e-6
             fimo_thresh_promoter = 1e-4
 
-            rename_gene(mdata)
+            rename_gene(mdata) # rename the gene from Ensembl ID to gene symbols using mygene
 
             for i in range(4):
                 for class_, thresh in [('enhancer', fimo_thresh_enhancer), 
@@ -175,4 +183,12 @@ if __name__ == '__main__':
                     motif_enrichment_df.to_csv(os.path.join(output_folder, f'cNMF_{class_}_pearson_topn2000_sample_D{i}_motif_enrichment.txt'), sep='\t', index=False)
 
 
+        # Run explained variance
+        if args.Perform_explained_variance:
+            compute_explained_variance(cnmf_obj,X,k,output_folder = output_path)
+
     
+    # save comfigs used         
+    args_dict = vars(args)
+    with open(f'{args.input_folder}/Eval/config.yml', 'w') as f:
+        yaml.dump(args_dict, f, default_flow_style=False, width=1000)
