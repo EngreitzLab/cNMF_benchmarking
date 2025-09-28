@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=091625_100k_cells_10iter_torch_halsvar_online_e8_plot           # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091625_100k_cells_10iter_torch_halsvar_online_e8/Eval/plot/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091625_100k_cells_10iter_torch_halsvar_online_e8/Eval/plot/logs/%j.err       # Error file
+#SBATCH --job-name=091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all_k_selection           # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all/Plot/k_selection/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all/Plot/k_selection/logs/%j.err       # Error file
 #SBATCH --partition=engreitz            # partition name
 #SBATCH --time=1:00:00                  # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
@@ -18,7 +18,9 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/091625_100k_cells_10iter_torch_halsvar_online_e8"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius"
+RUN_NAME="091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all"
+LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
 START_TIME=$(date +%s)
@@ -34,11 +36,11 @@ echo "Log directory: $LOG_DIR"
 
 
 # Create logs directory if it doesn't exist
-mkdir -p "$LOG_DIR/Eval/plot/logs"
+mkdir -p "$LOG_DIR/Plot/k_selection/logs"
 
-# Activate conda base environment
+# Activate conda base environment (change deponds on the sk or torch)
 echo "Activating conda base environment..."
-source activate NMF_Benchmarking
+source activate sk-cNMF 
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"
@@ -48,9 +50,9 @@ echo "Python path: $(which python)"
 # Run the Python script
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Plotting/Slurm_Version/cNMF_k_selection.py\
-        --output_directory "$/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation" \
-        --run_name "091625_100k_cells_10iter_torch_halsvar_online_e8"\
-        --save_folder_name "$LOG_DIR/Eval/plot"\
+        --output_directory "$OUT_DIR" \
+        --run_name "$RUN_NAME" \
+        --save_folder_name "$LOG_DIR/Plot/k_selection"\
         --eval_folder_name "$LOG_DIR/Eval" \
 
 

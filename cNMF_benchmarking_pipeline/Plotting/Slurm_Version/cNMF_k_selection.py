@@ -1,13 +1,15 @@
 import sys
 from statsmodels.stats.multitest import fdrcorrection
+import argparse
 
 
 # Change path to wherever you have repo locally
 sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
 
-from Plotting.src import (load_stablity_error_data, plot_stablity_error, 
-                          load_perturbation_data, plot_perturbation,
-                          load_enrichment_data,plot_enrichment_data
+from Plotting.src import (load_stablity_error_data, plot_stablity_error,\
+                         load_enrichment_data, plot_enrichment,\
+                         load_perturbation_data, plot_perturbation,\
+                         load_explained_variance_data,plot_explained_variance
                           )
 
 
@@ -37,15 +39,19 @@ if __name__ == '__main__':
 
     # Enrichement 
     count_df = load_enrichment_data(folder = args.eval_folder_name, components = k_value)
-    plot_enrichment_data(count_df,folder_name = args.save_folder_name, file_name = "Enrichment")
+    plot_enrichment(count_df,folder_name = args.save_folder_name, file_name = "Enrichment")
 
     # Perturbation
     test_stats_df = load_perturbation_data(folder = args.eval_folder_name, components = k_value)
     plot_perturbation(test_stats_df, folder_name = args.save_folder_name, file_name = "Perturbation")
 
-
-    # Explained Variance (working in progress)
-
-
+    # Explained Variance
+    stats = load_explained_variance_data(folder = args.eval_folder_name, components=k_value)
+    plot_explained_variance(stats, folder_name = args.save_folder_name, file_name = "Explained_Variance")
 
     # Motif (working in progress for complie the results)
+
+    # save comfigs used         
+    args_dict = vars(args)
+    with open(f'{args.save_folder_name}/Plot/config.yml', 'w') as f:
+        yaml.dump(args_dict, f, default_flow_style=False, width=1000)

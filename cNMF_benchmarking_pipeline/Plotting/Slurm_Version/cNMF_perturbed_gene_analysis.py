@@ -2,13 +2,16 @@ import sys
 import muon as mu 
 import numpy as np
 import pandas as pd
+import argparse
 
 # Change path to wherever you have repo locally
 sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
 
 from Plotting.src import plot_umap_per_gene, plot_top_program_per_gene, perturbed_gene_dotplot,\
-                         plot_log2FC, plot_volcano, programs_dotplots, analyze_correlations, \
-                         graph_pdf_gene_QC, convert_with_mygene, convert_adata_with_mygene, read_npz, merge_pdfs_in_folder
+                                      plot_log2FC, plot_volcano, programs_dotplots, analyze_correlations, \
+                                      create_comprehensive_plot, create_gene_correlation_waterfall, convert_with_mygene, \
+                                      convert_adata_with_mygene, read_npz, merge_svgs_to_pdf, merge_pdfs_in_folder
+
 
 
 if __name__ == '__main__':
@@ -22,6 +25,8 @@ if __name__ == '__main__':
     parser.add_argument('--top_program',  type=int, default=5)
     parser.add_argument('--p_value',  type=float, default=0.05)
     parser.add_argument('--pdf_save_path',  type=str, required=True)
+    parser.add_argument('--PDF',  action="store_true")  
+
 
 
     args = parser.parse_args()
@@ -50,12 +55,27 @@ if __name__ == '__main__':
     # Graph all pdf 
     for gene in perturbed_gene_found:
 
-        save_name = f"{gene} QC"
-
-        graph_pdf_gene_QC(mdata, args.gene_loading_path, args.program_loading_path, args.perturb_path, Target_Gene = gene, top_program= args.top_program,\
-             save_path=args.pdf_save_path, save_name=save_name, p_value = args.p_value)
+        create_comprehensive_plot(
+            mdata,
+            args.perturb_path,
+            args.gene_loading_path,
+            args.program_loading_path,
+            gene,
+            save_path=args.pdf_save_path,
+            save_name=f"{gene}",
+            figsize=(25, 25),
+            show=False,
+            PDF = args.PDF
+        )
 
     # merge pdf 
-    merge_path = f"{args.pdf_save_path}/Perturbed_Gene_QC"
-    merge_pdfs_in_folder(merge_path)
+    if args.PDF:
+        merge_pdfs_in_folder(args.pdf_save_path)
+    else:
+        merge_svgs_to_pdf(args.pdf_save_path)
+
+    # save comfigs used         
+    args_dict = vars(args)
+    with open(f'{args.input_folder}/Eval/config.yml', 'w') as f:
+        yaml.dump(args_dict, f, default_flow_style=False, width=1000)
         

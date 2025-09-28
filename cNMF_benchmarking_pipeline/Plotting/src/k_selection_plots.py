@@ -63,7 +63,7 @@ def plot_stablity_error(stats, folder_name = None, file_name = None):
     ax2.tick_params(axis='both', which='major', labelsize=10)
 
     if folder_name and file_name:
-        fig.savefig(f"{folder_name}/{file_name}.png")
+        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight" )#  transparent=True)
 
 
 # Load data for differeent enrichment test
@@ -146,8 +146,7 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
     ax3.tick_params(axis='both', which='major', labelsize=10)
 
     if folder_name and file_name:
-        fig.savefig(f"{folder_name}/{file_name}.png")
-
+        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")# transparent=True)
 
 # load perturbation data 
 def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80, 100, 200, 250, 300]):
@@ -178,7 +177,7 @@ def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80
 # plot perturbation data
 def plot_perturbation(test_stats_df, folder_name = None, file_name = None):
 
-    fig, axs = plt.subplots(ncols=1, nrows=2,figsize=(9, 9))
+    fig, axs = plt.subplots(ncols=1, nrows=2,figsize=(5, 5))
 
     axs[0].set_title('Unique regulators of progams per sample (pval <=0.000335)', fontsize=10)
     plotting_df = test_stats_df.loc[test_stats_df.pval<=0.000335, ['K', 'sample','target_name']].drop_duplicates().groupby(['K', 'sample']).count().reset_index()
@@ -193,4 +192,40 @@ def plot_perturbation(test_stats_df, folder_name = None, file_name = None):
     axs[1].set_ylabel('# Regulators', fontsize=10)
 
     if folder_name and file_name:
-        fig.savefig(f"{folder_name}/{file_name}.png")
+        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")#  transparent=True)
+
+# load total explained variance
+def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 300]):
+
+    stats = {}
+    for k in components:
+    
+        input_path = f"{folder}/{k}/{k}_Explained_Variance_Summary.txt"
+        df = pd.read_csv(input_path, sep = '\t', index_col = 0)
+
+        stats[k] = df['Total'].values[0]
+
+    
+    print("min Explained_variance is", min(stats.values()))
+    print("max Explained_variance is", max(stats.values()))
+
+    return stats
+
+# plot NMF explained variance
+def plot_explained_variance(stats, folder_name=None, file_name=None):
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(4, 2))
+
+    # Plot the data
+    ax.plot(list(stats.keys()), list(stats.values()), 'k-', linewidth=2)
+    ax.set_xlabel('Components')
+    ax.set_ylabel('TotalExplained Variance')
+    ax.set_xlim(0, 310)
+    ax.grid(True, alpha=0.3)
+    ax.tick_params(axis='both', which='major', labelsize=10)
+    
+    # Save the figure if folder and file names are provided
+    if folder_name and file_name:
+        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight") # transparent=True)
+    
+    plt.show()
