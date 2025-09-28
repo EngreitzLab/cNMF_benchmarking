@@ -19,7 +19,9 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation"
+RUN_NAME="090525_100k_10iter_1000batiter_sk_cd_frobenius"
+LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
 START_TIME=$(date +%s)
@@ -57,8 +59,8 @@ echo "Python path: $(which python)"
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/sk-cNMF/Slurm_Version/sk-cNMF_batch_inference_pipeline.py \
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad" \
-        --output_directory "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius" \
-        --run_name "091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_${K}" \
+        --output_directory "$OUT_DIR" \
+        --run_name "${RUN_NAME}_${K}" \
         --algo "cd" \
         --K $K \
         --max_NMF_iter 1000 \

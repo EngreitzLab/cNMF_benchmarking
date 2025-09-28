@@ -124,6 +124,7 @@ if __name__ == '__main__':
     parser.add_argument('--online_max_pass', type = int, default = 20)
     parser.add_argument('--online_chunk_size', type = int, default = 5000)
     parser.add_argument('--online_chunk_max_iter', type = int, default = 200)
+    parser.add_argument('--shuffle_cells', action="store_true")
 
     
     parser.add_argument('--sel_thresh', nargs='*', type=float, default=[2.0])  
@@ -138,6 +139,7 @@ if __name__ == '__main__':
 
     # running 
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
+    print(f"{args.counts_fn} used for inference" )
 
 
     cnmf_obj.prepare(counts_fn=args.counts_fn, components=k_value, n_iter=args.numiter, densify=args.densify, tpm_fn=args.tpm_fn, num_highvar_genes=args.numhvgenes, genes_file=args.genes_file,
@@ -149,7 +151,8 @@ if __name__ == '__main__':
                 online_usage_tol = args.online_usage_tol, online_spectra_tol = args.online_spectra_tol,
                 fp_precision = args.fp_precision, 
                 batch_max_iter = args.batch_max_iter, batch_hals_tol = args.batch_hals_tol, batch_hals_max_iter = args.batch_hals_max_iter,
-                online_max_pass = args.online_max_pass, online_chunk_size = args.online_chunk_size, online_chunk_max_iter = args.online_chunk_max_iter)
+                online_max_pass = args.online_max_pass, online_chunk_size = args.online_chunk_size, online_chunk_max_iter = args.online_chunk_max_iter,
+                shuffle_cells = args.shuffle_cells)
 
 
 
@@ -166,3 +169,8 @@ if __name__ == '__main__':
 
     # Save all cNMF scores in separate mudata objects
     compile_results(args.output_directory, args.run_name)
+
+    # save comfigs used         
+    args_dict = vars(args)
+    with open(f'{args.output_directory}/{run_name}/config.yml', 'w') as f:
+        yaml.dump(args_dict, f, default_flow_style=False, width=1000)

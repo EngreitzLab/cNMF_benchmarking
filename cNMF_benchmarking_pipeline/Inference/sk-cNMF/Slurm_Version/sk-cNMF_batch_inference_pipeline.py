@@ -142,3 +142,8 @@ if __name__ == '__main__':
 
     # Save all cNMF scores in separate mudata objects
     compile_results(args.output_directory, args.run_name)
+
+    # save comfigs used         
+    args_dict = vars(args)
+    with open(f'{args.output_directory}/{run_name}/config.yml', 'w') as f:
+        yaml.dump(args_dict, f, default_flow_style=False, width=1000)

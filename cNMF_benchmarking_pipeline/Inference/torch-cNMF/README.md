@@ -38,5 +38,6 @@
     | online_chunk_size | int | 5000 | Chunk/mini-batch size for online learning |
     | online_chunk_max_iter | int | 200 | Maximum iterations for updating H or W in online learning |
     | online_usage_tol | float | 0.05 | Tolerance for updating W in each chunk during online learning |
+    | shuffle_cells | bool | false | Shuffle cells in obs and guide assignment in obsm to do online learning is recommanded |
     | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
 
