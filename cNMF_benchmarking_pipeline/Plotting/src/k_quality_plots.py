@@ -164,7 +164,6 @@ def max_gene_values_barplot(data_list, title="Maxinum shared genes between sk-cd
     plt.tight_layout()
     plt.show()
 
-
 # For graphing clustermap given corr/eu/overlap matrix
 def graph_cluster(matrix, method = 'single', save = False, save_folder_name = None , save_file_name = None , show = True, figsize = (4,4) ):
  
@@ -213,6 +212,43 @@ def graph_cluster(matrix, method = 'single', save = False, save_folder_name = No
     
     return g
 
+# graph pdf for 3 clustermap
+def graph_pdf_clustermap(cor, distance, overlap, save_path, filename):
+
+    with PdfPages(f"{save_path}/{filename}") as pdf:
+        
+
+        g1 = graph_cluster(cor, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_correlation")
+        g2 = graph_cluster(distance, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_Euclidean_distance")
+        g3 = graph_cluster(overlap, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_top_300_genes")
+
+        fig, axes = plt.subplots(1, 3, figsize=(30, 10))
+        fig.suptitle(filename, 
+                    fontsize=24, fontweight='bold', y=0.95)
+
+        img1 = plt.imread(f"{save_path}/ClusterMap_for_correlation.png")
+        axes[0].imshow(img1)
+        axes[0].axis('off')
+        
+        img2 = plt.imread(f"{save_path}/ClusterMap_for_Euclidean_distance.png") 
+        axes[1].imshow(img2)
+        axes[1].axis('off')
+
+        img3 = plt.imread(f"{save_path}/ClusterMap_for_top_300_genes.png") 
+        axes[2].imshow(img3)
+        axes[2].axis('off')
+        
+        plt.tight_layout()
+        pdf.savefig(fig,bbox_inches='tight')
+        plt.close()
+        
+        plt.close(g1.fig)
+        plt.close(g2.fig)
+        plt.close(g3.fig)
+        os.remove(f"{save_path}/ClusterMap_for_correlation.png")
+        os.remove(f"{save_path}/ClusterMap_for_Euclidean_distance.png")
+        os.remove(f"{save_path}/ClusterMap_for_top_300_genes.png")
+                              
 '''# graph heatmap base on the clustermap -> TODOs: need more thinking in this
 def graph_heatmap(g, r, c, folder_name, file_name, num_gene = 300, sorted = False):
     # g = clustermap
@@ -258,40 +294,3 @@ def graph_heatmap(g, r, c, folder_name, file_name, num_gene = 300, sorted = Fals
  
         plt.show()
 '''
-# graph pdf for 3 clustermap
-def graph_pdf_clustermap(cor, distance, overlap, save_path, filename):
-
-    with PdfPages(f"{save_path}/{filename}") as pdf:
-        
-
-        g1 = graph_cluster(cor, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_correlation")
-        g2 = graph_cluster(distance, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_Euclidean_distance")
-        g3 = graph_cluster(overlap, save = True, save_folder_name = save_path , save_file_name = "ClusterMap_for_top_300_genes")
-
-        fig, axes = plt.subplots(1, 3, figsize=(30, 10))
-        fig.suptitle(filename, 
-                    fontsize=24, fontweight='bold', y=0.95)
-
-        img1 = plt.imread(f"{save_path}/ClusterMap_for_correlation.png")
-        axes[0].imshow(img1)
-        axes[0].axis('off')
-        
-        img2 = plt.imread(f"{save_path}/ClusterMap_for_Euclidean_distance.png") 
-        axes[1].imshow(img2)
-        axes[1].axis('off')
-
-        img3 = plt.imread(f"{save_path}/ClusterMap_for_top_300_genes.png") 
-        axes[2].imshow(img3)
-        axes[2].axis('off')
-        
-        plt.tight_layout()
-        pdf.savefig(fig,bbox_inches='tight')
-        plt.close()
-        
-        plt.close(g1.fig)
-        plt.close(g2.fig)
-        plt.close(g3.fig)
-        os.remove(f"{save_path}/ClusterMap_for_correlation.png")
-        os.remove(f"{save_path}/ClusterMap_for_Euclidean_distance.png")
-        os.remove(f"{save_path}/ClusterMap_for_top_300_genes.png")
-                              

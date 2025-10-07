@@ -120,6 +120,8 @@ def merge_pdfs_in_folder(folder_path, output_filename="merged_perturbed_gene_QC.
     except Exception as e:
         print(f"Error saving merged PDF: {str(e)}")
 
+
+# merge all svgs to pdf 
 def merge_svgs_to_pdf(folder_path, output_filename="merged_perturbed_gene_QC.pdf"):
 
     svg_files = glob.glob(os.path.join(folder_path, "*.svg"))

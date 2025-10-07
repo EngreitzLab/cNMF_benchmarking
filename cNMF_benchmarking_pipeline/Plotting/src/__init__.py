@@ -19,11 +19,11 @@ from .k_quality_plots import program_corr,program_euclidean, top_genes_overlap,\
 #from .Correlation_plot import analyze_program_correlations, analyze_correlations
 #from .Perturbation_plot import plot_top_bottom_genes
 
-#from .program_QC_plots import *
+#from .Program_QC_plots import *
 
 # gene QC plots
 from .Perturbed_gene_QC_plots import  plot_umap_per_gene, plot_top_program_per_gene, perturbed_gene_dotplot,\
-                                      plot_log2FC, plot_volcano, programs_dotplots, analyze_correlations, \
+                                      plot_log2FC, plot_volcano, programs_dotplot, analyze_correlations, \
                                       create_comprehensive_plot,create_gene_correlation_waterfall 
 
 

@@ -101,7 +101,6 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type = int, default = 14)
     parser.add_argument('--K', nargs='*', type=int, default=None) # allow zero input 
     parser.add_argument('--init', type = str, default = 'random')
-    parser.add_argument('--n_iter', type = int, default = 10)
     parser.add_argument('--loss', default = 'frobenius')
     parser.add_argument('--algo', type = str, default = 'mu')
     parser.add_argument('--max_NMF_iter', type = int , default = 500)

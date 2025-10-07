@@ -5,7 +5,7 @@
 #SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/10k_10iter_sk_cd_frobenius/logs/sk-cNMF-10k_%j.out      # Output file (%j = job ID)
 #SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/10k_10iter_sk_cd_frobenius/logs/sk-cNMF-10k_%j.err       # Error file
 #SBATCH --partition=engreitz           # partition name
-#SBATCH --time=05:00:00                # Time limit (5 minutes)
+#SBATCH --time=60:00:00                # Time limit (5 minutes)
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task

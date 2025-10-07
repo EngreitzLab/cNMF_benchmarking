@@ -1,18 +1,17 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=092525_100k_cells_10iter_torch_halsvar_batch_e7_v100_s         # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/092525_100k_cells_10iter_torch_halsvar_batch_e7_v100_s/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/092525_100k_cells_10iter_torch_halsvar_batch_e7_v100_s/logs/%j.err       # Error file
+#SBATCH --job-name=100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit         # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.err       # Error file
 #SBATCH --partition=gpu                # partition name
-#SBATCH --time=25:00:00                # Time limit 
+#SBATCH --time=30:00:00                # Time limit 
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
 #SBATCH --mem=64G                      # Memory per node
 #SBATCH --gres=gpu:1                   # Request 1 GPU
-#SBATCH -C GPU_SKU:V100_SXM2       # Request specific GPU
-
+#SBATCH -C GPU_SKU:V100S_PCIE
 
 # Optional: Request specific GPU type if available
 ##SBATCH --constraint="GPU_MEM:32GB" # GPU memory constraint 
@@ -35,8 +34,8 @@ echo "Working directory: $(pwd)"
 
 
 # Configuration - Set your log directory here
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation"
-RUN_NAME="092525_100k_cells_10iter_torch_halsvar_batch_e7_v100_s"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit"
+RUN_NAME="100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Create logs directory if it doesn't exist
@@ -93,7 +92,7 @@ nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 # Run the Python script
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_inference_pipeline.py\
-        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad"\
+        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad"\
         --output_directory "$OUT_DIR" \
         --run_name "$RUN_NAME" \
         --algo "halsvar"\
@@ -110,7 +109,8 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --online_usage_tol 0.005 \
         --online_spectra_tol 0.005\
         --use_gpu \
-
+        --sk_cd_refit \
+        #--shuffle_cells
 
 
 

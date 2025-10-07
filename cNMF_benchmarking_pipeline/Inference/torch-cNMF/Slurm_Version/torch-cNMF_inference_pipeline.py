@@ -80,12 +80,22 @@ def compile_results(output_directory, run_name, sel_thresh = 2.0, components = [
         # Make mdata
         mdata = muon.MuData({'rna': adata_, 'cNMF': prog_data})
 
+        if "guide_names" in adata_.uns:
+            mdata['cNMF'].uns["guide_names"] = adata_.uns["guide_names"]
+
+        if "guide_targets" in adata_.uns:
+            mdata['cNMF'].uns["guide_targets"] = adata_.uns["guide_targets"]
+
+        if "guide_assignment" in adata_.obsm:
+            mdata['cNMF'].obsm["guide_assignment"] = adata_.obsm["guide_assignment"]
+
         os.makedirs((f'{output_directory}/{run_name}/adata'), exist_ok=True)
         mdata.write(f'{output_directory}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(
                                                                                 output_directory=output_directory,
                                                                                 run_name = run_name,
                                                                                 k=k,
                                                                                 sel_thresh = str(sel_thresh).replace('.','_')))
+
 
 
 
@@ -125,7 +135,7 @@ if __name__ == '__main__':
     parser.add_argument('--online_chunk_size', type = int, default = 5000)
     parser.add_argument('--online_chunk_max_iter', type = int, default = 200)
     parser.add_argument('--shuffle_cells', action="store_true")
-
+    parser.add_argument('--sk_cd_refit', action="store_true")
     
     parser.add_argument('--sel_thresh', nargs='*', type=float, default=[2.0])  
 
@@ -172,5 +182,5 @@ if __name__ == '__main__':
 
     # save comfigs used         
     args_dict = vars(args)
-    with open(f'{args.output_directory}/{run_name}/config.yml', 'w') as f:
+    with open(f'{args.output_directory}/{args.run_name}/config.yml', 'w') as f:
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)

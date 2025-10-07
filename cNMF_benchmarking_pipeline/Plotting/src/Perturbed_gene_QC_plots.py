@@ -27,7 +27,18 @@ plt.rcParams["axes.spines.right"] = False
 #plt.rcParams["axes.spines.left"] = False
 plt.rcParams['pdf.fonttype'] = 42  # TrueType fonts (editable text)
 plt.rcParams['ps.fonttype'] = 42   # For EPS as well
-sc.set_figure_params(vector_friendly=True)
+
+
+plt.rcParams.update({
+    'font.size': 14,
+    'axes.titlesize': 16,
+    'axes.labelsize': 14,
+    'legend.fontsize': 14,        # Legend text size
+    'legend.title_fontsize': 14,  # Legend title size
+    'xtick.labelsize': 14,
+    'ytick.labelsize': 14,
+    'figure.titlesize': 20
+})
 
 import sys
 # Change path to wherever you have repo locally
@@ -40,20 +51,18 @@ def plot_umap_per_gene(mdata, Target_Gene, ax=None, color='purple', save_path=No
 
     renamed = convert_adata_with_mygene(mdata['rna'])
     
-    # check if gene exist
+    # Check if gene exists
     gene_name_list = renamed.var_names.tolist()
     if Target_Gene not in gene_name_list:
         print("gene name is not found in mdata")
         return None
     
-    # set color
+    # Set color
     colors = ['lightgrey', color]
     n_bins = 100
     cmap = mcolors.LinearSegmentedColormap.from_list('custom', colors, N=n_bins)
     
-    #if save_name is None:
-    
-    title = save_name = f'{Target_Gene} Expression UMAP'
+    title = f'{Target_Gene} Expression UMAP'
     
     # If no axis provided, create new figure
     if ax is None:
@@ -65,8 +74,14 @@ def plot_umap_per_gene(mdata, Target_Gene, ax=None, color='purple', save_path=No
     
     # Plot on the provided/created axis
     sc.pl.umap(renamed, color=Target_Gene, title=title, cmap=cmap, ax=ax, show=False)
-
-    ax.set_title(title, fontweight='bold', loc='center')
+    
+    # Rasterize ONLY the scatter points (collections) in this axis
+    for collection in ax.collections:
+        collection.set_rasterized(True)
+    
+    ax.set_title(title, fontsize=18, fontweight='bold', loc='center')
+    ax.set_xlabel('UMAP 1', fontsize=10, fontweight = 'bold')
+    ax.set_ylabel('UMAP 2', fontsize=10, fontweight = 'bold')
 
     # Only save if standalone and save_path provided
     if standalone and save_path and save_name:
@@ -80,7 +95,7 @@ def plot_umap_per_gene(mdata, Target_Gene, ax=None, color='purple', save_path=No
             plt.close(fig)
     
     return ax
-  
+
 
 # read the cNMF gene matrix (in txt), plot top x gene in the program 
 def plot_top_program_per_gene(gene_loading_path, Target_Gene, top_program=10, 
@@ -100,6 +115,8 @@ def plot_top_program_per_gene(gene_loading_path, Target_Gene, top_program=10,
     
     # sort top x program
     df_sorted = df_renamed[Target_Gene].nlargest(top_program)
+    df_sorted = df_sorted.sort_values(ascending=True)
+
     
     # If no axis provided, create new figure
     if ax is None:
@@ -113,14 +130,15 @@ def plot_top_program_per_gene(gene_loading_path, Target_Gene, top_program=10,
     bars = ax.barh(range(len(df_sorted)), df_sorted.values, color='#808080', alpha=0.8)
     
     # Customize the plot
+    ax.set_title(f"Top Loading Program for {Target_Gene}",fontsize=12, fontweight='bold', loc='center')
     ax.set_yticks(range(len(df_sorted)))
     ax.set_yticklabels(df_sorted.index, fontsize=10)
-    ax.set_xlabel('Gene Loading Score (z-score)', fontsize=11)
-    ax.set_ylabel(f'Program Name')
+    ax.set_xlabel('Gene Loading Score (z-score)',fontsize=10, fontweight='bold') #, loc='center')
+    ax.set_ylabel(f'Program Name',fontsize=10, fontweight='bold', loc='center')
     
     # Format x-axis
     ax.set_xlim(0, max(df_sorted.values) * 1.1)
-    ax.ticklabel_format(style='scientific', axis='x', scilimits=(0,0))
+    ax.ticklabel_format(style='scientific', axis='x' )#scilimits=(0,0))
     
     # Add grid
     ax.grid(axis='x', alpha=0.3, linestyle='-', linewidth=0.5)
@@ -130,8 +148,6 @@ def plot_top_program_per_gene(gene_loading_path, Target_Gene, top_program=10,
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     
-    # Set title
-    ax.set_title(f"Top Loading Program for {Target_Gene}", fontweight='bold', loc='center')
     
     # Only save if standalone and save_path provided
     if standalone and save_path and save_name:
@@ -147,8 +163,7 @@ def plot_top_program_per_gene(gene_loading_path, Target_Gene, top_program=10,
     return ax
 
 
-# plot the gene expresion dotplot split by days given mdata
-def perturbed_gene_dotplot(mdata, Target_Gene, groupby='sample', save_name=None, 
+def perturbed_gene_dotplot(mdata, Target_Gene, groupby='sample', save_name=None,
                           save_path=None, figsize=(3, 2), show=False, ax=None):
     # read in adata
     renamed = convert_adata_with_mygene(mdata['rna'])
@@ -161,7 +176,7 @@ def perturbed_gene_dotplot(mdata, Target_Gene, groupby='sample', save_name=None,
     if ax is None:
         # Standalone mode - let scanpy create its own figure
         dp = sc.pl.dotplot(renamed, Target_Gene, groupby=groupby,
-                          figsize=figsize, swap_axes=True, dendrogram=False, 
+                          figsize=figsize, swap_axes=True, dendrogram=False,
                           show=False, return_fig=True)
         dp.make_figure()
         fig = dp.fig
@@ -169,18 +184,27 @@ def perturbed_gene_dotplot(mdata, Target_Gene, groupby='sample', save_name=None,
     else:
         # Gridspec mode - use provided ax
         fig = ax.get_figure()
-        dp = sc.pl.dotplot(renamed, Target_Gene, groupby=groupby, 
-                          swap_axes=True, dendrogram=False, show=False, 
+        dp = sc.pl.dotplot(renamed, Target_Gene, groupby=groupby,
+                          swap_axes=True, dendrogram=False, show=False,
                           return_fig=True, ax=ax)
         dp.make_figure()
+    
+    ax.set_title(f"{Target_Gene} Expression", fontsize=14, fontweight='bold', loc='center')
+    ax.set_ylabel('Gene', fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel('Day', fontsize=10, fontweight='bold', loc='center')
+    
+    # Get labels and set ticks properly
+    label = list(mdata['rna'].obs[groupby].cat.categories)  # Use categories instead
+    
+    # Set both ticks and labels together
+    tick_positions = range(len(label))
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(label, fontsize=8)
 
-    ax.set_title(f"{Target_Gene} Expression", fontweight='bold', loc='center')
-    ax.set_ylabel('Gene')
-    ax.set_xlabel( 'Day')
     
     # save fig (only in standalone mode)
     if save_name and save_path and ax is None:
-        fig.savefig(f"{save_path}/{save_name}.png", format='svg', bbox_inches='tight', dpi=300)
+        fig.savefig(f"{save_path}/{save_name}.png", format='png', bbox_inches='tight', dpi=300)  # Changed to png
     
     # Control whether to display the plot (only in standalone mode)
     if ax is None:
@@ -189,8 +213,76 @@ def perturbed_gene_dotplot(mdata, Target_Gene, groupby='sample', save_name=None,
         else:
             plt.close(fig)
     
-    return ax 
- 
+    return ax
+
+
+
+# plot the gene expresion dotplot split by days given mdata
+def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
+                log2fc_col='log2FC', num_item=5, p_value=0.05, save_path=None, save_name=None, 
+                figsize=(5, 4), show=False, ax=None, Day =""):
+    # read df
+    df = pd.read_csv(perturb_path, sep="\t")
+    # Sort by log2FC
+    df_sorted = df.loc[df[tagert_col_name] == Target]
+    df_sorted = df_sorted[df_sorted['adj_pval'] < p_value]
+    df_sorted = df_sorted.sort_values(by=log2fc_col, ascending=False)
+    # Get top and bottom gene
+    top_df = df_sorted.head(num_item)
+    bottom_df = df_sorted.tail(num_item)
+    # Combine and add category
+    top = top_df.copy()
+    bottom = bottom_df.copy()
+    # Combine data
+    plot_data = pd.merge(top, bottom, how='outer')
+    plot_data = plot_data.sort_values(by=log2fc_col, ascending=False)
+    
+    # Create the plot
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+    else:
+        fig = ax.get_figure()
+    
+    # Create horizontal bar plot
+    colors = ['red' if x > 0 else 'blue' for x in plot_data[log2fc_col]]
+    bars = ax.barh(range(len(plot_data)), plot_data[log2fc_col], color=colors, alpha=0.7)
+    
+    # Customize the plot
+    ax.set_yticks(range(len(plot_data)))
+    ax.set_yticklabels(plot_data[plot_col_name],fontsize=10) 
+
+
+    ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
+    ax.set_ylabel( "Program Name",fontsize=10, fontweight='bold', loc='center')
+    ax.set_title(f"Program Log2 Fold-Change with {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
+
+    # Add a vertical line at x=0
+    ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5)
+
+
+    
+    # Add legend
+    from matplotlib.patches import Patch
+    legend_elements = [Patch(facecolor='red', alpha=0.7, label='Upregulated'),
+                      Patch(facecolor='blue', alpha=0.7, label='Downregulated')]
+    ax.legend(handles=legend_elements) #loc='lower right')
+    
+    # Adjust layout
+    ax.grid(axis='x', alpha=0.3)
+    
+    # Save if path provided (only when ax is not provided)
+    if save_path and ax is None:
+        fig.savefig(f'{save_path}/{save_name}.svg', format='svg', bbox_inches='tight', dpi=300)
+    
+    # Control whether to display the plot (only when ax is not provided)
+    if ax is None:
+        if show:
+            plt.show()
+        else:
+            plt.close(fig)
+    
+    return ax, plot_data
+  
 
 # plot barplot for up/down regulated genes log2FC given results from perturbation analysis, return genes in df
 def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
@@ -224,15 +316,16 @@ def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_na
     
     # Customize the plot
     ax.set_yticks(range(len(plot_data)))
-    ax.set_yticklabels(plot_data[plot_col_name])
-    ax.set_xlabel('Effect on Program Expression (log2 fold-change)')
-    ax.set_ylabel( "Program Name")
-    ax.set_title(save_name, fontweight='bold')
-    
+    ax.set_yticklabels(plot_data[plot_col_name],fontsize=10) 
+
+
+    ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
+    ax.set_ylabel( "Program Name",fontsize=10, fontweight='bold', loc='center')
+    ax.set_title(f"Program Log2 Fold-Change with {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
+
     # Add a vertical line at x=0
     ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5)
 
-    ax.set_title(f"Program Log2 Fold-Change with {Target} {Day}", fontweight='bold', loc='center')
 
     
     # Add legend
@@ -291,19 +384,27 @@ def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_n
                s=3, label="Up-regulated", color="red")
     
     # Add text labels
+    texts = []
     for i, r in up.iterrows():
-        ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), s=r[plot_col_name])
+        texts.append(ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), 
+                            s=r[plot_col_name], fontsize=10, zorder=10))
     for i, r in down.iterrows():
-        ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), s=r[plot_col_name])
+        texts.append(ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), 
+                            s=r[plot_col_name], fontsize=10, zorder=10))
+    
+    # Adjust text to avoid overlaps
+    adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5), ax=ax)
+    
     
     # Set labels and lines
-    ax.set_xlabel('Effect on Program Expression (log2 fold-change)')
-    ax.set_ylabel("Adjusted p-value, -log10")
+    ax.set_title(f"Volcano Plot for {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
+    ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
+    ax.set_ylabel("Adjusted p-value, -log10",fontsize=10, fontweight='bold', loc='center')
     ax.axvline(down_thred_log, color="grey", linestyle="--")
     ax.axvline(up_thred_log, color="grey", linestyle="--")
     ax.axhline(-np.log10(p_value), color="grey", linestyle="--")
     ax.legend()
-    ax.set_title(f"Volcano Plot for {Target} {Day}", fontweight='bold', loc='center')
+    ax.set_title(f"Volcano Plot for {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
 
     
     # Save if path provided (only when ax is not provided)
@@ -316,13 +417,13 @@ def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_n
             plt.show()
         else:
             plt.close(fig)
+        
+    return ax, pd.merge(up, down, how='outer'), texts
     
-    return ax, pd.merge(up, down, how='outer')
- 
 
 # given mdata, list of programs to plot, plot dotplot for programs, split by days
-def programs_dotplots(mdata, program_loading_path, Target, groupby="sample", program_list=None,
-                      save_path=None, save_name=None, figsize=(5, 4), show=False, ax=None, Day = None):
+def programs_dotplot(mdata, program_loading_path, Target, groupby="sample", program_list=None,
+                     save_path=None, save_name=None, figsize=(5, 4), show=False, ax=None, Day=""):
     # load data
     df = pd.read_csv(program_loading_path, sep='\t', index_col=0)
     
@@ -330,6 +431,9 @@ def programs_dotplots(mdata, program_loading_path, Target, groupby="sample", pro
     adata_new = ad.AnnData(X=df.values)
     adata_new.obs[groupby] = mdata['rna'].obs[groupby].values
     
+    # Ensure groupby column is categorical
+    if not pd.api.types.is_categorical_dtype(adata_new.obs[groupby]):
+        adata_new.obs[groupby] = pd.Categorical(adata_new.obs[groupby])
     
     gene_list = adata_new.var_names.tolist()
     
@@ -339,15 +443,18 @@ def programs_dotplots(mdata, program_loading_path, Target, groupby="sample", pro
     if not gene_list:
         # Handle empty gene list
         if ax is None:
-            blank_img = np.ones((400, 400, 3), dtype=np.uint8) * 255
+            blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
             img = Image.fromarray(blank_img)
-            img.save(full_path)
-            return None, None
+            if save_path and save_name:
+                full_path = f"{save_path}/{save_name}.png"
+                img.save(full_path)
+            return None
         else:
-            ax.text(0.5, 0.5, 'No programs to display', 
+            ax.text(0.5, 0.5, 'No programs to display',
                    ha='center', va='center', transform=ax.transAxes)
-            ax.set_title(f"{Target} Perturbed Program Loading Scores {Day}", fontweight='bold', loc='center')
-            return ax, None
+            ax.set_title(f"{Target} Perturbed Program Loading Scores {Day}", 
+                        fontweight='bold', loc='center')
+            return ax
     
     gene_list = gene_list[::-1]
     
@@ -365,15 +472,22 @@ def programs_dotplots(mdata, program_loading_path, Target, groupby="sample", pro
         dp = sc.pl.dotplot(adata_new, gene_list, groupby=groupby, swap_axes=True, figsize=figsize,
                           dendrogram=False, show=False, return_fig=True, ax=ax)
         dp.make_figure()
-
-
-    ax.set_title(f"{Target} Perturbed Program Loading Scores {Day}", fontweight='bold', loc='center')
-    ax.set_ylabel('Program Name')
-    ax.set_xlabel("Day")
     
+    ax.set_title(f"{Target} Perturbed Program Loading Scores {Day}", 
+                fontsize=14, fontweight='bold', loc='center')
+    ax.set_ylabel('Program Name', fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel("Day", fontsize=10, fontweight='bold', loc='center')
+    
+    # Get labels and set ticks properly
+    label = list(adata_new.obs[groupby].cat.categories)
+    
+    # Set both ticks and labels together
+    tick_positions = range(len(label))
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(label, fontsize=8)
     
     # Save if path provided (only when ax is not provided)
-    if save_path and ax is None:
+    if save_path and save_name and ax is None:
         fig.savefig(f'{save_path}/{save_name}.svg', format='svg', bbox_inches='tight', dpi=300)
     
     # Control whether to display the plot (only in standalone mode)
@@ -423,9 +537,9 @@ def analyze_correlations(gene_loading_path, Target, top_num=5, save_path=None,
                    color=colors, alpha=0.7)
     
     # Customize the plot
-    ax.set_title(f"Gene Loading Correlation for {Target}", fontweight='bold', loc = 'center')
-    ax.set_ylabel('Simliar Gene')
-    ax.set_xlabel('Correlation Coefficient')
+    ax.set_title(f"Gene Loading Correlation for {Target}",fontsize=14, fontweight='bold', loc='center')
+    ax.set_ylabel('Gene Name',fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel('Correlation Coefficient',fontsize=10, fontweight='bold', loc='center')
     
     # Set y-axis labels
     ax.set_yticks(range(len(combined_correlations)))
@@ -459,7 +573,7 @@ def analyze_correlations(gene_loading_path, Target, top_num=5, save_path=None,
             plt.close(fig)
     
     return ax, combined_correlations
-
+   
 
 def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save_path=None, 
                          save_name=None, figsize=(3, 5), show=False, ax=None, Day =""):
@@ -513,8 +627,6 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
     # Remove x-axis labels
     ax.set_xticks([])
 
-    ax.set_title(f"Gene Perturbation Correlation for {Target_Gene} {Day}", fontweight='bold', loc = 'center')
-
     
     # Highlight the labeled genes with larger markers and add annotations
     texts = []
@@ -528,11 +640,12 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
                           ha='center')
             texts.append(text)
     
-    adjust_text(texts, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5), ax=ax) 
+    adjust_text(texts, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5), ax=ax, fontsize=12) 
     
-    ax.set_ylabel(f'Correlation of program\nexpression with\n{Target_Gene} perturbation')
-    ax.set_xlabel('Perturbed genes')
-    #ax.set_ylim(-1, 1)
+    ax.set_title(f"Gene Perturbation Correlation for {Target_Gene} {Day}",fontsize=14, fontweight='bold', loc='center')
+    ax.set_ylabel(f'Correlation of Program\nExpression with\n{Target_Gene} Perturbation',fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel('Perturbed Genes',fontsize=10, fontweight='bold', loc='center')
+
     
     # Add grid
     ax.grid(True, alpha=0.3, linestyle='--')
@@ -555,10 +668,10 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
             plt.close(fig)
     
     
-    return ax
+    return ax, texts
 
 
-# graph svg 
+# graph one big svg or pdf 
 def create_comprehensive_plot(
     mdata,
     perturb_path,
@@ -580,40 +693,47 @@ def create_comprehensive_plot(
     save_name=None,
     figsize=(25, 20),
     show=True,
-    PDF = True
+    PDF=True
 ):
 
     # Create figure with custom gridspec for 4-5-5-5 layout
     fig = plt.figure(figsize=figsize)
     
     # Create gridspec with 5 rows using 20 columns for flexibility
-    gs = gridspec.GridSpec(5, 20, figure=fig)
+    # Create gridspec with spacing parameters
+    gs = gridspec.GridSpec(5, 25, figure=fig, 
+                        hspace=0.4,  # Vertical spacing between rows
+                        wspace=0.5,  # Horizontal spacing between columns
+                        #top=0.96,    # Top margin
+                        #bottom=0.04)#, # Bottom margin
+                        left=0.10,   # Left margin
+                       right=0.90)  # Right margin
     
     # First row: 4 plots (each takes 5 columns out of 20)
-    ax1 = fig.add_subplot(gs[0, 0:5])    # UMAP
-    ax2 = fig.add_subplot(gs[0, 5:10])   # Top program
-    ax3 = fig.add_subplot(gs[0, 10:15])  # Perturbed gene dotplot
-    ax4 = fig.add_subplot(gs[0, 15:20])  # Correlation analysis
+    ax1 = fig.add_subplot(gs[0, 1:6])    # UMAP
+    ax2 = fig.add_subplot(gs[0, 7:12])   # Top program
+    ax3 = fig.add_subplot(gs[0, 13:18])  # Perturbed gene dotplot
+    ax4 = fig.add_subplot(gs[0, 19:24])  # Correlation analysis
     
-    ax5 = fig.add_subplot(gs[1, 0:5])    # D0 - Log2FC
-    ax6 = fig.add_subplot(gs[1, 5:10])    # D0 - Volcano
-    ax7 = fig.add_subplot(gs[1, 10:15])   # D0 - Dotplot
-    ax8 = fig.add_subplot(gs[1, 15:20])  # D0 - Waterfall
+    ax5 = fig.add_subplot(gs[1, 1:6])    # D0 - Log2FC
+    ax6 = fig.add_subplot(gs[1, 7:12])    # D0 - Volcano
+    ax7 = fig.add_subplot(gs[1, 13:18])   # D0 - Dotplot
+    ax8 = fig.add_subplot(gs[1, 19:24])  # D0 - Waterfall
 
-    ax9 = fig.add_subplot(gs[2, 0:5])  # D1 - Log2FC
-    ax10 = fig.add_subplot(gs[2, 5:10])   # D1 - Volcano
-    ax11 = fig.add_subplot(gs[2, 10:15])   # D1 - Dotplot
-    ax12 = fig.add_subplot(gs[2, 15:20])  # D1 - Waterfall
+    ax9 = fig.add_subplot(gs[2, 1:6])  # D1 - Log2FC
+    ax10 = fig.add_subplot(gs[2, 7:12])   # D1 - Volcano
+    ax11 = fig.add_subplot(gs[2, 13:18])   # D1 - Dotplot
+    ax12 = fig.add_subplot(gs[2, 19:24])  # D1 - Waterfall
 
-    ax13 = fig.add_subplot(gs[3, 0:5]) # D2 - Log2FC
-    ax14 = fig.add_subplot(gs[3, 5:10]) # D2 - Volcano    
-    ax15 = fig.add_subplot(gs[3, 10:15])   # D2 - Dotplot
-    ax16 = fig.add_subplot(gs[3, 15:20])   # D2 - Waterfall
+    ax13 = fig.add_subplot(gs[3, 1:6]) # D2 - Log2FC
+    ax14 = fig.add_subplot(gs[3, 7:12]) # D2 - Volcano    
+    ax15 = fig.add_subplot(gs[3, 13:18])   # D2 - Dotplot
+    ax16 = fig.add_subplot(gs[3, 19:24])   # D2 - Waterfall
 
-    ax17 = fig.add_subplot(gs[4, 0:5])  # D3 - Log2FC
-    ax18 = fig.add_subplot(gs[4, 5:10]) # D3 - Volcano
-    ax19 = fig.add_subplot(gs[4, 10:15]) # D3 - Dotplot
-    ax20 = fig.add_subplot(gs[4, 15:20])   # D3 - Dotplot
+    ax17 = fig.add_subplot(gs[4, 1:6])  # D3 - Log2FC
+    ax18 = fig.add_subplot(gs[4, 7:12]) # D3 - Volcano
+    ax19 = fig.add_subplot(gs[4, 13:18]) # D3 - Dotplot
+    ax20 = fig.add_subplot(gs[4, 19:24])   # D3 - Dotplot
 
     
 
@@ -631,6 +751,11 @@ def create_comprehensive_plot(
         figsize=(4, 3),
         ax=ax1
     )
+    ax1.set_title(f"{Target_Gene} UMAP", fontsize=18, fontweight='bold', loc='center')
+    ax1.set_xlabel('UMAP 1', fontsize=14, fontweight = 'bold')
+    ax1.set_ylabel('UMAP 2', fontsize=14, fontweight = 'bold')
+
+
     
     # Plot 2: Top program 
     ax2 = plot_top_program_per_gene(
@@ -639,8 +764,11 @@ def create_comprehensive_plot(
         top_program=top_program,
         species=species, 
         ax=ax2,
-        figsize=(5, 8)
+        figsize=(2, 4)
     )
+    ax2.set_title(f"Top Loading Program for {Target_Gene}",fontsize=20, fontweight='bold', loc='center')
+    ax2.set_xlabel('Gene Loading Score (z-score)',fontsize=14, fontweight='bold') #, loc='center')
+    ax2.set_ylabel(f'Program Name',fontsize=14, fontweight='bold', loc='center')
     
     # Plot 3: Perturbed gene dotplot
     ax3 = perturbed_gene_dotplot(
@@ -650,15 +778,21 @@ def create_comprehensive_plot(
         figsize=(3, 2),
         ax=ax3
     )
+    ax3.set_title(f"{Target_Gene} Expression", fontsize=20, fontweight='bold', loc='center')
+    ax3.set_ylabel('Gene', fontsize=14, fontweight='bold', loc='center')
+    ax3.set_xlabel('Day', fontsize=14, fontweight='bold', loc='center')
     
     # Plot 4: Correlation analysis
     ax4, corr_data = analyze_correlations(
         gene_loading_path=gene_loading_path,
         Target=Target_Gene,
         top_num=top_num,
-        figsize=(5, 3),
+        figsize=(4, 3),
         ax=ax4
     )
+    ax4.set_title(f"Gene Loading Correlation for {Target_Gene}",fontsize=20, fontweight='bold', loc='center')
+    ax4.set_ylabel('Gene Name',fontsize=14, fontweight='bold', loc='center')
+    ax4.set_xlabel('Correlation Coefficient',fontsize=14, fontweight='bold', loc='center')
 
     # Loop through samples and create 4 plots per sample (Log2FC, Volcano, Dotplot, Waterfall)
     samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
@@ -681,24 +815,37 @@ def create_comprehensive_plot(
             Day=Day
         )
         ax_index += 1
+        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_ylabel( "Program Name",fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_title(f"Program Log2 Fold-Change with {Target_Gene} {Day}",fontsize=20, fontweight='bold', loc='center')
+
         
         # Plot 2: Volcano plot
         current_ax = axes[ax_index]
-        current_ax, program = plot_volcano(
+        current_ax, program, text = plot_volcano(
             perturb_path=file_name, 
             Target=Target_Gene, 
             down_thred_log=down_thred_log, 
             up_thred_log=up_thred_log, 
             p_value=p_value,
-            figsize=(5, 4), 
+            figsize=(5, 3), 
             ax=current_ax,
             Day=Day
         )
         ax_index += 1
+        current_ax.set_title(f"Volcano Plot for {Target_Gene} {Day}",fontsize=20, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_ylabel("Adjusted p-value, -log10",fontsize=14, fontweight='bold', loc='center')
+        for t in text:
+            t.set_fontsize(14)
+        #    t.set_fontweight('bold')
+        adjust_text(text, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5), ax=current_ax, fontsize=14) 
+
+
 
         # Plot 3: Programs dotplot
         current_ax = axes[ax_index]
-        current_ax = programs_dotplots(
+        current_ax = programs_dotplot(
             mdata, 
             program_loading_path=program_loading_path, 
             program_list=df["program_name"].tolist(),
@@ -708,21 +855,33 @@ def create_comprehensive_plot(
             Day=Day
         )
         ax_index += 1
+        current_ax.set_title(f"{Target_Gene} Perturbed Program Loading Scores {Day}",fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_ylabel('Program Name',fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel("Day",fontsize=14, fontweight='bold', loc='center')
         
         # Plot 4: Waterfall plot (NEW)
         current_ax = axes[ax_index]
-        current_ax = create_gene_correlation_waterfall(
+        current_ax,text = create_gene_correlation_waterfall(
             # Add your waterfall function parameters here
             perturb_path=file_name,
             Target_Gene=Target_Gene,
             ax=current_ax,
             Day=Day,
-            figsize=(4, 3),
+            figsize=(3, 4),
         )
         ax_index += 1
+        current_ax.set_title(f"Gene Perturbation Correlation for {Target_Gene} {Day}",fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_ylabel(f'Correlation of Program\nExpression with\n{Target_Gene} Perturbation',fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Perturbed Genes',fontsize=14, fontweight='bold', loc='center')
+
+        for t in text:
+            t.set_fontsize(14)
+        #    t.set_fontweight('bold')
+        adjust_text(text, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5), ax=current_ax, fontsize=14) 
+
 
     # Add main title
-    fig.suptitle(f'Comprehensive Analysis: {Target_Gene}', fontweight='bold', y=0.995)
+    fig.suptitle(f'Comprehensive Analysis: {Target_Gene}', fontweight='bold', y=0.995, fontsize = 30)
     
     # Adjust layout
     plt.tight_layout()
@@ -744,6 +903,3 @@ def create_comprehensive_plot(
     else:
         plt.close(fig)
     
-    return fig
-    
-     

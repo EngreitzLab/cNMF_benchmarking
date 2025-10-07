@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius          # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/logs/%A_%a.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/logs/%A_%a.err       # Error file
+#SBATCH --job-name=100525_100k_10iter_1000batiter_sk_cd_e7_seed42          # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/100525_100k_10iter_1000batiter_sk_cd_e7_seed42/logs/%A_%a.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/100525_100k_10iter_1000batiter_sk_cd_e7_seed42/logs/%A_%a.err       # Error file
 #SBATCH --partition=engreitz           # partition name
 #SBATCH --array=1-8                    # Run parallel jobs (array indices 1-#)
 #SBATCH --time=48:00:00                # Time limit
@@ -19,8 +19,8 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation"
-RUN_NAME="090525_100k_10iter_1000batiter_sk_cd_frobenius"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/100525_100k_10iter_1000batiter_sk_cd_e7_seed42"
+RUN_NAME="100525_100k_10iter_1000batiter_sk_cd_e7_seed42"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
@@ -64,7 +64,8 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --algo "cd" \
         --K $K \
         --max_NMF_iter 1000 \
-        --tol 1e-5
+        --tol 1e-7 \
+        --seed 42
 
 
 
