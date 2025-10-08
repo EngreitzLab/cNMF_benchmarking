@@ -22,7 +22,6 @@
     | alpha_spectra | float | 0.0 | Regularization parameter for NMF corresponding to alpha_H |
     | use_gpu | bool | False | Whether to use GPU |
     | mode | str | "batch" | Learning mode: "batch" or "online". Online only works when beta=2.0 |
-    | batch_size | int | 5000 | Batch size for online NMF learning |
     | algo | str | "halsvar" | Algorithm choice: "mu", "halsvar" |
     | init | str | "nndsvdar" | Initialization method: "random", "nndsvd", "nndsvda", "nndsvdar" |
     | tol | float | 1e-4 | Tolerance used for convergence check |
