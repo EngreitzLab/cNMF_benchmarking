@@ -38,5 +38,6 @@
     | online_usage_tol | float | 0.05 | Tolerance for updating W in each chunk during online learning |
     | online_spectra_tol | float | 0.05 | Tolerance for updating H in each chunk during online learning |
     | shuffle_cells | bool | False | Shuffle cells in obs and guide assignment in obsm to do online learning is recommanded |
+    |sk_cd_refit| bool | False | Use sk-cd refit function if True, use torch refit if False |
     | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
 
