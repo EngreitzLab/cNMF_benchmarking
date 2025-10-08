@@ -23,7 +23,6 @@
     | use_gpu | bool | False | Whether to use GPU |
     | mode | str | "batch" | Learning mode: "batch" or "online". Online only works when beta=2.0 |
     | batch_size | int | 5000 | Batch size for online NMF learning |
-    | max_NMF_iter | int | 1000 | Maximum number of iterations per individual NMF run |
     | algo | str | "halsvar" | Algorithm choice: "mu", "halsvar" |
     | init | str | "nndsvdar" | Initialization method: "random", "nndsvd", "nndsvda", "nndsvdar" |
     | tol | float | 1e-4 | Tolerance used for convergence check |
