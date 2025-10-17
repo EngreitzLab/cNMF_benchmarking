@@ -120,6 +120,7 @@ dependencies:
       - anyio==4.10.0
       - biothings-client==0.4.1
       - certifi==2025.8.3
+      - cnmf==1.7.1
       - gin==0.1.6
       - h11==0.16.0
       - httpcore==1.0.9
