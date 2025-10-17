@@ -49,7 +49,7 @@ if __name__ == '__main__':
     stats = load_explained_variance_data(folder = args.eval_folder_name, components=k_value)
     plot_explained_variance(stats, folder_name = args.save_folder_name, file_name = "Explained_Variance")
 
-    # Motif (working in progress for complie the results)
+    # Motif (working in progress)
 
     # save comfigs used         
     args_dict = vars(args)

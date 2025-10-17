@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all_k_selection           # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all/Plot/k_selection/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all/Plot/k_selection/logs/%j.err       # Error file
+#SBATCH --job-name=092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX_plot          # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX/Plot/k_selection/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX/Plot/k_selection/logs/%j.err       # Error file
 #SBATCH --partition=engreitz            # partition name
 #SBATCH --time=1:00:00                  # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
@@ -18,8 +18,8 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius"
-RUN_NAME="091425_100k_10iter_1000batiter_Htol_sk_cd_frobenius_all"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch"
+RUN_NAME="092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
@@ -40,7 +40,7 @@ mkdir -p "$LOG_DIR/Plot/k_selection/logs"
 
 # Activate conda base environment (change deponds on the sk or torch)
 echo "Activating conda base environment..."
-source activate sk-cNMF 
+source activate torch-cNMF 
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"

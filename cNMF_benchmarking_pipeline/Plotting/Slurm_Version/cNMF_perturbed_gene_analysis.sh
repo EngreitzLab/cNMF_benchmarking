@@ -20,7 +20,7 @@
 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/cNMF_100_07102024/consensus_NMF/Plot/Perturb_gene/"
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/cNMF_100_07102024/consensus_NMF/Plot/Perturb_gene"
 
 # Store start time
 START_TIME=$(date +%s)

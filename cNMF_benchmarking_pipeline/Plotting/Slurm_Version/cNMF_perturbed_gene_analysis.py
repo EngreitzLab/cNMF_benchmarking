@@ -8,7 +8,7 @@ import argparse
 sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
 
 from Plotting.src import plot_umap_per_gene, plot_top_program_per_gene, perturbed_gene_dotplot,\
-                                      plot_log2FC, plot_volcano, programs_dotplots, analyze_correlations, \
+                                      plot_log2FC, plot_volcano, programs_dotplot, analyze_correlations, \
                                       create_comprehensive_plot, create_gene_correlation_waterfall, convert_with_mygene, \
                                       convert_adata_with_mygene, read_npz, merge_svgs_to_pdf, merge_pdfs_in_folder
 
@@ -49,6 +49,10 @@ if __name__ == '__main__':
     # found detected perturbed gene
     gene_list = convert_with_mygene(pd.DataFrame(index=mdata.var_names.tolist())) # convert gene id to geene name
     perturbed_gene_found = list(set(gene_list.index) & set(perturbed_gene))
+
+    # sort list by alphabetical order 
+    perturbed_gene_found = sorted(perturbed_gene_found)
+
     print(f"there are {len(perturbed_gene_found)} perturbed gene found")
 
 
@@ -63,7 +67,7 @@ if __name__ == '__main__':
             gene,
             save_path=args.pdf_save_path,
             save_name=f"{gene}",
-            figsize=(25, 25),
+            figsize=(35, 35),
             show=False,
             PDF = args.PDF
         )
@@ -76,6 +80,6 @@ if __name__ == '__main__':
 
     # save comfigs used         
     args_dict = vars(args)
-    with open(f'{args.input_folder}/Eval/config.yml', 'w') as f:
+    with open(f'{args.pdf_save_path}/Plot/config.yml', 'w') as f:
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)
         
