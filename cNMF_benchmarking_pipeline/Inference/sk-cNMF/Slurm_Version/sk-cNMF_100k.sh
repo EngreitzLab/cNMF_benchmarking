@@ -5,8 +5,8 @@
 #SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/100525_100k_10iter_1000batiter_sk_cd_e7_seed42/logs/%A_%a.out      # Output file (%j = job ID)
 #SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/100525_100k_10iter_1000batiter_sk_cd_e7_seed42/logs/%A_%a.err       # Error file
 #SBATCH --partition=engreitz           # partition name
-#SBATCH --array=1-8                    # Run parallel jobs (array indices 1-#)
-#SBATCH --time=48:00:00                # Time limit
+#SBATCH --array=1                    # Run parallel jobs (array indices 1-#)
+#SBATCH --time=100:00:00                # Time limit
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
@@ -28,7 +28,8 @@ START_TIME=$(date +%s)
 
 
 # Define K values array
-K_VALUES=(30 50 60 80 100 200 250 300)
+K_VALUES=(300)
+
 
 # Get K value for this array task
 K=${K_VALUES[$((SLURM_ARRAY_TASK_ID-1))]}
@@ -58,14 +59,14 @@ echo "Python path: $(which python)"
 # Run the Python script
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/sk-cNMF/Slurm_Version/sk-cNMF_batch_inference_pipeline.py \
-        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes.h5ad" \
+        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad" \
         --output_directory "$OUT_DIR" \
         --run_name "${RUN_NAME}_${K}" \
         --algo "cd" \
         --K $K \
         --max_NMF_iter 1000 \
         --tol 1e-7 \
-        --seed 42
+        --seed 142
 
 
 
