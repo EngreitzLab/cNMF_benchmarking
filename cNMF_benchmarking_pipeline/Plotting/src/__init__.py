@@ -24,9 +24,12 @@ from .k_quality_plots import program_corr,program_euclidean, top_genes_overlap,\
 # gene QC plots
 from .Perturbed_gene_QC_plots import  plot_umap_per_gene, plot_top_program_per_gene, perturbed_gene_dotplot,\
                                       plot_log2FC, plot_volcano, programs_dotplot, analyze_correlations, \
-                                      create_comprehensive_plot,create_gene_correlation_waterfall 
+                                      create_comprehensive_plot,create_gene_correlation_waterfall,\
+                                        plot_umap_per_gene_guide 
+
 
 
 # helper functions
-from .utilities import convert_with_mygene, convert_adata_with_mygene, read_npz, merge_pdfs_in_folder, merge_svgs_to_pdf
+from .utilities import convert_with_mygene, convert_adata_with_mygene, rename_adata_gene_dictionary, \
+                        rename_list_gene_dictionary, read_npz, merge_pdfs_in_folder, merge_svgs_to_pdf
 

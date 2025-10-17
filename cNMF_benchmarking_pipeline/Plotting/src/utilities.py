@@ -49,6 +49,8 @@ def convert_with_mygene(dataframe, species='human', index = True):
     
     return new_dataframe
 
+
+
 # same, input is adata
 def convert_adata_with_mygene(adata, species='human'):
 
@@ -74,6 +76,36 @@ def convert_adata_with_mygene(adata, species='human'):
 
     return adata_new
 
+
+
+# given a tsv dictionary, convert EnsemblID to gene name for adata 
+def rename_adata_gene_dictionary(adata, dictionary_file_path):
+
+    adata_new = adata.copy()
+
+    # Convert mapping result to list before assignment
+    df = pd.read_csv(dictionary_file_path, sep='\t')
+    ensemble_to_gene = dict(zip(df['ensembl_id'], df['gene']))
+    new_names = [ensemble_to_gene.get(x, x) for x in adata.var_names]
+    
+    adata_new.var_names = (new_names)
+
+    return adata_new
+
+
+
+# given a tsv dictionary, convert EnsemblID to gene name for list
+def rename_list_gene_dictionary(list_input, dictionary_file_path):
+
+    # Convert mapping result to list before assignment
+    df = pd.read_csv(dictionary_file_path, sep='\t')
+    ensemble_to_gene = dict(zip(df['ensembl_id'], df['gene']))
+    new_names = [ensemble_to_gene.get(x, x) for x in list_input]
+    
+    return new_names
+
+
+
 # read cNMF programs
 def read_npz(path):
 
@@ -88,6 +120,7 @@ def read_npz(path):
     )
      
     return df
+
 
 
 # merge all PDFs into one, save pdf in the same folder_path
@@ -119,6 +152,7 @@ def merge_pdfs_in_folder(folder_path, output_filename="merged_perturbed_gene_QC.
         
     except Exception as e:
         print(f"Error saving merged PDF: {str(e)}")
+
 
 
 # merge all svgs to pdf 
