@@ -3,6 +3,7 @@ import sys
 import yaml
 import logging
 import mudata
+import muon
 import pandas as pd
 import numpy as np
 import argparse
@@ -24,14 +25,14 @@ from Evaluation.src import (
 )
 from Evaluation.src.enrichment_trait import process_enrichment_data
 
-def assign_guide(mdatam,file):
+def _assign_guide(mdata, file, key = "rna"):
 
     # read mdata with guide
-    mdata_guide = mudata.read(file)
+    mdata_guide = muon.read(file)
 
-    mdata['cNMF'].uns["guide_names"] = mdata_guide["cNMF_100"].uns["guide_names"]
-    mdata['cNMF'].uns["guide_targets"] = mdata_guide["cNMF_100"].uns["guide_targets"]
-    mdata['cNMF'].obsm["guide_assignment"] = mdata_guide["cNMF_100"].obsm["guide_assignment"]
+    mdata['cNMF'].uns["guide_names"] = mdata_guide[key].uns["guide_names"]
+    mdata['cNMF'].uns["guide_targets"] = mdata_guide[key].uns["guide_targets"]
+    mdata['cNMF'].obsm["guide_assignment"] = mdata_guide[key].obsm["guide_assignment"]
 
 
 def rename_gene(mdata):
@@ -49,13 +50,20 @@ def rename_gene(mdata):
 
     mdata['cNMF'].uns['var_names'] = [gene_dict.get(x, x) for x in mdata['cNMF'].uns['var_names']]
 
+def rename_gene_dictionary(mdata, dictionary_file_path):
+
+    # Convert mapping result to list before assignment
+    df = pd.read_csv(dictionary_file_path, sep='\t')
+    ensemble_to_gene = dict(zip(df['ensembl_id'], df['gene']))
+    new_names = [ensemble_to_gene.get(x, x) for x in mdata['rna'].var_names]
+    mdata['rna'].var_names = (new_names)
 
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--input_folder', type=str, required=True)  
-    parser.add_argument('--mdata_guide', type=str, default="/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/mdata_guide.h5mu")
+    parser.add_argument('--mdata_guide', type=str, default='adata')
     parser.add_argument('--K', nargs='*', type=int, default=None) # allow zero input 
     parser.add_argument('--thre', default = '2.0')
 
@@ -70,11 +78,13 @@ if __name__ == '__main__':
     parser.add_argument('--X_normalized', type=str,  help='path to normalized input cell x gene matrix from cNMF pipeline', required=True)
     parser.add_argument('--out_dir', help='path to make cnmf object', type=str, required=True)  
     parser.add_argument('--run_name', help='name of cnmf obj',type=str, required=True)  
-    
+    parser.add_argument('--assign_guide', action="store_true")
+    parser.add_argument('--assign_guide_key', type = str, default = "rna")
+    parser.add_argument('--dictionary_file_path', type = str, default= None)
+
+
 
     args = parser.parse_args()
-
-
 
 
     # either change the array here or run each component in parallel
@@ -110,7 +120,7 @@ if __name__ == '__main__':
         # Run perturbation assocation
         if args.Perform_perturbation: 
 
-            assign_guide(mdata, args.mdata_guide) 
+            if args.assign_guide: _assign_guide(mdata, args.mdata_guide, args.assign_guide_key) 
 
             for samp in mdata['rna'].obs['sample'].unique():
                 mdata_ = mdata[mdata['rna'].obs['sample']==samp]
@@ -156,7 +166,10 @@ if __name__ == '__main__':
             fimo_thresh_enhancer = 1e-6
             fimo_thresh_promoter = 1e-4
 
-            rename_gene(mdata) # rename the gene from Ensembl ID to gene symbols using mygene
+            if args.dictionary_file_path is None:
+                rename_gene(mdata) # rename the gene from Ensembl ID to gene symbols using mygene
+            else:
+                rename_gene_dictionary(mdata, args.dictionary_file_path)
 
             for i in range(4):
                 for class_, thresh in [('enhancer', fimo_thresh_enhancer), 
@@ -185,7 +198,7 @@ if __name__ == '__main__':
 
         # Run explained variance
         if args.Perform_explained_variance:
-            compute_explained_variance(cnmf_obj,X,k,output_folder = output_path)
+            compute_explained_variance(cnmf_obj, X, k, output_folder = output_folder)
 
     
     # save comfigs used         

@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=090525_100k_10iter_1000batiter_sk_cd_frobenius_all_eval           # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/090525_100k_10iter_1000batiter_sk_cd_frobenius_all/Eval/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius/090525_100k_10iter_1000batiter_sk_cd_frobenius_all/Eval/logs/%j.err       # Error file
+#SBATCH --job-name=batch_halsvar_cd_e7_eval           # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/Consensus_across_methods/batch_halsvar_cd_e7/Eval/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/Consensus_across_methods/batch_halsvar_cd_e7/Eval/logs/%j.err       # Error file
 #SBATCH --partition=engreitz              # partition name
-#SBATCH --time=15:00:00                 # Time limit 
+#SBATCH --time=05:00:00                 # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
-#SBATCH --cpus-per-task=10               # CPUs per task
+#SBATCH --cpus-per-task=20              # CPUs per task
 #SBATCH --mem=80G                       # Memory per node
 
 # Email notifications
@@ -18,8 +18,8 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/090525_100k_10iter_1000batiter_sk_cd_frobenius"
-RUN_NAME="090525_100k_10iter_1000batiter_sk_cd_frobenius_all"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/Consensus_across_methods"
+RUN_NAME="batch_halsvar_cd_e7"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
@@ -49,17 +49,24 @@ echo "Python path: $(which python)"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py\
-        --X_normalized "$LOG_DIR/cnmf_tmp/$RUN_NAME.norm_counts.h5ad"\
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Slurm_Version/cNMF_evaluation_pipeline.py \
+        --X_normalized "$LOG_DIR/cnmf_tmp/$RUN_NAME.norm_counts.h5ad" \
         --out_dir "$OUT_DIR" \
-        --run_name "$RUN_NAME"\
-        --input_folder "$LOG_DIR"\
-        --Perform_explained_variance\
+        --run_name "$RUN_NAME" \
+        --input_folder "$LOG_DIR" \
+        --Perform_explained_variance \
         --Perform_categorical \
         --Perform_perturbation \
         --Perform_geneset \
         --Perform_trait \
-        #--Perform_motif 
+        --assign_guide \
+        --dictionary_file_path "/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/weissman_guides_with_coordinates.tsv" \
+        --assign_guide_key "cNMF_100"    \
+        #--mdata_guide "$LOG_DIR/adata/cNMF_30_2.0.h5mu" \
+        #any file that is h5mu with guide assignment in obms and uns is fine 
+        #--Perform_motif \
+
+        
 
 
 # Calculate and print elapsed time at the end
