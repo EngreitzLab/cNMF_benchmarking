@@ -1,16 +1,16 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit        # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%A_%a.out       # Output file (fixed double slash)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%A_%a.err     # Error file (fixed double slash)
+#SBATCH --job-name=101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par        # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/v100/101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par/logs/%A_%a.out       # Output file (fixed double slash)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/v100/101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par/logs/%A_%a.err     # Error file (fixed double slash)
 #SBATCH --partition=gpu                # partition name
 #SBATCH --array=1-8                    # Run parallel jobs (array indices 1-#)
-#SBATCH --time=5:00:00                # Time limit 
+#SBATCH --time=15:00:00                # Time limit 
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task (keeping 1 core as requested)
-#SBATCH --mem=64G                      # Memory per node
+#SBATCH --mem=80G                      # Memory per node
 #SBATCH --gres=gpu:1                   # Request 1 GPU (for future use)
 #SBATCH -C GPU_SKU:V100S_PCIE
 
@@ -32,8 +32,8 @@ K_VALUES=(30 50 60 80 100 200 250 300)
 K=${K_VALUES[$((SLURM_ARRAY_TASK_ID-1))]}
 
 # Configuration - Set your log directory here (fixed to match SLURM paths)
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit"
-RUN_NAME="100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/v100"
+RUN_NAME="101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Create logs directory if it doesn't exist
@@ -115,8 +115,9 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --online_usage_tol 0.005 \
         --online_spectra_tol 0.005 \
         --K $K \
-        --use_gpu \
         --sk_cd_refit \
+        --use_gpu \
+        --parallel_running 
         #--shuffle_cells
 
 # Record end time and calculate duration

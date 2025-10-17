@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit         # Job name
+#SBATCH --job-name=101325_1M_cells_10iter_torch_halsvar_e7_v100s_skrefit         # Job name
 #SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.out      # Output file (%j = job ID)
 #SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.err       # Error file
 #SBATCH --partition=gpu                # partition name
@@ -9,7 +9,7 @@
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
-#SBATCH --mem=64G                      # Memory per node
+#SBATCH --mem=80G                      # Memory per node
 #SBATCH --gres=gpu:1                   # Request 1 GPU
 #SBATCH -C GPU_SKU:V100S_PCIE
 
