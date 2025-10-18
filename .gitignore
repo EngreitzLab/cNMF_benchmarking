@@ -2,3 +2,4 @@
 *.fa
 *.fai
 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/src/explained_variance_Helen_Ver.py
+Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/weissman_guides_with_coordinates.tsv
