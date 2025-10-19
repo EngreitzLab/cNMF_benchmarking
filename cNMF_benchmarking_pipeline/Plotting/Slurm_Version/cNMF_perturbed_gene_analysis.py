@@ -28,8 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--pdf_save_path',  type=str, required=True)
     parser.add_argument('--PDF',  action="store_true")  
     parser.add_argument('--file_to_dictionary',  type=str, default = None)  
-
-
+    parser.add_argument('--n_processes', type=int, default = -1)  
 
     args = parser.parse_args()
 
@@ -52,7 +51,8 @@ if __name__ == '__main__':
     perturbed_gene_found = sorted(perturbed_gene_found)
     print(f"there are {len(perturbed_gene_found)} perturbed gene found")
     
-    print("Starting parallel gene processing...")                                                         
+    print("Starting parallel gene processing...")                   
+
     try: 
         # Graph all pdf 
         result = parallel_gene_processing( 
@@ -64,9 +64,10 @@ if __name__ == '__main__':
             figsize = (30, 30),
             show=False,
             PDF=args.PDF,
-            n_processes = -1
+            n_processes = args.n_processes
         )
-        print(f"Parallel processing completed successfully. Results: {len(result) if result else 'None'}")                                                                                                          
+        print(f"Parallel processing completed successfully. Results: {len(result) if result else 'None'}")    
+
     except Exception as e:                                                                                 
         print(f"ERROR in parallel_gene_processing: {e}")  
     

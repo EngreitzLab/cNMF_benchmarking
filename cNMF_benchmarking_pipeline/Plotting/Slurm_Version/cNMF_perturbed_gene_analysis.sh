@@ -5,10 +5,11 @@
 #SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/cNMF_100_07102024/consensus_NMF/Plot/Perturb_gene/logs/%j.out      # Output file (%j = job ID)
 #SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/cNMF_100_07102024/consensus_NMF/Plot/Perturb_gene/logs/%j.err       # Error file
 #SBATCH --partition=engreitz            # partition name
-#SBATCH --time=5:00:00                  # Time limit 
+#SBATCH --time=15:00:00                  # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
+#SBATCH --ntasks=1                      # Number of tasks
 #SBATCH --cpus-per-task=20               # CPUs per task
-#SBATCH --mem=96G                       # Memory per node
+#SBATCH --mem=240G                       # Memory per node
 
 # Email notifications
 #SBATCH --mail-type=BEGIN              # Send email when job starts
@@ -55,7 +56,8 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --p_value 0.05 \
         --pdf_save_path "$LOG_DIR" \
         --PDF \
-        --file_to_dictionary "/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/weissman_guides_with_coordinates.tsv"
+        --file_to_dictionary "/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/weissman_guides_with_coordinates.tsv" \
+        --n_processes 70
 
 
 
