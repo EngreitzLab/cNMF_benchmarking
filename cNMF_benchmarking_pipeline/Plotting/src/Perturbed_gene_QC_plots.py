@@ -20,6 +20,11 @@ import matplotlib.gridspec as gridspec
 from adjustText import adjust_text
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
+import multiprocessing as mp
+from multiprocessing import Pool, Manager
+from functools import partial
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import sys
 
 plt.rcParams["axes.spines.top"] = False
 plt.rcParams["axes.spines.right"] = False
@@ -76,6 +81,7 @@ def plot_umap_per_gene(adata,file_to_dictionary, Target_Gene, ax=None, color='pu
         standalone = False
     
     # Plot on the provided/created axis
+    plt.sca(ax)  # Set current axis to ensure scanpy uses correct figure -CC change
     sc.pl.umap(renamed, color=Target_Gene, title=title, cmap=cmap, ax=ax, show=False)
     
     # Rasterize ONLY the scatter points (collections) in this axis
@@ -138,6 +144,8 @@ def plot_umap_per_gene_guide(mdata, file_to_dictionary, Target_Gene, ax=None, co
         standalone = False
     
     # Plot on the provided/created axis
+    plt.sca(ax)  # Set current axis to ensure scanpy uses correct figure -CC change
+
     sc.pl.umap(adata, color=Target_Gene, title=title, cmap=cmap, ax=ax, show=False)
     
     # Rasterize ONLY the scatter points (collections) in this axis
@@ -231,7 +239,7 @@ def plot_top_program_per_gene(mdata, file_to_dictionary, Target_Gene, top_progra
 
 
 
-
+# plot dotplot given a target gene 
 def perturbed_gene_dotplot(mdata, file_to_dictionary,  Target_Gene, groupby='sample', save_name=None,
                           save_path=None, figsize=(3, 2), show=False, ax=None):
     # read in adata
@@ -766,7 +774,13 @@ def create_comprehensive_plot(
     PDF=True
 ):
 
-    # Create figure with custom gridspec for 4-5-5-5 layout
+    # Set matplotlib backend to non-interactive to reduce memory usage
+    plt.ioff()
+    
+    # Close any existing figures to prevent memory leaks
+    plt.close('all')
+    
+    # Create figure with custom gridspec for 5-5-5-5 layout
     fig = plt.figure(figsize=figsize)
     
     # Create gridspec with 5 rows using 20 columns for flexibility
@@ -783,35 +797,42 @@ def create_comprehensive_plot(
     ax1 = fig.add_subplot(gs[0, 0:5])    # UMAP Expression
     ax21 = fig.add_subplot(gs[0, 6:11])   # Top program
     ax3 = fig.add_subplot(gs[0, 12:16])  # Perturbed gene dotplot
-    ax4 = fig.add_subplot(gs[0, 17:22])  # Correlation analysis
-    ax2 = fig.add_subplot(gs[0, 23:27])  # UMAP Perturbation
+    #ax4 = fig.add_subplot(gs[0, 17:22])  # Correlation analysis
+    #ax2 = fig.add_subplot(gs[0, 23:27])  # UMAP Perturbation
 
     ax5 = fig.add_subplot(gs[1, 1:6])    # D0 - Log2FC
     ax6 = fig.add_subplot(gs[1, 7:12])    # D0 - Volcano
     ax7 = fig.add_subplot(gs[1, 13:18])   # D0 - Dotplot
-    ax8 = fig.add_subplot(gs[1, 19:24])  # D0 - Waterfall
+    ax8 = fig.add_subplot(gs[1, 20:25])  # D0 - Waterfall
 
     ax9 = fig.add_subplot(gs[2, 1:6])  # D1 - Log2FC
     ax10 = fig.add_subplot(gs[2, 7:12])   # D1 - Volcano
     ax11 = fig.add_subplot(gs[2, 13:18])   # D1 - Dotplot
-    ax12 = fig.add_subplot(gs[2, 19:24])  # D1 - Waterfall
+    ax12 = fig.add_subplot(gs[2, 20:25])  # D1 - Waterfall
 
     ax13 = fig.add_subplot(gs[3, 1:6]) # D2 - Log2FC
     ax14 = fig.add_subplot(gs[3, 7:12]) # D2 - Volcano    
     ax15 = fig.add_subplot(gs[3, 13:18])   # D2 - Dotplot
-    ax16 = fig.add_subplot(gs[3, 19:24])   # D2 - Waterfall
+    ax16 = fig.add_subplot(gs[3, 20:25])   # D2 - Waterfall
 
     ax17 = fig.add_subplot(gs[4, 1:6])  # D3 - Log2FC
     ax18 = fig.add_subplot(gs[4, 7:12]) # D3 - Volcano
     ax19 = fig.add_subplot(gs[4, 13:18]) # D3 - Dotplot
-    ax20 = fig.add_subplot(gs[4, 19:24])   # D3 - Dotplot
+    ax20 = fig.add_subplot(gs[4, 20:25])   # D3 - Dotplot
 
     
     # List of all axes for easy access
+    '''
     axes = [ax1, ax2, ax3, ax4,         
             ax5, ax6, ax7, ax8, ax9,     
             ax10, ax11, ax12, ax13, ax14,  
             ax15, ax16, ax17, ax18, ax19, ax20, ax21]  
+    '''
+    axes = [ax1, ax3,         
+            ax5, ax6, ax7, ax8, ax9,     
+            ax10, ax11, ax12, ax13, ax14,  
+            ax15, ax16, ax17, ax18, ax19, ax20, ax21] 
+    
 
     # Plot 1: UMAP
     ax1 = plot_umap_per_gene(
@@ -838,7 +859,7 @@ def create_comprehensive_plot(
     ax21.set_xlabel('UMAP 1', fontsize=14, fontweight = 'bold')
     ax21.set_ylabel('UMAP 2', fontsize=14, fontweight = 'bold')
 
-
+    '''
     # Plot 2: Top program 
     ax2 = plot_top_program_per_gene(
         mdata=mdata,
@@ -852,8 +873,8 @@ def create_comprehensive_plot(
     ax2.set_title(f"Top Loading Program for {Target_Gene}",fontsize=20, fontweight='bold', loc='center')
     ax2.set_xlabel('Gene Loading Score (z-score)',fontsize=14, fontweight='bold') #, loc='center')
     ax2.set_ylabel(f'Program Name',fontsize=14, fontweight='bold', loc='center')
+    '''
     
-
     # Plot 3: Perturbed gene dotplot
     ax3 = perturbed_gene_dotplot(
         mdata=mdata,
@@ -867,6 +888,7 @@ def create_comprehensive_plot(
     ax3.set_ylabel('Gene', fontsize=14, fontweight='bold', loc='center')
     ax3.set_xlabel('Day', fontsize=14, fontweight='bold', loc='center')
     
+    '''
     # Plot 4: Correlation analysis
     ax4, corr_data = analyze_correlations(
         mdata=mdata,
@@ -879,10 +901,11 @@ def create_comprehensive_plot(
     ax4.set_title(f"Gene Loading Correlation for {Target_Gene}",fontsize=20, fontweight='bold', loc='center')
     ax4.set_ylabel('Gene Name',fontsize=14, fontweight='bold', loc='center')
     ax4.set_xlabel('Correlation Coefficient',fontsize=14, fontweight='bold', loc='center')
+    '''
 
     # Loop through samples and create 4 plots per sample (Log2FC, Volcano, Dotplot, Waterfall)
     samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
-    ax_index = 4  # Start from ax5 (index 4)
+    ax_index = 2  # Start from ax5 (index 4)
     
     for idx, samp in enumerate(samples):
         file_name = f"{perturb_path}_{samp}_perturbation_association.txt" 
@@ -984,6 +1007,62 @@ def create_comprehensive_plot(
     # Control whether to display the plot
     if show:
         plt.show()
-    else:
-        plt.close(fig)
+    
+    # Always close the figure to prevent memory leak
+    plt.close(fig)
  
+ 
+ # parallel run - single gene 
+def process_single_gene(gene, mdata, perturb_path, file_to_dictionary, save_path,
+                       figsize=(25, 25), PDF=True, show=False):
+    try:
+        print(f"Processing gene: {gene}")
+
+        create_comprehensive_plot(
+            mdata=mdata,
+            perturb_path=perturb_path,
+            Target_Gene=gene,
+            file_to_dictionary=file_to_dictionary,
+            save_path=save_path,
+            save_name=gene,
+            figsize=figsize,
+            show=show,
+            PDF=PDF
+        )
+
+        return f"Success: {gene}"
+
+    except Exception as e:
+        print(f"Error processing {gene}: {str(e)}")
+        return f"Error: {gene} - {str(e)}"
+
+# parallel run - multi genes
+def parallel_gene_processing(perturbed_gene_list, mdata, perturb_path, file_to_dictionary,
+                            save_path, figsize=(25, 25), PDF=True, show=False, n_processes=-1):
+
+    if n_processes == -1:
+        n_processes = os.cpu_count()
+
+
+    # Create partial function with fixed parameters
+    process_func = partial(
+        process_single_gene,
+        mdata=mdata,
+        perturb_path=perturb_path,
+        file_to_dictionary=file_to_dictionary,
+        save_path=save_path,
+        figsize=figsize,
+        PDF=PDF,
+        show=show
+    )
+
+    print(f"Starting parallel processing of {len(perturbed_gene_list)} genes using {n_processes} processes...")
+
+    # Use multiprocessing Pool for SLURM compatibility
+    with ThreadPoolExecutor(max_workers=n_processes) as executor:
+        results = list(executor.map(process_func, perturbed_gene_list))
+
+    print("Parallel processing completed!")
+
+    return results
+  

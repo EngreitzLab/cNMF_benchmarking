@@ -1,34 +1,34 @@
 import os
-
 import math
-
 import mudata
 import scanpy as sc
-
 import numpy as np
 import pandas as pd
-
 import seaborn as sns
 from matplotlib import pyplot as plt
-
 from statsmodels.stats.multitest import fdrcorrection
 from statsmodels.regression.mixed_linear_model import MixedLM
-
 from joblib import Parallel, delayed
 from tqdm.auto import tqdm
 import cnmf
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score, silhouette_samples
+import scipy.sparse as sp
+import anndata as ad
 
 
 # collect all NMF runs 
 # important: i must use the same package inference (torch-nmf or sk-nmf) to call combine here
-def load_stablity_error_data(output_directory,run_name, components = [30, 50, 60, 80, 100, 200, 250, 300]):
+def load_stablity_error_data(output_directory,run_name, components = [30, 50, 60, 80, 100, 200, 250, 300], 
+density_threshold = 0.5, local_neighborhood_size = 0.3):
 
     cnmf_obj = cnmf.cNMF(output_dir=output_directory, name=run_name)
 
     stats = []
     norm_counts = sc.read(cnmf_obj.paths['normalized_counts'])
     for k in components:
-        stats.append(cnmf_obj.consensus(k, skip_density_and_return_after_stats=True, show_clustering=False, close_clustergram_fig=True, norm_counts=norm_counts).stats)
+        stats.append(cnmf_obj.consensus(k, skip_density_and_return_after_stats=True, show_clustering=False, 
+        close_clustergram_fig=True, norm_counts=norm_counts, density_threshold = density_threshold,local_neighborhood_size = local_neighborhood_size).stats)
 
     stats = pd.DataFrame(stats)
 
@@ -39,7 +39,6 @@ def load_stablity_error_data(output_directory,run_name, components = [30, 50, 60
     print("max error is",stats['prediction_error'].max())
 
     return stats
-
 
 # plot NMF stability and error
 def plot_stablity_error(stats, folder_name = None, file_name = None):
@@ -148,6 +147,7 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
     if folder_name and file_name:
         fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")# transparent=True)
 
+
 # load perturbation data 
 def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80, 100, 200, 250, 300]):
     
@@ -194,6 +194,7 @@ def plot_perturbation(test_stats_df, folder_name = None, file_name = None):
     if folder_name and file_name:
         fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")#  transparent=True)
 
+
 # load total explained variance
 def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 300]):
 
@@ -210,6 +211,7 @@ def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200,
     print("max Explained_variance is", max(stats.values()))
 
     return stats
+
 
 # plot NMF explained variance
 def plot_explained_variance(stats, folder_name=None, file_name=None):
@@ -229,3 +231,80 @@ def plot_explained_variance(stats, folder_name=None, file_name=None):
         fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight") # transparent=True)
     
     plt.show()
+
+
+
+''' Faster stability + error calculation & error calculation is a bit off 
+because the refit_usages is not the same as the saved one, it needs to refit but it takes time 
+def load_stablity_error_data_(k, cnmf_obj, norm_counts, rf_usages_path, density_threshold, local_neighborhood_size):
+
+    # load files 
+    merged_spectra = cnmf.load_df_from_npz(cnmf_obj.paths['merged_spectra']%k)
+    rf_usages = pd.read_csv(rf_usages_path, sep="\t")
+    
+    # calculate stability 
+    n_neighbors = int(local_neighborhood_size * merged_spectra.shape[0]/k)
+    l2_spectra = (merged_spectra.T/np.sqrt((merged_spectra**2).sum(axis=1))).T
+
+    kmeans_model = KMeans(n_clusters=k, n_init=10, random_state=1)
+    kmeans_model.fit(l2_spectra)
+    kmeans_cluster_labels = pd.Series(kmeans_model.labels_+1, index=l2_spectra.index)
+    silhouette = silhouette_score(l2_spectra.values, kmeans_cluster_labels, metric='euclidean')
+
+    # Find median usage for each gene across cluster
+    median_spectra = l2_spectra.groupby(kmeans_cluster_labels).median()
+
+    # Normalize median spectra to probability distributions.
+    median_spectra = (median_spectra.T/median_spectra.sum(1)).T
+
+    # reset index and col names 
+    median_spectra.columns = range(len(median_spectra.columns))
+    median_spectra = median_spectra.reset_index(drop=True)
+
+    
+
+    rf_usages = rf_usages.drop("bc_wells", axis = 1)
+    rf_usages.columns = range(len(rf_usages.columns))
+    rf_usages = rf_usages.reset_index(drop=True)
+
+
+    # Compute prediction error as a frobenius norm
+    rf_pred_norm_counts = rf_usages.dot(median_spectra)        
+    if sp.issparse(norm_counts.X):
+        prediction_error = ((norm_counts.X.todense() - rf_pred_norm_counts)**2).sum().sum()
+    else:
+        prediction_error = ((norm_counts.X - rf_pred_norm_counts)**2).sum().sum()    
+        
+    return pd.DataFrame([k, density_threshold, silhouette,  prediction_error],
+            index = ['k', 'local_density_threshold', 'silhouette', 'prediction_error'],
+            columns = ['stats'])
+
+
+def load_stablity_error_data(output_directory, run_name, local_neighborhood_size=0.30, 
+   density_threshold=2.0, components = [30, 50, 60, 80, 100, 200, 250, 300]):
+
+    cnmf_obj = cnmf.cNMF(output_dir=output_directory, name=run_name)
+
+    stats = []
+    norm_counts = sc.read(cnmf_obj.paths['normalized_counts'])
+    
+    for k in components:
+        rf_usages_path = '{output_directory}/{run_name}/{run_name}.usages.k_{k}.dt_{sel_thresh}.consensus.txt'.format(
+                                                                                output_directory=output_directory,
+                                                                                run_name = run_name,
+                                                                                k=k,
+                                                                                sel_thresh = f"{density_threshold}".replace('.','_'))
+
+        stats.append(load_stablity_error_data_(k, cnmf_obj, norm_counts, rf_usages_path, density_threshold, local_neighborhood_size))
+
+    arr = np.array(stats).squeeze()
+    df = pd.DataFrame(arr, columns=['k', 'local_density_threshold', 'silhouette', 'prediction_error'])
+
+    print("min stablity is", df['silhouette'].min())
+    print("max stablity is", df['silhouette'].max())
+
+    print("min error is",df['prediction_error'].min())
+    print("max error is",df['prediction_error'].max())
+
+    return df
+'''
