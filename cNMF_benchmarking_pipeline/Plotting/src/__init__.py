@@ -1,3 +1,8 @@
+# helper functions
+from .utilities import convert_with_mygene, convert_adata_with_mygene, rename_adata_gene_dictionary, \
+                        rename_list_gene_dictionary, read_npz, merge_pdfs_in_folder, merge_svgs_to_pdf
+
+
 # K selection plots
 from .k_selection_plots import load_stablity_error_data, plot_stablity_error,\
                                load_enrichment_data, plot_enrichment,\
@@ -6,10 +11,18 @@ from .k_selection_plots import load_stablity_error_data, plot_stablity_error,\
 
 
 from .k_quality_plots import program_corr,program_euclidean, top_genes_overlap,\
-                             graph_cluster,graph_pdf_clustermap, \
-                             programs_dotplots,sort_corr_matrix, max_gene_values_barplot, programs_dotplots,\
-                             sort_corr_matrix
+                             graph_cluster, graph_pdf_clustermap, \
+                             cNMF_barplot, cNMF_boxplot, \
+                             sort_corr_matrix, programs_dotplots, consensus_clustermap
                             
+
+# gene QC plots
+from .Perturbed_gene_QC_plots import  plot_umap_per_gene, plot_top_program_per_gene, perturbed_gene_dotplot,\
+                                      plot_log2FC, plot_volcano, programs_dotplot, analyze_correlations, \
+                                      create_comprehensive_plot,create_gene_correlation_waterfall,\
+                                      plot_umap_per_gene_guide, process_single_gene, parallel_gene_processing
+
+
 
 # program QC plots
 #from .Top_enrichment_plot import plot_top_gene_per_program, plot_top_program_per_gene, \
@@ -21,15 +34,4 @@ from .k_quality_plots import program_corr,program_euclidean, top_genes_overlap,\
 
 #from .Program_QC_plots import *
 
-# gene QC plots
-from .Perturbed_gene_QC_plots import  plot_umap_per_gene, plot_top_program_per_gene, perturbed_gene_dotplot,\
-                                      plot_log2FC, plot_volcano, programs_dotplot, analyze_correlations, \
-                                      create_comprehensive_plot,create_gene_correlation_waterfall,\
-                                        plot_umap_per_gene_guide 
-
-
-
-# helper functions
-from .utilities import convert_with_mygene, convert_adata_with_mygene, rename_adata_gene_dictionary, \
-                        rename_list_gene_dictionary, read_npz, merge_pdfs_in_folder, merge_svgs_to_pdf
 
