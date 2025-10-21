@@ -175,19 +175,19 @@ def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80
 
 
 # plot perturbation data
-def plot_perturbation(test_stats_df, folder_name = None, file_name = None):
+def plot_perturbation(test_stats_df, pval =0.000335, folder_name = None, file_name = None):
 
     fig, axs = plt.subplots(ncols=1, nrows=2,figsize=(5, 5))
 
-    axs[0].set_title('Unique regulators of progams per sample (pval <=0.000335)', fontsize=10)
-    plotting_df = test_stats_df.loc[test_stats_df.pval<=0.000335, ['K', 'sample','target_name']].drop_duplicates().groupby(['K', 'sample']).count().reset_index()
+    axs[0].set_title(f'Unique regulators of progams per sample (pval <= {str(pval)})', fontsize=10)
+    plotting_df = test_stats_df.loc[test_stats_df.pval<=pval, ['K', 'sample','target_name']].drop_duplicates().groupby(['K', 'sample']).count().reset_index()
     sns.lineplot(x='K', y='target_name', hue='sample', data=plotting_df, ax=axs[0])
     axs[0].set_ylabel('# Regulators', fontsize=10)
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
 
-    axs[1].set_title('Unique regulators of progams (pval <=0.000335)', fontsize=10)
-    plotting_df = test_stats_df.loc[test_stats_df.pval<=0.000335, ['K','target_name']].drop_duplicates().groupby(['K']).count().reset_index()
+    axs[1].set_title(f'Unique regulators of progams (pval <= {str(pval)})', fontsize=10)
+    plotting_df = test_stats_df.loc[test_stats_df.pval<=pval, ['K','target_name']].drop_duplicates().groupby(['K']).count().reset_index()
     sns.lineplot(x='K', y='target_name', data=plotting_df, color='black', ax=axs[1])
     axs[1].set_ylabel('# Regulators', fontsize=10)
 
