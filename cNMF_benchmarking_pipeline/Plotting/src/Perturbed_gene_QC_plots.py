@@ -55,9 +55,18 @@ from .utilities import convert_adata_with_mygene, convert_with_mygene, rename_li
 
 
 # plot gene expression UMAP given adata
-def plot_umap_per_gene(adata,file_to_dictionary, Target_Gene, ax=None, color='purple', save_path=None, save_name=None, figsize=(8,6), show=False):
+def plot_umap_per_gene(mdata, Target_Gene, file_to_dictionary = None, ax=None,
+ color='purple', save_path=None, save_name=None, figsize=(8,6), show=False):
 
-    renamed = rename_adata_gene_dictionary(adata, file_to_dictionary)
+    if file_to_dictionary is None:
+        renamed = mdata['rna'].copy()
+    else:
+        renamed = rename_adata_gene_dictionary(mdata['rna'], file_to_dictionary)
+
+
+    # Check if query gene exists
+    if Target_Gene not in renamed.var_names.values:
+        raise ValueError(f"Gene {Target_Gene} not found in mdata")
     
     # Check if gene exists
     gene_name_list = renamed.var_names.tolist()
@@ -108,7 +117,8 @@ def plot_umap_per_gene(adata,file_to_dictionary, Target_Gene, ax=None, color='pu
 
 
 # plot guide UMAP given mdata with guide assignment
-def plot_umap_per_gene_guide(mdata, file_to_dictionary, Target_Gene, ax=None, color='red', save_path=None, save_name=None, figsize=(8,6), show=False):
+def plot_umap_per_gene_guide(mdata, Target_Gene, ax=None, color='red', save_path=None, 
+save_name=None, figsize=(8,6), show=False):
 
     # Extract gRNA per cell and merge the gRNA targeting the same gene 
     X = mdata['cNMF'].obsm["guide_assignment"].T
@@ -117,7 +127,7 @@ def plot_umap_per_gene_guide(mdata, file_to_dictionary, Target_Gene, ax=None, co
                     )
     df_merge = df.groupby(df.index).sum()
 
-    adata = ad.AnnData(X=df_merge.T.values, obs =mdata['rna'].obs ) 
+    adata = ad.AnnData(X=df_merge.T.values, obs=mdata['rna'].obs ) 
     adata.var_names = df_merge.index
     adata.obsm['X_pca'] = mdata['rna'].obsm['X_pca']
     adata.obsm['X_umap'] = mdata['rna'].obsm['X_umap']
@@ -125,7 +135,8 @@ def plot_umap_per_gene_guide(mdata, file_to_dictionary, Target_Gene, ax=None, co
     # Check if gene exists
     gene_name_list = adata.var_names.tolist()
     if Target_Gene not in gene_name_list:
-        print("gene name is not found in adata")
+        raise ValueError(f"Gene {Target_Gene} not found in guide assignment")
+    
         return None
     
     # Set color
@@ -172,7 +183,7 @@ def plot_umap_per_gene_guide(mdata, file_to_dictionary, Target_Gene, ax=None, co
 
 
 # read the cNMF gene matrix (in txt), plot top x gene in the program 
-def plot_top_program_per_gene(mdata, file_to_dictionary, Target_Gene, top_program=10, 
+def plot_top_program_per_gene(mdata,  Target_Gene, file_to_dictionary = None,top_program=10, 
                                species="human", ax=None, save_path=None, save_name=None, 
                                figsize=(5,8), show=False):
 
@@ -180,13 +191,17 @@ def plot_top_program_per_gene(mdata, file_to_dictionary, Target_Gene, top_progra
     X =  mdata["cNMF"].varm["loadings"] 
 
     # rename gene
-    renamed_gene_list = rename_list_gene_dictionary( mdata["rna"].var_names, file_to_dictionary)
-    df_renamed = pd.DataFrame(data=X, columns = renamed_gene_list)
+    if file_to_dictionary is None:
+        df_renamed = pd.DataFrame(data=X, columns = mdata["rna"].var_names)
+    else:
+        renamed_gene_list = rename_list_gene_dictionary( mdata["rna"].var_names, file_to_dictionary)
+        df_renamed = pd.DataFrame(data=X, columns = renamed_gene_list)
+
     
     # Check if gene exists
     if Target_Gene not in df_renamed.columns:
-        print(f"Gene {Target_Gene} not found in data")
-        return None
+        raise ValueError(f"Gene {Target_Gene} not found in mdata")
+    
     
     # sort top x program
     df_sorted = df_renamed[Target_Gene].nlargest(top_program)
@@ -240,11 +255,21 @@ def plot_top_program_per_gene(mdata, file_to_dictionary, Target_Gene, top_progra
 
 
 # plot dotplot given a target gene 
-def perturbed_gene_dotplot(mdata, file_to_dictionary,  Target_Gene, groupby='sample', save_name=None,
+def perturbed_gene_dotplot(mdata,  Target_Gene, file_to_dictionary=None, groupby='sample', save_name=None,
                           save_path=None, figsize=(3, 2), show=False, ax=None):
     # read in adata
-    renamed = rename_adata_gene_dictionary(mdata['rna'],file_to_dictionary)
+    if file_to_dictionary is None:
+        renamed = mdata['rna']
+    else:
+        renamed = rename_adata_gene_dictionary(mdata['rna'],file_to_dictionary)
+
     renamed.var_names_make_unique()
+
+
+    # Check if query gene exists
+    if Target_Gene not in renamed.var_names.values:
+        raise ValueError(f"Gene {Target_Gene} not found in mdata")
+    
     
     if save_name is None:
         save_name = f"{Target_Gene} Expression by days"
@@ -294,80 +319,19 @@ def perturbed_gene_dotplot(mdata, file_to_dictionary,  Target_Gene, groupby='sam
 
 
 
-# plot the gene expresion dotplot split by days given mdata
-def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
-                log2fc_col='log2FC', num_item=5, p_value=0.05, save_path=None, save_name=None, 
-                figsize=(5, 4), show=False, ax=None, Day =""):
-    # read df
-    df = pd.read_csv(perturb_path, sep="\t")
-    # Sort by log2FC
-    df_sorted = df.loc[df[tagert_col_name] == Target]
-    df_sorted = df_sorted[df_sorted['adj_pval'] < p_value]
-    df_sorted = df_sorted.sort_values(by=log2fc_col, ascending=False)
-    # Get top and bottom gene
-    top_df = df_sorted.head(num_item)
-    bottom_df = df_sorted.tail(num_item)
-    # Combine and add category
-    top = top_df.copy()
-    bottom = bottom_df.copy()
-    # Combine data
-    plot_data = pd.merge(top, bottom, how='outer')
-    plot_data = plot_data.sort_values(by=log2fc_col, ascending=False)
-    
-    # Create the plot
-    if ax is None:
-        fig, ax = plt.subplots(figsize=figsize)
-    else:
-        fig = ax.get_figure()
-    
-    # Create horizontal bar plot
-    colors = ['red' if x > 0 else 'blue' for x in plot_data[log2fc_col]]
-    bars = ax.barh(range(len(plot_data)), plot_data[log2fc_col], color=colors, alpha=0.7)
-    
-    # Customize the plot
-    ax.set_yticks(range(len(plot_data)))
-    ax.set_yticklabels(plot_data[plot_col_name],fontsize=10) 
-
-
-    ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
-    ax.set_ylabel( "Program Name",fontsize=10, fontweight='bold', loc='center')
-    ax.set_title(f"Program Log2 Fold-Change with {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
-
-    # Add a vertical line at x=0
-    ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5)
-
-
-    
-    # Add legend
-    from matplotlib.patches import Patch
-    legend_elements = [Patch(facecolor='red', alpha=0.7, label='Upregulated'),
-                      Patch(facecolor='blue', alpha=0.7, label='Downregulated')]
-    ax.legend(handles=legend_elements) #loc='lower right')
-    
-    # Adjust layout
-    ax.grid(axis='x', alpha=0.3)
-    
-    # Save if path provided (only when ax is not provided)
-    if save_path and ax is None:
-        fig.savefig(f'{save_path}/{save_name}.svg', format='svg', bbox_inches='tight', dpi=300)
-    
-    # Control whether to display the plot (only when ax is not provided)
-    if ax is None:
-        if show:
-            plt.show()
-        else:
-            plt.close(fig)
-    
-    return ax, plot_data
-  
-
-
 # plot barplot for up/down regulated genes log2FC given results from perturbation analysis, return genes in df
 def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
                 log2fc_col='log2FC', num_item=5, p_value=0.05, save_path=None, save_name=None, 
                 figsize=(5, 4), show=False, ax=None, Day =""):
+
     # read df
     df = pd.read_csv(perturb_path, sep="\t")
+    
+    # Check if query gene exists
+    if Target not in df[tagert_col_name].values:
+        print(f"Gene {Target} not found in mdata")
+        return 
+
     # Sort by log2FC
     df_sorted = df.loc[df[tagert_col_name] == Target]
     df_sorted = df_sorted[df_sorted['adj_pval'] < p_value]
@@ -430,12 +394,19 @@ def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_na
  
 
 
+
 # plot one volcone plot given perturbation analysis, return genes in df
 def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
                  down_thred_log=-0.05, up_thred_log=0.05, p_value=0.05, save_path=None, 
                  save_name=None, figsize=(5, 4), show=False, ax=None, Day =""):
                  
     df = pd.read_csv(perturb_path, sep="\t")
+       
+    # Check if query gene exists
+    if Target not in df[tagert_col_name].values:
+        print(f"Gene {Target} not found in mdata")
+        return 
+
     df_program = df.loc[df[tagert_col_name] == Target]
     
     # Create figure/axes if not provided
@@ -498,6 +469,7 @@ def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_n
             plt.close(fig)
         
     return ax, pd.merge(up, down, how='outer'), texts   
+
 
 
 
@@ -576,13 +548,24 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
  
  
  
+
 # plot top x programs for perturbed gene given Target gene and gene loading file path
-def analyze_correlations(mdata, file_to_dictionary, Target, top_num=5, save_path=None, 
+def analyze_correlations(mdata, Target, file_to_dictionary=None, top_num=5, save_path=None, 
                          save_name=None, figsize=(10, 8), show=False, ax=None):
-    # read data
+        
     X =  mdata["cNMF"].varm["loadings"] 
-    renamed_gene_list = rename_list_gene_dictionary(mdata["rna"].var_names, file_to_dictionary)
-    df_rename = pd.DataFrame(data=X, columns = renamed_gene_list)
+
+    # rename gene
+    if file_to_dictionary is None:
+        df_rename = pd.DataFrame(data=X, columns = mdata["rna"].var_names)
+    else:
+        renamed_gene_list = rename_list_gene_dictionary( mdata["rna"].var_names, file_to_dictionary)
+        df_rename = pd.DataFrame(data=X, columns = renamed_gene_list)
+
+    # check if gene exists
+    if Target not in df_rename.columns:
+        raise ValueError(f"Gene {Target} not found in mdata")
+
 
     # Calculate correlation matrix
     correlation_matrix = df_rename.corr()
@@ -650,7 +633,9 @@ def analyze_correlations(mdata, file_to_dictionary, Target, top_num=5, save_path
             plt.close(fig)
     
     return ax, combined_correlations
-    
+
+
+
 
 # plot the waterfall plot for genes that have simliar program loading scores when perturbed 
 def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save_path=None, 
@@ -659,9 +644,9 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
     # Read data
     df = pd.read_csv(perturb_path, sep='\t', index_col=0)
     
-    # Check if query gene exists in dataframe
+    # Check if query gene exists
     if Target_Gene not in df.index:
-        raise ValueError(f"Gene {Target_Gene} not found in dataframe index")
+        raise ValueError(f"Gene {Target_Gene} not found in perturb analysis")
     
     # Get log2FC values for query gene across all programs
     df_gene = df.loc[Target_Gene]
@@ -750,6 +735,7 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
 
 
 
+
 # graph one big svg or pdf 
 def create_comprehensive_plot(
     mdata,
@@ -769,97 +755,104 @@ def create_comprehensive_plot(
     p_value=0.05,
     save_path=None,
     save_name=None,
-    figsize=(25, 20),
+    figsize=None,
+    samples=None,
+    square_plots=True,
     show=True,
     PDF=True
 ):
-
+    """
+    Create a comprehensive multi-panel figure for analyzing gene perturbations.
+    
+    Parameters:
+    -----------
+    samples : list, optional
+        List of sample/day identifiers. If None, defaults to ['D0', 'sample_D1', 'sample_D2', 'sample_D3'].
+        Can be any length to accommodate different numbers of timepoints.
+    
+    figsize : tuple, optional
+        Figure size (width, height). If None, automatically calculated based on:
+        - square_plots=True: calculates height to make all plots square
+        - square_plots=False: uses legacy calculation (25, 4 + num_samples * 4)
+    
+    square_plots : bool, default=True
+        If True, automatically adjusts figsize to make all plots square-shaped.
+        If False, uses the legacy auto-sizing calculation.
+        Ignored if figsize is explicitly provided.
+    
+    ... (other parameters remain the same as original)
+    """
+    
+    # Set default samples if not provided
+    if samples is None:
+        samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
+    
+    # Calculate figure dimensions
+    num_samples = len(samples)
+    
     # Set matplotlib backend to non-interactive to reduce memory usage
     plt.ioff()
     
     # Close any existing figures to prevent memory leaks
     plt.close('all')
     
-    # Create figure with custom gridspec for 5-5-5-5 layout
+    # Create figure with custom gridspec
+    # 1 header row + n sample rows
+    num_rows = 1 + num_samples
     fig = plt.figure(figsize=figsize)
     
-    # Create gridspec with 5 rows using 20 columns for flexibility
-    # Create gridspec with spacing parameters
-    gs = gridspec.GridSpec(5, 27, figure=fig, 
+    # Create gridspec with dynamic number of rows using 27 columns for flexibility
+    gs = gridspec.GridSpec(num_rows, 27, figure=fig, 
                         hspace=0.4,  # Vertical spacing between rows
                         wspace=0.5,  # Horizontal spacing between columns
-                        #top=0.96,    # Top margin
-                        #bottom=0.04)#, # Bottom margin
                         left=0.10,   # Left margin
-                       right=0.90)  # Right margin
+                        right=0.90)  # Right margin
     
-    # First row: 4 plots (each takes 5 columns out of 20)
+    # First row: 5 header plots
     ax1 = fig.add_subplot(gs[0, 0:5])    # UMAP Expression
     ax21 = fig.add_subplot(gs[0, 6:11])   # Top program
     ax3 = fig.add_subplot(gs[0, 12:16])  # Perturbed gene dotplot
-    #ax4 = fig.add_subplot(gs[0, 17:22])  # Correlation analysis
-    #ax2 = fig.add_subplot(gs[0, 23:27])  # UMAP Perturbation
-
-    ax5 = fig.add_subplot(gs[1, 1:6])    # D0 - Log2FC
-    ax6 = fig.add_subplot(gs[1, 7:12])    # D0 - Volcano
-    ax7 = fig.add_subplot(gs[1, 13:18])   # D0 - Dotplot
-    ax8 = fig.add_subplot(gs[1, 20:25])  # D0 - Waterfall
-
-    ax9 = fig.add_subplot(gs[2, 1:6])  # D1 - Log2FC
-    ax10 = fig.add_subplot(gs[2, 7:12])   # D1 - Volcano
-    ax11 = fig.add_subplot(gs[2, 13:18])   # D1 - Dotplot
-    ax12 = fig.add_subplot(gs[2, 20:25])  # D1 - Waterfall
-
-    ax13 = fig.add_subplot(gs[3, 1:6]) # D2 - Log2FC
-    ax14 = fig.add_subplot(gs[3, 7:12]) # D2 - Volcano    
-    ax15 = fig.add_subplot(gs[3, 13:18])   # D2 - Dotplot
-    ax16 = fig.add_subplot(gs[3, 20:25])   # D2 - Waterfall
-
-    ax17 = fig.add_subplot(gs[4, 1:6])  # D3 - Log2FC
-    ax18 = fig.add_subplot(gs[4, 7:12]) # D3 - Volcano
-    ax19 = fig.add_subplot(gs[4, 13:18]) # D3 - Dotplot
-    ax20 = fig.add_subplot(gs[4, 20:25])   # D3 - Dotplot
-
+    ax4 = fig.add_subplot(gs[0, 17:22])  # Correlation analysis
+    ax2 = fig.add_subplot(gs[0, 23:27])  # UMAP Perturbation
     
-    # List of all axes for easy access
-    '''
-    axes = [ax1, ax2, ax3, ax4,         
-            ax5, ax6, ax7, ax8, ax9,     
-            ax10, ax11, ax12, ax13, ax14,  
-            ax15, ax16, ax17, ax18, ax19, ax20, ax21]  
-    '''
-    axes = [ax1, ax3,         
-            ax5, ax6, ax7, ax8, ax9,     
-            ax10, ax11, ax12, ax13, ax14,  
-            ax15, ax16, ax17, ax18, ax19, ax20, ax21] 
+    # Initialize list with header axes
+    axes = [ax1, ax2, ax3, ax4, ax21]
     
+    # Dynamically create axes for each sample
+    # Each sample row has 4 plots: Log2FC, Volcano, Dotplot, Waterfall
+    for sample_idx in range(num_samples):
+        row_idx = sample_idx + 1  # Start from row 1 (after header)
+        
+        ax_log2fc = fig.add_subplot(gs[row_idx, 1:6])    # Log2FC
+        ax_volcano = fig.add_subplot(gs[row_idx, 7:12])  # Volcano
+        ax_dotplot = fig.add_subplot(gs[row_idx, 13:18]) # Dotplot
+        ax_waterfall = fig.add_subplot(gs[row_idx, 20:25]) # Waterfall
+        
+        axes.extend([ax_log2fc, ax_volcano, ax_dotplot, ax_waterfall])
 
     # Plot 1: UMAP
     ax1 = plot_umap_per_gene(
-        adata=mdata['rna'],
-        file_to_dictionary = file_to_dictionary,
+        mdata=mdata,
+        file_to_dictionary=file_to_dictionary,
         Target_Gene=Target_Gene, 
         figsize=(4, 3),
         ax=ax1
     )
     ax1.set_title(f"{Target_Gene} Expression", fontsize=18, fontweight='bold', loc='center')
-    ax1.set_xlabel('UMAP 1', fontsize=14, fontweight = 'bold')
-    ax1.set_ylabel('UMAP 2', fontsize=14, fontweight = 'bold')
+    ax1.set_xlabel('UMAP 1', fontsize=14, fontweight='bold')
+    ax1.set_ylabel('UMAP 2', fontsize=14, fontweight='bold')
     
-
     # Plot 21: UMAP for gRNA
     ax21 = plot_umap_per_gene_guide(
         mdata=mdata,
-        file_to_dictionary = file_to_dictionary,
         Target_Gene=Target_Gene, 
         figsize=(4, 3),
         ax=ax21
     )
     ax21.set_title(f"{Target_Gene} Perturbation", fontsize=18, fontweight='bold', loc='center')
-    ax21.set_xlabel('UMAP 1', fontsize=14, fontweight = 'bold')
-    ax21.set_ylabel('UMAP 2', fontsize=14, fontweight = 'bold')
+    ax21.set_xlabel('UMAP 1', fontsize=14, fontweight='bold')
+    ax21.set_ylabel('UMAP 2', fontsize=14, fontweight='bold')
 
-    '''
     # Plot 2: Top program 
     ax2 = plot_top_program_per_gene(
         mdata=mdata,
@@ -870,10 +863,9 @@ def create_comprehensive_plot(
         ax=ax2,
         figsize=(2, 4)
     )
-    ax2.set_title(f"Top Loading Program for {Target_Gene}",fontsize=20, fontweight='bold', loc='center')
-    ax2.set_xlabel('Gene Loading Score (z-score)',fontsize=14, fontweight='bold') #, loc='center')
-    ax2.set_ylabel(f'Program Name',fontsize=14, fontweight='bold', loc='center')
-    '''
+    ax2.set_title(f"Top Loading Program for {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
+    ax2.set_xlabel('Gene Loading Score (z-score)', fontsize=14, fontweight='bold')
+    ax2.set_ylabel(f'Program Name', fontsize=14, fontweight='bold', loc='center')
     
     # Plot 3: Perturbed gene dotplot
     ax3 = perturbed_gene_dotplot(
@@ -888,7 +880,6 @@ def create_comprehensive_plot(
     ax3.set_ylabel('Gene', fontsize=14, fontweight='bold', loc='center')
     ax3.set_xlabel('Day', fontsize=14, fontweight='bold', loc='center')
     
-    '''
     # Plot 4: Correlation analysis
     ax4, corr_data = analyze_correlations(
         mdata=mdata,
@@ -898,14 +889,12 @@ def create_comprehensive_plot(
         figsize=(4, 3),
         ax=ax4
     )
-    ax4.set_title(f"Gene Loading Correlation for {Target_Gene}",fontsize=20, fontweight='bold', loc='center')
-    ax4.set_ylabel('Gene Name',fontsize=14, fontweight='bold', loc='center')
-    ax4.set_xlabel('Correlation Coefficient',fontsize=14, fontweight='bold', loc='center')
-    '''
+    ax4.set_title(f"Gene Loading Correlation for {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
+    ax4.set_ylabel('Gene Name', fontsize=14, fontweight='bold', loc='center')
+    ax4.set_xlabel('Correlation Coefficient', fontsize=14, fontweight='bold', loc='center')
 
     # Loop through samples and create 4 plots per sample (Log2FC, Volcano, Dotplot, Waterfall)
-    samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
-    ax_index = 2  # Start from ax5 (index 4)
+    ax_index = 5  # Start after header axes (0-4)
     
     for idx, samp in enumerate(samples):
         file_name = f"{perturb_path}_{samp}_perturbation_association.txt" 
@@ -924,11 +913,10 @@ def create_comprehensive_plot(
             Day=Day
         )
         ax_index += 1
-        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=14, fontweight='bold', loc='center')
-        current_ax.set_ylabel( "Program Name",fontsize=14, fontweight='bold', loc='center')
-        current_ax.set_title(f"Program Log2 Fold-Change, {Day} \n {Target_Gene} ",fontsize=20, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_ylabel("Program Name", fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_title(f"Program Log2 Fold-Change, {Day} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
 
-        
         # Plot 2: Volcano plot
         current_ax = axes[ax_index]
         current_ax, program, text = plot_volcano(
@@ -942,15 +930,12 @@ def create_comprehensive_plot(
             Day=Day
         )
         ax_index += 1
-        current_ax.set_title(f"Volcano Plot, {Day} \n    {Target_Gene}",fontsize=20, fontweight='bold', loc='center')
-        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=14, fontweight='bold', loc='center')
-        current_ax.set_ylabel("Adjusted p-value, -log10",fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_title(f"Volcano Plot, {Day} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_ylabel("Adjusted p-value, -log10", fontsize=14, fontweight='bold', loc='center')
         for t in text:
             t.set_fontsize(14)
-        #    t.set_fontweight('bold')
         adjust_text(text, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5), ax=current_ax, fontsize=14) 
-
-
 
         # Plot 3: Programs dotplot
         current_ax = axes[ax_index]
@@ -963,13 +948,13 @@ def create_comprehensive_plot(
             Day=Day
         )
         ax_index += 1
-        current_ax.set_title(f"Perturbed Program Loading Scores, {Day} \n    {Target_Gene} ",fontsize=18, fontweight='bold', loc='center')
-        current_ax.set_ylabel('Program Name',fontsize=14, fontweight='bold', loc='center')
-        current_ax.set_xlabel("Day",fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_title(f"Perturbed Program Loading Scores, {Day} \n {Target_Gene}", fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_ylabel('Program Name', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel("Day", fontsize=14, fontweight='bold', loc='center')
         
         # Plot 4: Waterfall plot 
         current_ax = axes[ax_index]
-        current_ax,text = create_gene_correlation_waterfall(
+        current_ax, text = create_gene_correlation_waterfall(
             perturb_path=file_name,
             Target_Gene=Target_Gene,
             ax=current_ax,
@@ -977,18 +962,16 @@ def create_comprehensive_plot(
             figsize=(3, 4),
         )
         ax_index += 1
-        current_ax.set_title(f"Gene Perturbation Correlation, {Day} \n    {Target_Gene}",fontsize=18, fontweight='bold', loc='center')
-        current_ax.set_ylabel(f'Correlation of Program\nExpression with\n{Target_Gene} Perturbation',fontsize=14, fontweight='bold', loc='center')
-        current_ax.set_xlabel('Perturbed Genes',fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_title(f"Gene Perturbation Correlation, {Day} \n {Target_Gene}", fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_ylabel(f'Correlation of Program\nExpression with\n{Target_Gene} Perturbation', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Perturbed Genes', fontsize=14, fontweight='bold', loc='center')
 
         for t in text:
             t.set_fontsize(14)
-        #    t.set_fontweight('bold')
         adjust_text(text, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5), ax=current_ax, fontsize=14) 
 
-
     # Add main title
-    fig.suptitle(f'Comprehensive Analysis: {Target_Gene}', fontweight='bold', y=0.995, fontsize = 30)
+    fig.suptitle(f'Comprehensive Analysis: {Target_Gene}', fontweight='bold', y=0.995, fontsize=30)
     
     # Adjust layout
     plt.tight_layout()
@@ -1010,35 +993,95 @@ def create_comprehensive_plot(
     
     # Always close the figure to prevent memory leak
     plt.close(fig)
- 
- 
- # parallel run - single gene 
-def process_single_gene(gene, mdata, perturb_path, file_to_dictionary, save_path,
-                       figsize=(25, 25), PDF=True, show=False):
+
+
+
+
+# parallel run - single genes
+def process_single_gene(Target_Gene,     
+                        mdata,
+                        perturb_path,
+                        file_to_dictionary,
+                        top_program=10,
+                        species="human", 
+                        groupby='sample',
+                        tagert_col_name="target_name",
+                        plot_col_name="program_name",
+                        log2fc_col='log2FC',
+                        num_item=5,
+                        top_num=5,
+                        down_thred_log=-0.05,
+                        up_thred_log=0.05,
+                        p_value=0.05,
+                        save_path=None,
+                        save_name=None,
+                        figsize=None,
+                        samples=None,
+                        square_plots=True,
+                        show=True,
+                        PDF=True):
+
     try:
-        print(f"Processing gene: {gene}")
+        print(f"Processing gene: {Target_Gene}")
 
         create_comprehensive_plot(
             mdata=mdata,
             perturb_path=perturb_path,
-            Target_Gene=gene,
+            Target_Gene=Target_Gene,
             file_to_dictionary=file_to_dictionary,
+            top_program=top_program,
+            species=species,
+            groupby=groupby,
+            tagert_col_name=tagert_col_name,
+            plot_col_name=plot_col_name,
+            log2fc_col=log2fc_col,
+            num_item=num_item,
+            top_num=top_num,
+            down_thred_log=down_thred_log,
+            up_thred_log=up_thred_log,
+            p_value=p_value,
             save_path=save_path,
             save_name=gene,
             figsize=figsize,
+            samples=samples,
+            square_plots=square_plots,
             show=show,
             PDF=PDF
         )
 
-        return f"Success: {gene}"
+        return f"Success: {Target_Gene}"
 
     except Exception as e:
-        print(f"Error processing {gene}: {str(e)}")
-        return f"Error: {gene} - {str(e)}"
+        print(f"Error processing {Target_Gene}: {str(e)}")
+        return f"Error: {Target_Gene} - {str(e)}"
+
+
+
 
 # parallel run - multi genes
-def parallel_gene_processing(perturbed_gene_list, mdata, perturb_path, file_to_dictionary,
-                            save_path, figsize=(25, 25), PDF=True, show=False, n_processes=-1):
+def parallel_gene_processing(perturbed_gene_list, 
+                        mdata,
+                        perturb_path,
+                        file_to_dictionary,
+                        top_program=10,
+                        species="human", 
+                        groupby='sample',
+                        tagert_col_name="target_name",
+                        plot_col_name="program_name",
+                        log2fc_col='log2FC',
+                        num_item=5,
+                        top_num=5,
+                        down_thred_log=-0.05,
+                        up_thred_log=0.05,
+                        p_value=0.05,
+                        save_path=None,
+                        save_name=None,
+                        figsize=None,
+                        samples=None,
+                        square_plots=True,
+                        show=True,
+                        PDF=True,
+                        n_processes=-1):
 
     if n_processes == -1:
         n_processes = os.cpu_count()
@@ -1046,15 +1089,30 @@ def parallel_gene_processing(perturbed_gene_list, mdata, perturb_path, file_to_d
 
     # Create partial function with fixed parameters
     process_func = partial(
-        process_single_gene,
-        mdata=mdata,
-        perturb_path=perturb_path,
-        file_to_dictionary=file_to_dictionary,
-        save_path=save_path,
-        figsize=figsize,
-        PDF=PDF,
-        show=show
-    )
+            process_single_gene,
+            mdata=mdata,
+            perturb_path=perturb_path,
+            Target_Gene=Target_Gene,
+            file_to_dictionary=file_to_dictionary,
+            top_program=top_program,
+            species=species,
+            groupby=groupby,
+            tagert_col_name=tagert_col_name,
+            plot_col_name=plot_col_name,
+            log2fc_col=log2fc_col,
+            num_item=num_item,
+            top_num=top_num,
+            down_thred_log=down_thred_log,
+            up_thred_log=up_thred_log,
+            p_value=p_value,
+            save_path=save_path,
+            save_name=gene,
+            figsize=figsize,
+            samples=samples,
+            square_plots=square_plots,
+            show=show,
+            PDF=PDF
+        )
 
     print(f"Starting parallel processing of {len(perturbed_gene_list)} genes using {n_processes} processes...")
 

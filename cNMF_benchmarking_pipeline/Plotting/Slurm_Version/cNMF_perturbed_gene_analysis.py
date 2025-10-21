@@ -23,12 +23,25 @@ if __name__ == '__main__':
 
     parser.add_argument('--mdata_path', type=str, required=True)  
     parser.add_argument('--perturb_path', type=str, required=True) # partial path for each day
-    parser.add_argument('--top_program',  type=int, default=5)
-    parser.add_argument('--p_value',  type=float, default=0.05)
-    parser.add_argument('--pdf_save_path',  type=str, required=True)
-    parser.add_argument('--PDF',  action="store_true")  
     parser.add_argument('--file_to_dictionary',  type=str, default = None)  
-    parser.add_argument('--n_processes', type=int, default = -1)  
+    parser.add_argument('--species', type=str, default = "human")  
+    parser.add_argument('--groupby', type=str, default = "sample")  
+    parser.add_argument('--tagert_col_name', type=str, default = "target_name")  
+    parser.add_argument('--plot_col_name', type=str, default = "program_name")  
+    parser.add_argument('--log2fc_col', type=str, default = "log2FC") 
+    parser.add_argument('--top_num',  type=int, default=5)
+    parser.add_argument('--p_value',  type=float, default=0.05)
+    parser.add_argument('--down_thred_log',  type=float, default=-0.05)
+    parser.add_argument('--up_thred_log',  type=float, default=0.05)
+    parser.add_argument('--pdf_save_path',  type=str, required=True)
+    parser.add_argument('--samples', nargs='+', default=['D0', 'sample_D1', 'sample_D2', 'sample_D3'])
+    parser.add_argument('--square_plots',  action="store_true")  
+    parser.add_argument('--figsize', type=tuple_arg, default=(35, 35))
+    parser.add_argument('--show',  action="store_true")  
+    parser.add_argument('--PDF',  action="store_true")  
+    parser.add_argument('--n_processes', type=int, default = -1) 
+
+
 
     args = parser.parse_args()
 
@@ -60,9 +73,21 @@ if __name__ == '__main__':
             perturb_path = args.perturb_path,
             perturbed_gene_list = perturbed_gene_found,
             file_to_dictionary = args.file_to_dictionary,
+            species=args.species,
+            groupby=args.groupby,
+            tagert_col_name=args.tagert_col_name,
+            plot_col_name=args.plot_col_name,
+            log2fc_col=args.log2fc_col,
+            top_num=args.top_num,
+            p_value=args.p_value,
+            down_thred_log=args.down_thred_log,
+            up_thred_log=args.up_thred_log,
+            pdf_save_path=args.pdf_save_path,
+            samples=args.samples,
+            square_plots=args.square_plots,
             save_path = args.pdf_save_path,
-            figsize = (30, 30),
-            show=False,
+            figsize = args.figsize,
+            show=args.show,
             PDF=args.PDF,
             n_processes = args.n_processes
         )

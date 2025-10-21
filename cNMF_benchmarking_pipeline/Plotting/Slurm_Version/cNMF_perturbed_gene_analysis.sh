@@ -57,7 +57,11 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --pdf_save_path "$LOG_DIR" \
         --PDF \
         --file_to_dictionary "/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/weissman_guides_with_coordinates.tsv" \
-        --n_processes 70
+        --n_processes 70 \
+        --samples D0 sample_D1 sample_D2 sample_D3 \
+        --square_plots \
+        --figsize 35 35
+
 
 
 
