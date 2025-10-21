@@ -84,7 +84,7 @@ def rename_adata_gene_dictionary(adata, dictionary_file_path):
     adata_new = adata.copy()
 
     # Convert mapping result to list before assignment
-    df = pd.read_csv(dictionary_file_path, sep='\t')
+    df = pd.read_csv(dictionary_file_path, sep='\t', low_memory=False)
     ensemble_to_gene = dict(zip(df['ensembl_id'], df['gene']))
     new_names = [ensemble_to_gene.get(x, x) for x in adata.var_names]
     
@@ -98,7 +98,7 @@ def rename_adata_gene_dictionary(adata, dictionary_file_path):
 def rename_list_gene_dictionary(list_input, dictionary_file_path):
 
     # Convert mapping result to list before assignment
-    df = pd.read_csv(dictionary_file_path, sep='\t')
+    df = pd.read_csv(dictionary_file_path, sep='\t', low_memory=False)
     ensemble_to_gene = dict(zip(df['ensembl_id'], df['gene']))
     new_names = [ensemble_to_gene.get(x, x) for x in list_input]
     
@@ -126,12 +126,12 @@ def read_npz(path):
 # merge all PDFs into one, save pdf in the same folder_path
 def merge_pdfs_in_folder(folder_path, output_filename="merged_perturbed_gene_QC.pdf"):
 
-    
     # Create PdfMerger object
     merger = PdfMerger()
     
     # Get all PDF files in the folder
     pdf_files = glob.glob(os.path.join(folder_path, "*.pdf"))
+    pdf_files.sort() 
     print(f"Found {len(pdf_files)} PDF files")
     
     # Merge each PDF
@@ -159,6 +159,7 @@ def merge_pdfs_in_folder(folder_path, output_filename="merged_perturbed_gene_QC.
 def merge_svgs_to_pdf(folder_path, output_filename="merged_perturbed_gene_QC.pdf"):
 
     svg_files = glob.glob(os.path.join(folder_path, "*.svg"))
+    svg_files.sort()
     print(f"Found {len(svg_files)} SVG files")
     
     merger = PdfMerger()
