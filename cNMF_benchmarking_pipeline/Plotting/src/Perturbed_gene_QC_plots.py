@@ -650,14 +650,16 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
     
     # Get log2FC values for query gene across all programs
     df_gene = df.loc[Target_Gene]
-    df_gene_log2fc = df_gene["log2FC"]
+    df_gene_log2fc = df_gene[['log2FC','program_name']].sort_values(by = "program_name")
+    df_gene_log2fc.drop("program_name", axis = 1, inplace = True)
     
     correlations = {}
     for gene in df.index:
         if gene != Target_Gene:
             gene_values = df.loc[gene]
-            gene_log2fc = gene_values["log2FC"]
-            corr, _ = pearsonr(df_gene_log2fc, gene_log2fc)
+            gene_log2fc = gene_values[['log2FC','program_name']].sort_values(by = "program_name")
+            gene_log2fc.drop("program_name", axis = 1, inplace = True)
+            corr, _ = pearsonr(df_gene_log2fc['log2FC'], gene_log2fc['log2FC'])
             correlations[gene] = corr
     
     # Convert to DataFrame and sort
