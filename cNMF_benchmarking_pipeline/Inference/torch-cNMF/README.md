@@ -4,6 +4,7 @@
 * Individual NMF inference using: [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
 * consensus NMF using: [torch-cNMF](https://github.com/ymo6/torch_based_cNMF) 
 * To run torch-cNMF, create a new conda environment with `conda env create -f environment.yml --name torch-cNMF` with the provided yml file, then run `pip install git+https://github.com/ymo6/torch_based_cNMF.git` in the terminal
+* Singularity Container can be found in https://hub.docker.com/r/igvf/torch-cnmf/tags
 
 
     | Parameter | Type | Default | Description |
