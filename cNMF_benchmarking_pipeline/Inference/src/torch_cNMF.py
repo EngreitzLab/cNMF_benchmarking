@@ -5,7 +5,6 @@ from IPython.display import Image
 from matplotlib import gridspec
 import scanpy as sc
 from pathlib import Path
-import scanpy as sc
 import anndata
 import muon 
 import cnmf
@@ -32,7 +31,7 @@ def run_cnmf_consensus(cnmf_obj=None, output_dir=None, name=None,
 def compile_results(output_directory, run_name, sel_thresh = [2.0], components = [30, 50, 60, 80, 100, 200, 250, 300] ):
        
  for i in sel_thresh:
-    for k in K:
+    for k in components:
 
         scores = pd.read_csv('{output_directory}/{run_name}/{run_name}.usages.k_{k}.dt_{sel_thresh}.consensus.txt'.format(
                                                                                         output_directory=output_directory,
