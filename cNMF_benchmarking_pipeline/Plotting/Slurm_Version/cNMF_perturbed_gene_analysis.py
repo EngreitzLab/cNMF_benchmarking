@@ -14,7 +14,8 @@ from Plotting.src import plot_umap_per_gene, plot_top_program_per_gene, perturbe
                          create_gene_correlation_waterfall, \
                          convert_with_mygene, convert_adata_with_mygene, read_npz, \
                          merge_pdfs_in_folder, merge_svgs_to_pdf, create_comprehensive_plot, rename_adata_gene_dictionary, \
-                         rename_list_gene_dictionary, plot_umap_per_gene_guide, process_single_gene, parallel_gene_processing
+                         rename_list_gene_dictionary, plot_umap_per_gene_guide, process_single_gene, parallel_gene_processing,\
+                         compute_gene_correlation_matrix, compute_gene_waterfall_cor
 
 
 if __name__ == '__main__':
@@ -24,7 +25,6 @@ if __name__ == '__main__':
     parser.add_argument('--mdata_path', type=str, required=True)  
     parser.add_argument('--perturb_path', type=str, required=True) # partial path for each day
     parser.add_argument('--file_to_dictionary',  type=str, default = None)  
-    parser.add_argument('--species', type=str, default = "human")  
     parser.add_argument('--groupby', type=str, default = "sample")  
     parser.add_argument('--tagert_col_name', type=str, default = "target_name")  
     parser.add_argument('--plot_col_name', type=str, default = "program_name")  
@@ -55,6 +55,10 @@ if __name__ == '__main__':
     #read mdata
     mdata = mu.read_h5mu(args.mdata_path)
 
+    # compute corr once
+    correlation_matrix = compute_gene_correlation_matrix(mdata, file_to_dictionary = args.file_to_dictionary)
+
+
     # found detected perturbed gene
     perturbed_gene = np.unique(mdata['cNMF'].uns["guide_targets"])
     gene_list = rename_list_gene_dictionary(mdata['rna'].var_names.tolist(), args.file_to_dictionary) # convert gene id to geene name
@@ -63,6 +67,36 @@ if __name__ == '__main__':
     # sort list by alphabetical order 
     perturbed_gene_found = sorted(perturbed_gene_found)
     print(f"there are {len(perturbed_gene_found)} perturbed gene found")
+
+
+    '''
+    # Graph all pdf 
+    for gene in perturbed_gene_found:
+
+        create_comprehensive_plot(
+            mdata = mdata,
+            perturb_path = args.perturb_path,
+            Target_Gene = gene,
+            correlation_matrix = correlation_matrix,
+            file_to_dictionary = args.file_to_dictionary,
+            groupby=args.groupby,
+            tagert_col_name=args.tagert_col_name,
+            plot_col_name=args.plot_col_name,
+            log2fc_col=args.log2fc_col,
+            top_num=args.top_num,
+            p_value=args.p_value,
+            down_thred_log=args.down_thred_log,
+            up_thred_log=args.up_thred_log,
+            save_path = args.pdf_save_path,
+            save_name = gene,
+            square_plots=args.square_plots,
+            figsize = args.figsize,
+            show=args.show,
+            PDF = True,
+            samples= ['D0', 'sample_D1', 'sample_D2', 'sample_D3'],
+        )
+    '''
+        
     
     print("Starting parallel gene processing...")                   
 
@@ -73,7 +107,6 @@ if __name__ == '__main__':
             perturb_path = args.perturb_path,
             perturbed_gene_list = perturbed_gene_found,
             file_to_dictionary = args.file_to_dictionary,
-            species=args.species,
             groupby=args.groupby,
             tagert_col_name=args.tagert_col_name,
             plot_col_name=args.plot_col_name,
@@ -96,6 +129,8 @@ if __name__ == '__main__':
     except Exception as e:                                                                                 
         print(f"ERROR in parallel_gene_processing: {e}")  
     
+
+
     # merge pdf 
     if args.PDF:
         merge_pdfs_in_folder(args.pdf_save_path)

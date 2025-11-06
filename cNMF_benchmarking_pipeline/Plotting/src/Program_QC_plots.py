@@ -12,11 +12,31 @@ import matplotlib.colors as mcolors
 from cnmf import cNMF
 
 
+plt.rcParams["axes.spines.top"] = False
+plt.rcParams["axes.spines.right"] = False
+#plt.rcParams["axes.spines.bottom"] = False
+#plt.rcParams["axes.spines.left"] = False
+plt.rcParams['pdf.fonttype'] = 42  # TrueType fonts (editable text)
+plt.rcParams['ps.fonttype'] = 42   # For EPS as well
+
+
+plt.rcParams.update({
+    'font.size': 16,
+    'axes.titlesize': 16,
+    'axes.labelsize': 16,
+    'legend.fontsize': 16,        # Legend text size
+    'legend.title_fontsize': 14,  # Legend title size
+    'xtick.labelsize': 16,
+    'ytick.labelsize': 16,
+    'figure.titlesize': 20
+})
+
+
 import sys
 # Change path to wherever you have repo locally
 sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
 
-from .utilities import convert_with_mygene
+from .utilities import convert_adata_with_mygene, convert_with_mygene, rename_list_gene_dictionary, rename_adata_gene_dictionary
 
 
 # read the cNMF gene matrix (in txt), plot top x gene in the program 
@@ -178,7 +198,7 @@ def plot_violin(mdata_path, program_loading_path, target_program, figsize = (4,3
         df.groupby("cell_type")
         .agg(
             mean_expr=("expression", "mean"),
-            frac_cells=("expression", lambda x: (x > 0).mean())
+            frac_cells=("expression", lambda x: (x > x.mean()).mean())
         )
         .reset_index()
     )

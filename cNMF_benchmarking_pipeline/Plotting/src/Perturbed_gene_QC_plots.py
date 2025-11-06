@@ -24,7 +24,7 @@ import multiprocessing as mp
 from multiprocessing import Pool, Manager
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-import sys
+
 
 plt.rcParams["axes.spines.top"] = False
 plt.rcParams["axes.spines.right"] = False
@@ -101,6 +101,9 @@ def plot_umap_per_gene(mdata, Target_Gene, file_to_dictionary = None, ax=None,
     ax.set_xlabel('UMAP 1', fontsize=10, fontweight = 'bold')
     ax.set_ylabel('UMAP 2', fontsize=10, fontweight = 'bold')
 
+    if ax is None:
+        plt.tight_layout()
+
     # Only save if standalone and save_path provided
     if standalone and save_path and save_name:
         fig.savefig(f"{save_path}/{save_name}.svg", format='svg', bbox_inches='tight', dpi=300)
@@ -167,6 +170,9 @@ save_name=None, figsize=(8,6), show=False):
     ax.set_xlabel('UMAP 1', fontsize=10, fontweight = 'bold')
     ax.set_ylabel('UMAP 2', fontsize=10, fontweight = 'bold')
 
+    if ax is None:
+        plt.tight_layout()
+
     # Only save if standalone and save_path provided
     if standalone and save_path and save_name:
         fig.savefig(f"{save_path}/{save_name}.svg", format='svg', bbox_inches='tight', dpi=300)
@@ -184,7 +190,7 @@ save_name=None, figsize=(8,6), show=False):
 
 # read the cNMF gene matrix (in txt), plot top x gene in the program 
 def plot_top_program_per_gene(mdata,  Target_Gene, file_to_dictionary = None,top_program=10, 
-                               species="human", ax=None, save_path=None, save_name=None, 
+                            ax=None, save_path=None, save_name=None, 
                                figsize=(5,8), show=False):
 
     # read cNMF gene program matrix
@@ -238,6 +244,8 @@ def plot_top_program_per_gene(mdata,  Target_Gene, file_to_dictionary = None,top
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     
+    if ax is None:
+        plt.tight_layout()
     
     # Only save if standalone and save_path provided
     if standalone and save_path and save_name:
@@ -303,6 +311,8 @@ def perturbed_gene_dotplot(mdata,  Target_Gene, file_to_dictionary=None, groupby
     ax.set_xticks(tick_positions)
     ax.set_xticklabels(label, fontsize=8)
 
+    if ax is None:
+        plt.tight_layout()
     
     # save fig (only in standalone mode)
     if save_name and save_path and ax is None:
@@ -362,8 +372,8 @@ def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_na
 
 
     ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
-    ax.set_ylabel( "Program Name",fontsize=10, fontweight='bold', loc='center')
-    ax.set_title(f"Program Log2 Fold-Change with {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
+    ax.set_ylabel( "Name",fontsize=10, fontweight='bold', loc='center')
+    ax.set_title(f"Log2 Fold-Change with {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
 
     # Add a vertical line at x=0
     ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5)
@@ -378,6 +388,9 @@ def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_na
     
     # Adjust layout
     ax.grid(axis='x', alpha=0.3)
+
+    if ax is None:
+        plt.tight_layout()
     
     # Save if path provided (only when ax is not provided)
     if save_path and ax is None:
@@ -456,6 +469,8 @@ def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_n
     ax.legend()
     ax.set_title(f"Volcano Plot for {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
 
+    if ax is None:
+        plt.tight_layout()
     
     # Save if path provided (only when ax is not provided)
     if save_path and ax is None:
@@ -502,6 +517,7 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
             ax.set_title(f"{Target} Perturbed Program Loading Scores {Day}", 
                         fontweight='bold', loc='center')
             return ax
+
     
     gene_list = gene_list[::-1]
     
@@ -532,6 +548,9 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
     tick_positions = range(len(label))
     ax.set_xticks(tick_positions)
     ax.set_xticklabels(label, fontsize=8)
+
+    if ax is None:
+        plt.tight_layout()
     
     # Save if path provided (only when ax is not provided)
     if save_path and save_name and ax is None:
@@ -546,13 +565,11 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
     
     return ax
  
- 
- 
 
-# plot top x programs for perturbed gene given Target gene and gene loading file path
-def analyze_correlations(mdata, Target, file_to_dictionary=None, top_num=5, save_path=None, 
-                         save_name=None, figsize=(10, 8), show=False, ax=None):
-        
+
+# helper method to compute corr for analyze_correlations
+def compute_gene_correlation_matrix(mdata, file_to_dictionary =  None):
+
     X =  mdata["cNMF"].varm["loadings"] 
 
     # rename gene
@@ -562,16 +579,24 @@ def analyze_correlations(mdata, Target, file_to_dictionary=None, top_num=5, save
         renamed_gene_list = rename_list_gene_dictionary( mdata["rna"].var_names, file_to_dictionary)
         df_rename = pd.DataFrame(data=X, columns = renamed_gene_list)
 
+    # Calculate correlation matrix
+    gene_correlation = df_rename.corr()
+
+    return gene_correlation
+
+ 
+
+# plot top x programs for perturbed gene given Target gene and gene loading file path
+def analyze_correlations(gene_correlation, Target, top_num=5, save_path=None, 
+                         save_name=None, figsize=(10, 8), show=False, ax=None):
+
     # check if gene exists
-    if Target not in df_rename.columns:
+    if Target not in gene_correlation.columns:
         raise ValueError(f"Gene {Target} not found in mdata")
 
 
-    # Calculate correlation matrix
-    correlation_matrix = df_rename.corr()
-    
     # Get correlations with the target program
-    target_correlations = correlation_matrix[Target]
+    target_correlations = gene_correlation[Target]
     target_correlations = target_correlations.drop(Target)  # Remove self-correlation
     
     # Sort correlations
@@ -632,48 +657,54 @@ def analyze_correlations(mdata, Target, file_to_dictionary=None, top_num=5, save
         else:
             plt.close(fig)
     
-    return ax, combined_correlations
+    return ax 
 
+
+
+# helper method for computing waterfall corr
+def compute_gene_waterfall_cor(perturb_path):
+    import numpy as np
+    from scipy.stats import pearsonr
+
+    df = pd.read_csv(perturb_path, sep='\t', index_col=0)
+
+    # Pre-process: create matrix with genes as rows, programs as columns
+    pivot_df = df.pivot_table(index='target_name', columns='program_name', values='log2FC')
+
+    # Compute correlation matrix using numpy - much faster
+    corr_matrix = np.corrcoef(pivot_df.values)
+
+    # Convert back to dictionary format if needed
+    genes = pivot_df.index.tolist()
+    correlations = {}
+
+    for i, target_gene in enumerate(genes):
+        correlations[target_gene] = {
+            gene: corr_matrix[i, j]
+            for j, gene in enumerate(genes)
+            if gene != target_gene
+        }
+
+    return correlations
 
 
 
 # plot the waterfall plot for genes that have simliar program loading scores when perturbed 
-def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save_path=None, 
+def create_gene_correlation_waterfall(waterfall_correlation, Target_Gene, top_num=5, save_path=None, 
                          save_name=None, figsize=(3, 5), show=False, ax=None, Day =""):
 
-    # Read data
-    df = pd.read_csv(perturb_path, sep='\t', index_col=0)
-    
-    # Check if query gene exists
-    if Target_Gene not in df.index:
-        raise ValueError(f"Gene {Target_Gene} not found in perturb analysis")
-    
-    # Get log2FC values for query gene across all programs
-    df_gene = df.loc[Target_Gene]
-    df_gene_log2fc = df_gene[['log2FC','program_name']].sort_values(by = "program_name")
-    df_gene_log2fc.drop("program_name", axis = 1, inplace = True)
-    
-    correlations = {}
-    for gene in df.index:
-        if gene != Target_Gene:
-            gene_values = df.loc[gene]
-            gene_log2fc = gene_values[['log2FC','program_name']].sort_values(by = "program_name")
-            gene_log2fc.drop("program_name", axis = 1, inplace = True)
-            corr, _ = pearsonr(df_gene_log2fc['log2FC'], gene_log2fc['log2FC'])
-            correlations[gene] = corr
     
     # Convert to DataFrame and sort
-    corr_df = pd.DataFrame(list(correlations.items()),
-                           columns=['gene', 'correlation'])
-    corr_df = corr_df.sort_values('correlation', ascending=False)
+    gene_correlations = waterfall_correlation[Target_Gene] 
+    corr_df = pd.Series(gene_correlations).sort_values(ascending = False) 
     
     # Get top N positive and bottom N negative correlations for labeling
     top_positive = corr_df.head(top_num)
     top_negative = corr_df.tail(top_num)
-    genes_to_label = set(top_positive['gene'].tolist() + top_negative['gene'].tolist())
+    genes_to_label = set(top_positive.index.tolist() + top_negative.index.tolist())
     
     # Use ALL correlations for plotting
-    plot_data = corr_df.reset_index(drop=True)
+    plot_data = corr_df 
 
     # Create figure/axes if not provided
     if ax is None:
@@ -683,7 +714,7 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
     
     
     # Plot only the markers (no line)
-    ax.scatter(range(len(plot_data)), plot_data['correlation'], 
+    ax.scatter(range(len(plot_data)), plot_data.values, 
                color='gray', s=16)
     
     # Add horizontal reference line at y=0
@@ -695,16 +726,12 @@ def create_gene_correlation_waterfall(perturb_path, Target_Gene, top_num=5, save
     
     # Highlight the labeled genes with larger markers and add annotations
     texts = []
-    for idx, row in plot_data.iterrows():
-        if row['gene'] in genes_to_label:
-            ax.plot(idx, row['correlation'], 'o', color='darkgray', markersize=8, zorder=5)
-            # Add gene name annotation
-            text = ax.text(idx, row['correlation'], row['gene'],
-                          fontsize=10,
-                          style='italic',
-                          ha='center')
+    for i, (gene, values) in enumerate(plot_data.items()):
+        if gene in genes_to_label:
+            ax.plot(i, values, 'o', color='darkgray', markersize=5, zorder=5)
+            text = ax.text(i, values, gene, fontsize=10, style='italic', ha='center')
             texts.append(text)
-    
+            
     adjust_text(texts, arrowprops=dict(arrowstyle='-', color='gray', lw=0.5), ax=ax, fontsize=12) 
     
     ax.set_title(f"Gene Perturbation Correlation for {Target_Gene} {Day}",fontsize=14, fontweight='bold', loc='center')
@@ -744,8 +771,9 @@ def create_comprehensive_plot(
     perturb_path,
     file_to_dictionary,
     Target_Gene,
+    gene_correlation,
+    waterfall_correlation,
     top_program=10,
-    species="human", 
     groupby='sample',
     tagert_col_name="target_name",
     plot_col_name="program_name",
@@ -860,7 +888,6 @@ def create_comprehensive_plot(
         file_to_dictionary=file_to_dictionary,
         Target_Gene=Target_Gene,
         top_program=top_program,
-        species=species, 
         ax=ax2,
         figsize=(2, 4)
     )
@@ -882,9 +909,8 @@ def create_comprehensive_plot(
     ax3.set_xlabel('Day', fontsize=14, fontweight='bold', loc='center')
     
     # Plot 4: Correlation analysis
-    ax4, corr_data = analyze_correlations(
-        mdata=mdata,
-        file_to_dictionary=file_to_dictionary,
+    ax4 = analyze_correlations(
+        gene_correlation=gene_correlation,
         Target=Target_Gene,
         top_num=top_num,
         figsize=(4, 3),
@@ -956,7 +982,7 @@ def create_comprehensive_plot(
         # Plot 4: Waterfall plot 
         current_ax = axes[ax_index]
         current_ax, text = create_gene_correlation_waterfall(
-            perturb_path=file_name,
+            waterfall_correlation=waterfall_correlation,
             Target_Gene=Target_Gene,
             ax=current_ax,
             Day=Day,
@@ -1004,7 +1030,6 @@ def process_single_gene(Target_Gene,
                         perturb_path,
                         file_to_dictionary,
                         top_program=10,
-                        species="human", 
                         groupby='sample',
                         tagert_col_name="target_name",
                         plot_col_name="program_name",
@@ -1030,7 +1055,6 @@ def process_single_gene(Target_Gene,
             Target_Gene=Target_Gene,
             file_to_dictionary=file_to_dictionary,
             top_program=top_program,
-            species=species,
             groupby=groupby,
             tagert_col_name=tagert_col_name,
             plot_col_name=plot_col_name,
@@ -1063,7 +1087,6 @@ def parallel_gene_processing(perturbed_gene_list,
                         perturb_path,
                         file_to_dictionary,
                         top_program=10,
-                        species="human", 
                         groupby='sample',
                         tagert_col_name="target_name",
                         plot_col_name="program_name",
@@ -1093,7 +1116,6 @@ def parallel_gene_processing(perturbed_gene_list,
             Target_Gene=Target_Gene,
             file_to_dictionary=file_to_dictionary,
             top_program=top_program,
-            species=species,
             groupby=groupby,
             tagert_col_name=tagert_col_name,
             plot_col_name=plot_col_name,
