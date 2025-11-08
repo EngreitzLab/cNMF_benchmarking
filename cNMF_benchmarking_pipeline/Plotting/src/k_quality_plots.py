@@ -241,7 +241,7 @@ def consensus_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2,
     import textwrap
     wrapped_title = "\n".join(textwrap.wrap(title, width=50))  
     g.fig.suptitle(wrapped_title, fontsize=15,fontweight='bold')
-    sorted_overlap.max().max()
+    print("max value:", sorted_overlap.max().max())
    
 
 
