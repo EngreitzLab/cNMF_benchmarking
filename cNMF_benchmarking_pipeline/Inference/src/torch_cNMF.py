@@ -76,7 +76,7 @@ def compile_results(output_directory, run_name, sel_thresh = [2.0], components =
 
         # Make adata
         os.makedirs((f'{output_directory}/{run_name}/prog_data'), exist_ok=True)
-        prog_data.write(f'{output_directory}/{run_name}/prog_data/NMF_{k}_{sel_thresh}.h5ad'.format(
+        prog_data.write('{output_directory}/{run_name}/prog_data/NMF_{k}_{sel_thresh}.h5ad'.format(
                                                                                 output_directory=output_directory,
                                                                                 run_name = run_name,
                                                                                 k=k,
@@ -86,7 +86,7 @@ def compile_results(output_directory, run_name, sel_thresh = [2.0], components =
         mdata = muon.MuData({'rna': adata_, 'cNMF': prog_data})
 
         os.makedirs((f'{output_directory}/{run_name}/adata'), exist_ok=True)
-        mdata.write(f'{output_directory}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(
+        mdata.write('{output_directory}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(
                                                                                 output_directory=output_directory,
                                                                                 run_name = run_name,
                                                                                 k=k,

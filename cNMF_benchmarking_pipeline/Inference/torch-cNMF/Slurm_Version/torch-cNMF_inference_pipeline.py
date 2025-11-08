@@ -55,7 +55,9 @@ if __name__ == '__main__':
     parser.add_argument('--parallel_running', action="store_true")
     parser.add_argument('--num_gene', type = int, default = 300)
 
-    parser.add_argument('--sel_thresh', nargs='*', type=float, default=None)  
+    parser.add_argument('--sel_thresh', nargs='*', type=float, default=None) 
+    parser.add_argument('--run_refit_only', action="store_true")
+
 
     args = parser.parse_args()
 
@@ -66,15 +68,19 @@ if __name__ == '__main__':
         k_value = args.K
 
     if args.sel_thresh is None:
-        sel_thresh_value = [0.2, 2.0]
+        sel_thresh_value = [0.4, 0.8, 2.0]
     else:
         sel_thresh_value = args.sel_thresh
 
 
     # save comfigs used         
     os.makedirs((f'{args.output_directory}/{args.run_name}'), exist_ok=True)
+    args.sel_thresh= sel_thresh_value
+    args.K=k_value
     args_dict = vars(args)
-    with open(f'{args.output_directory}/{args.run_name}/config.yml', 'w') as f:
+    job_id = os.environ.get('SLURM_JOB_ID')
+
+    with open(f'{args.output_directory}/{args.run_name}/config_{job_id}.yml', 'w') as f:
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)
 
     # running 
@@ -95,12 +101,13 @@ if __name__ == '__main__':
                 shuffle_cells = args.shuffle_cells, sk_cd_refit =args.sk_cd_refit )
 
 
+    if not args.run_refit_only:
 
-    cnmf_obj.factorize(total_workers=1)
+        cnmf_obj.factorize(total_workers=1)
 
-    cnmf_obj.combine()
+        cnmf_obj.combine()
 
-    cnmf_obj.k_selection_plot()
+        cnmf_obj.k_selection_plot()
 
     # Consensus plots with all k to choose thresh
     run_cnmf_consensus(cnmf_obj, 
@@ -109,6 +116,7 @@ if __name__ == '__main__':
 
     # Save all cNMF scores in separate mudata objects
     compile_results(args.output_directory, args.run_name, components= k_value, sel_thresh = sel_thresh_value )
+
 
     # annotation for all K
     os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
@@ -122,7 +130,7 @@ if __name__ == '__main__':
                                                                                     sel_thresh = str(i).replace('.','_')),
                                                                                     sep='\t', index_col=0)   
             overlap = get_top_indices_fast(df, gene_num=args.num_gene)
-            annotate_genes_to_excel(overlap, f'{args.output_directory}/{args.run_name}/Annotation/{k}.xlsx')
+            annotate_genes_to_excel(overlap, f'{args.output_directory}/{args.run_name}/Annotation/{k}_{i}.xlsx')
 
 
 
