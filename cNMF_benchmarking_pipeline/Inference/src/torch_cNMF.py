@@ -20,7 +20,7 @@ def run_cnmf_consensus(cnmf_obj=None, output_dir=None, name=None,
                        components=[7,8,9,10], density_thresholds=[0.01, 0.05, 2.0]):
 
     if cnmf_obj is None:
-        cnmf_obj = init_cnmf_obj(output_dir=output_dir, name=name)
+        cnmf_obj = cnmf.init_cnmf_obj(output_dir=output_dir, name=name)
 
     for k in tqdm(components, desc='Running cNMF'):
         for thresh in density_thresholds:
@@ -64,8 +64,7 @@ def compile_results(output_directory, run_name, sel_thresh = [2.0], components =
 
         adata_ = anndata.read_h5ad('{output_directory}/{run_name}/cnmf_tmp/{run_name}.tpm.h5ad'.format(
                                                                                         output_directory=output_directory,
-                                                                                        run_name = run_name,
-                                                                                        k=k ))
+                                                                                        run_name = run_name))
         adata_.var_names_make_unique()
         adata_.obs_names_make_unique()
 
