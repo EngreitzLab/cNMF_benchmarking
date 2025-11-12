@@ -29,13 +29,7 @@ from .Perturbed_gene_QC_plots import  plot_umap_per_gene, plot_top_program_per_g
 
 
 # program QC plots
-#from .Top_enrichment_plot import plot_top_gene_per_program, plot_top_program_per_gene, \
-#                                    plot_motif_per_program, top_GO_per_program, plot_all_days_motif
-#from .Volcano_plot import plot_all_days_valcano
-#from .UMAP_plot import plot_umap_per_program,plot_umap_per_gene
-#from .Correlation_plot import analyze_program_correlations, analyze_correlations
-#from .Perturbation_plot import plot_top_bottom_genes
-
-#from .Program_QC_plots import *
-
+from .Program_QC_plots import plot_umap_per_program, plot_top_gene_per_program, top_GO_per_program, compute_program_correlation_matrix,\
+                              analyze_program_correlations, plot_violin, plot_program_log2FC, plot_program_heatmap, plot_program_volcano, \
+                              perturbed_gene_dotplot, compute_program_waterfall_cor, create_program_correlation_waterfall, create_comprehensive_program_plot
 
