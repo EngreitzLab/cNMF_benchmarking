@@ -4,3 +4,8 @@ from .explained_variance import compute_explained_variance, compute_Var, compute
 from .enrichment_geneset import compute_geneset_enrichment
 from .enrichment_motif import compute_motif_enrichment, compute_motif_enrichment_
 from .enrichment_trait import run_opentargets_query, process_json_format_l2g_columns, filter_open_targets_gwas_query, compute_trait_enrichment
+
+
+from .Compile_excel_sheet import compile_Program_loading_score_sheet_long, compile_Program_loading_score_sheet_flat, Compile_GO_sheet, \
+    Compile_Geneset_sheet, Compile_Trait_sheet, Compile_Perturbation_sheet, Compile_Association_sheet, Compile_Explained_variance, \
+    Compile_Target_Summary_sheet, Compile_Summary_sheet
