@@ -3,6 +3,7 @@ import argparse
 import cnmf
 import yaml
 import os
+import pandas as pd
 
 
 # Change path to wherever you have repo locally
@@ -73,15 +74,49 @@ if __name__ == '__main__':
         sel_thresh_value = args.sel_thresh
 
 
-    # save comfigs used         
+    # save comfigs used  
+
+    # create output directory       
     os.makedirs((f'{args.output_directory}/{args.run_name}'), exist_ok=True)
+
+    # Get args as dict
     args.sel_thresh= sel_thresh_value
     args.K=k_value
     args_dict = vars(args)
-    job_id = os.environ.get('SLURM_JOB_ID')
+
+    # --- Capture Slurm environment info ---
+    slurm_info = {
+            'job_id': os.environ.get('SLURM_JOB_ID'),
+            'job_name': os.environ.get('SLURM_JOB_NAME'),
+            'partition': os.environ.get('SLURM_JOB_PARTITION'),
+            'node_list': os.environ.get('SLURM_JOB_NODELIST'),
+            'num_nodes': os.environ.get('SLURM_JOB_NUM_NODES'),
+            'ntasks': os.environ.get('SLURM_NTASKS'),
+            'cpus_per_task': os.environ.get('SLURM_CPUS_PER_TASK'),
+            'mem_per_node': os.environ.get('SLURM_MEM_PER_NODE'),
+            'mem_per_cpu': os.environ.get('SLURM_MEM_PER_CPU'),
+            'gres': os.environ.get('SLURM_JOB_GRES'),
+            'gpu_device_ids': os.environ.get('SLURM_GPUS_ON_NODE'),
+            'gpu_type': os.environ.get('SLURM_JOB_GPUS'),
+            'time_limit': os.environ.get('SLURM_JOB_TIMELIMIT'),
+            'time_remaining': os.environ.get('SLURM_TIMELIMIT'),
+            'submit_dir': os.environ.get('SLURM_SUBMIT_DIR'),
+            'submit_host': os.environ.get('SLURM_SUBMIT_HOST'),
+            'constraint': os.environ.get('SLURM_JOB_CONSTRAINT'),
+            'array_task_id': os.environ.get('SLURM_ARRAY_TASK_ID'),
+        }
+    job_id = slurm_info['job_id'] or 'no_jobid'
+
+    # Merge them into your config
+    config_to_save = {
+        'script_args': args_dict,
+        'slurm_info': slurm_info
+    }
 
     with open(f'{args.output_directory}/{args.run_name}/config_{job_id}.yml', 'w') as f:
-        yaml.dump(args_dict, f, default_flow_style=False, width=1000)
+        yaml.dump(config_to_save, f, default_flow_style=False, width=1000)
+
+
 
     # running 
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
@@ -122,8 +157,8 @@ if __name__ == '__main__':
     os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
 
     for i in sel_thresh_value:
-        for k in K:
-            df = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_scores.k_{k}.dt_{sel_thresh}.txt'.format(
+        for k in k_value:
+            df = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_score.k_{k}.dt_{sel_thresh}.txt'.format(
                                                                                     output_directory=args.output_directory,
                                                                                     run_name = args.run_name,
                                                                                     k=k,
@@ -137,10 +172,10 @@ if __name__ == '__main__':
     # combine the parallel ran K value into "run_name_all" file 
     if args.parallel_running and isinstance(k_value, int):
 
-        file_name_input_new = f"{file_name_input}_{k_value}.spectra.k_{k_value}.iter"
+        file_name_input_new = f"{args.output_directory}/{args.run_name}_{k_value}.spectra.k_{k_value}.iter"
         file_name_output_new = f"{args.run_name}_all.spectra.k_{k_value}.iter"
 
-        source_folder_new = f"{source_folder}_{k_value}/cnmf_tmp"
+        source_folder_new = f"{args.output_directory}/{args.run_name}_{k_value}/cnmf_tmp"
 
         rename_all_NMF(source_folder = args.output_directory ,
                                 destination_folder = f"{args.utput_directory}_all/cnmf_tmp",

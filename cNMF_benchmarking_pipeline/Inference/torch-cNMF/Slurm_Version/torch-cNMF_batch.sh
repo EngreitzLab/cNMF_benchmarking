@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=101325_1M_cells_10iter_torch_halsvar_e7_v100s_skrefit         # Job name
+#SBATCH --job-name=100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit     # Job name
 #SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.out      # Output file (%j = job ID)
 #SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.err       # Error file
-#SBATCH --partition=gpu                # partition name
-#SBATCH --time=30:00:00                # Time limit 
+#SBATCH --partition=engreitz                # partition name
+#SBATCH --time=15:00:00                # Time limit 
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
-#SBATCH --mem=80G                      # Memory per node
-#SBATCH --gres=gpu:1                   # Request 1 GPU
-#SBATCH -C GPU_SKU:V100S_PCIE
+#SBATCH --mem=128G                      # Memory per node
+##SBATCH --gres=gpu:1                   # Request 1 GPU
+##SBATCH -C GPU_SKU:V100S_PCIE
 
 # Optional: Request specific GPU type if available
 ##SBATCH --constraint="GPU_MEM:32GB" # GPU memory constraint 
@@ -50,6 +50,7 @@ echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 # Activate conda base environment
 echo "Activating conda base environment..."
 source activate torch-cNMF
+#source activate torch-nmf-cd
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"
@@ -102,14 +103,16 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --batch_hals_max_iter 1000 \
         --batch_hals_tol 0.005 \
         --densify \
-        --online_chunk_size 50000 \
+        --online_chunk_size 100000 \
         --online_max_pass 1000 \
         --online_chunk_max_iter 1000 \
         --numiter 10 \
         --online_usage_tol 0.005 \
-        --online_spectra_tol 0.005\
-        --use_gpu \
+        --online_spectra_tol 0.005 \
+        --run_refit_only \
+        --K 300 \
         --sk_cd_refit \
+        #--use_gpu \
         #--shuffle_cells
 
 

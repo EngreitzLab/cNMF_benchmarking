@@ -3,7 +3,7 @@ import argparse
 import cnmf
 import yaml
 import os
-
+import pandas as pd
 
 # Change path to wherever you have repo locally
 sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # save comfigs used      
     os.makedirs((f'{args.output_directory}/{args.run_name}'), exist_ok=True)
     args_dict = vars(args)
-    with open(f'{args.output_directory}/{run_name}/config.yml', 'w') as f:
+    with open(f'{args.output_directory}/{args.run_name}/config.yml', 'w') as f:
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)
 
 
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
 
     for i in sel_thresh_value:
-        for k in K:
+        for k in k_value:
             df = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_scores.k_{k}.dt_{sel_thresh}.txt'.format(
                                                                                     output_directory=args.output_directory,
                                                                                     run_name = args.run_name,
