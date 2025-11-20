@@ -785,7 +785,7 @@ def create_comprehensive_plot(
     save_path=None,
     save_name=None,
     figsize=None,
-    samples=None,
+    sample=None,
     square_plots=True,
     show=True,
     PDF=True
@@ -795,7 +795,7 @@ def create_comprehensive_plot(
     
     Parameters:
     -----------
-    samples : list, optional
+    sample : list, optional
         List of sample/day identifiers. If None, defaults to ['D0', 'sample_D1', 'sample_D2', 'sample_D3'].
         Can be any length to accommodate different numbers of timepoints.
     
@@ -813,11 +813,11 @@ def create_comprehensive_plot(
     """
     
     # Set default samples if not provided
-    if samples is None:
-        samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
+    if sample is None:
+        sample = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
     
     # Calculate figure dimensions
-    num_samples = len(samples)
+    num_samples = len(sample)
     
     # Set matplotlib backend to non-interactive to reduce memory usage
     plt.ioff()
@@ -923,8 +923,8 @@ def create_comprehensive_plot(
     # Loop through samples and create 4 plots per sample (Log2FC, Volcano, Dotplot, Waterfall)
     ax_index = 5  # Start after header axes (0-4)
     
-    for idx, samp in enumerate(samples):
-        file_name = f"{perturb_path}_{samp}_perturbation_association.txt" 
+    for idx, samp in enumerate(sample):
+        file_name = f"{perturb_path}_{samp}.txt" 
         Day = f'Day {idx}'
 
         # Plot 1: Log2FC plot
@@ -982,7 +982,7 @@ def create_comprehensive_plot(
         # Plot 4: Waterfall plot 
         current_ax = axes[ax_index]
         current_ax, text = create_gene_correlation_waterfall(
-            waterfall_correlation=waterfall_correlation,
+            waterfall_correlation=waterfall_correlation[samp],
             Target_Gene=Target_Gene,
             ax=current_ax,
             Day=Day,
@@ -1024,7 +1024,6 @@ def create_comprehensive_plot(
 
 
 
-# parallel run - single genes
 def process_single_gene(Target_Gene,     
                         mdata,
                         perturb_path,
@@ -1039,9 +1038,8 @@ def process_single_gene(Target_Gene,
                         up_thred_log=0.05,
                         p_value=0.05,
                         save_path=None,
-                        save_name=None,
                         figsize=None,
-                        samples=None,
+                        sample=None,
                         square_plots=True,
                         show=True,
                         PDF=True):
@@ -1064,9 +1062,9 @@ def process_single_gene(Target_Gene,
             up_thred_log=up_thred_log,
             p_value=p_value,
             save_path=save_path,
-            save_name=gene,
+            save_name=Target_Gene,
             figsize=figsize,
-            samples=samples,
+            sample=sample,
             square_plots=square_plots,
             show=show,
             PDF=PDF
@@ -1079,9 +1077,6 @@ def process_single_gene(Target_Gene,
         return f"Error: {Target_Gene} - {str(e)}"
 
 
-
-
-# parallel run - multi genes
 def parallel_gene_processing(perturbed_gene_list, 
                         mdata,
                         perturb_path,
@@ -1096,9 +1091,8 @@ def parallel_gene_processing(perturbed_gene_list,
                         up_thred_log=0.05,
                         p_value=0.05,
                         save_path=None,
-                        save_name=None,
                         figsize=None,
-                        samples=None,
+                        sample=None,
                         square_plots=True,
                         show=True,
                         PDF=True,
@@ -1107,13 +1101,11 @@ def parallel_gene_processing(perturbed_gene_list,
     if n_processes == -1:
         n_processes = os.cpu_count()
 
-
     # Create partial function with fixed parameters
     process_func = partial(
             process_single_gene,
             mdata=mdata,
             perturb_path=perturb_path,
-            Target_Gene=Target_Gene,
             file_to_dictionary=file_to_dictionary,
             top_program=top_program,
             groupby=groupby,
@@ -1125,9 +1117,8 @@ def parallel_gene_processing(perturbed_gene_list,
             up_thred_log=up_thred_log,
             p_value=p_value,
             save_path=save_path,
-            save_name=gene,
             figsize=figsize,
-            samples=samples,
+            sample=sample,
             square_plots=square_plots,
             show=show,
             PDF=PDF
@@ -1135,11 +1126,10 @@ def parallel_gene_processing(perturbed_gene_list,
 
     print(f"Starting parallel processing of {len(perturbed_gene_list)} genes using {n_processes} processes...")
 
-    # Use multiprocessing Pool for SLURM compatibility
-    with ThreadPoolExecutor(max_workers=n_processes) as executor:
+    # Use ProcessPoolExecutor for true parallelism
+    with ProcessPoolExecutor(max_workers=n_processes) as executor:
         results = list(executor.map(process_func, perturbed_gene_list))
 
     print("Parallel processing completed!")
 
     return results
-  

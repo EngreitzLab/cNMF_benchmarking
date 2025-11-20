@@ -134,13 +134,16 @@ def sort_corr_matrix(Matrix):
 def programs_dotplots(k, output_dir, run_name, sel_thresh = 2.0, groupby='sample', save_name=None, save_path=None, 
 figsize=(4, 30), show=False, ax=None):
 
+    standalone_mode = ax is None
+
+
     def get_gene_path(output_dir, run_name, k, sel_thresh):
         """Helper to build path consistently"""
         return '{output_dir}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(
                                                                                 output_dir=output_dir,
                                                                                 run_name = run_name,
                                                                                 k=k,
-                                                                                sel_thresh = str(sel_thresh))
+                                                                                sel_thresh = str(sel_thresh).replace(".", "_"))
 
 
     # read in adata
@@ -184,7 +187,7 @@ figsize=(4, 30), show=False, ax=None):
 
     
     # save fig (only in standalone mode)
-    if save_name and save_path and ax is None:
+    if save_name and save_path and standalone_mode:
         fig.savefig(f"{save_path}/{save_name}.png", format='png', bbox_inches='tight', dpi=300)  # Changed to png
     
     # Control whether to display the plot (only in standalone mode)
@@ -195,7 +198,6 @@ figsize=(4, 30), show=False, ax=None):
             plt.close(fig)
     
     return ax
-
 
 
 
@@ -798,6 +800,33 @@ figsize = (5,5), pval = 0.05, title = "Shared traits torch-halsv-batch vs sk-cd 
     g.fig.suptitle(wrapped_title,fontweight='bold')
     print("max value:", sorted_overlap.max().max())
 
+
+def plot_coefficient_variance(shared_genes1, shared_genes2, shared_genes3=None, title1 ="", title2 = "", title3 = ""):
+    
+    # Calculate CV FIRST (before plotting)
+    cv_list1, cv_list2, cv_list3 = [], [], []
+    K_values = sorted(shared_genes1.keys())
+    
+    for k in K_values:
+        cv_list1.append(np.std(shared_genes1[k]) / np.mean(shared_genes1[k]))
+        cv_list2.append(np.std(shared_genes2[k]) / np.mean(shared_genes2[k]))
+    
+    if shared_genes3 is not None:
+        for k in K_values:
+            cv_list3.append(np.std(shared_genes3[k]) / np.mean(shared_genes3[k]))
+    
+    # Plot ONCE after all calculations
+    fig, ax = plt.subplots()
+    ax.plot(K_values, cv_list1, 'o-',linewidth=2.5, markersize=8, color='red',label=title1)
+    ax.plot(K_values, cv_list2, 'o-', linewidth=2.5, markersize=8, color='blue', label=title2)
+
+    if shared_genes3 is not None:
+        ax.plot(K_values, cv_list3, 'o-', linewidth=2.5, markersize=8, color='green', label=title3)
+
+    ax.set_title('CV trend across K values', fontsize=12, fontweight='bold')
+    ax.grid(True, alpha=0.3)
+    
+    ax.legend()
 
 '''
 # graph pdf for 3 clustermap

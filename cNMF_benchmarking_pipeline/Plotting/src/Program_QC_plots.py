@@ -337,7 +337,7 @@ save_path=None, save_name = None, figsize = (5, 4),show=False, ax=None):
 
 
 # plot violin plots for program expression on target program 
-def plot_violin(mdata, Target_Program, save_path=None, save_name=None, figsize=(3, 5), show=False, ax=None):
+def plot_violin(mdata, Target_Program, save_path=None, save_name=None, groupby = 'sample', figsize=(3, 5), show=False, ax=None):
 
     # Build dataframe from cNMF loadings
     df = pd.DataFrame(data=mdata['cNMF'].X, index=mdata['cNMF'].obs_names)
@@ -345,7 +345,7 @@ def plot_violin(mdata, Target_Program, save_path=None, save_name=None, figsize=(
     # Create dataframe with expression and cell type
     df = pd.DataFrame({
         "expression": df.iloc[:, Target_Program],  # Select column, not row
-        "cell_type": mdata['rna'].obs["sample"].values  
+        "cell_type": mdata['rna'].obs[groupby].values  
     })
     
     # Compute summary stats per cell_type
@@ -492,18 +492,16 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
 
 
 
- # plot heatmap for regulators to the program loadings
-
-
 
 
 # plot heatmap for program perturbation on different conditions
-def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="target_name", plot_col_name="program_name", samples= ['D0', 'sample_D1', 'sample_D2', 'sample_D3'],
-                log2fc_col='log2FC', p_value=0.05, save_path=None, save_name=None, 
+# plot heatmap for program perturbation on different conditions
+def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="target_name", plot_col_name="program_name", sample= ['D0', 'sample_D1', 'sample_D2', 'sample_D3'],
+                log2fc_col='log2FC', p_value=0.05, save_path=None, save_name=None, groupby = 'sample',
                 figsize=(5, 4), show=False, ax=None):
 
 
-    perturbed_df_list = [pd.read_csv(f"{perturb_path_base}_{samp}_perturbation_association.txt", sep="\t").assign(sample=samp) for samp in samples]
+    perturbed_df_list = [pd.read_csv(f"{perturb_path_base}_{samp}.txt", sep="\t").assign(sample=samp) for samp in sample]
     perturbed_df = pd.concat(perturbed_df_list, ignore_index=True)
 
     #sort by target programs
@@ -515,12 +513,12 @@ def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="tar
     # Filter df to keep only those genes
     df_filtered = df_sorted[df_sorted['target_name'].isin(genes_to_keep)]
 
-    df_pivot = df_filtered.pivot(columns = "target_name", index = "sample", values = "log2FC")
-    df_pivot_pval = df_filtered.pivot(columns = "target_name", index = "sample", values = "adj_pval")
+    df_pivot = df_filtered.pivot(columns = "target_name", index = groupby, values = "log2FC")
+    df_pivot_pval = df_filtered.pivot(columns = "target_name", index = groupby, values = "adj_pval")
 
 
     # Assuming your df has 'sample' column and gene columns with log2FC values
-    heatmap_data = df_pivot.rename(index={'sample_D1': 'D1', 'sample_D2': 'D2', 'sample_D3': 'D3'})
+    heatmap_data = df_pivot #.rename(index={'sample_D1': 'D1', 'sample_D2': 'D2', 'sample_D3': 'D3'})
 
 
     # Create the plot
@@ -565,7 +563,6 @@ def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="tar
             plt.close(fig)
     
     return ax
- 
 
 
 
@@ -856,7 +853,7 @@ def create_comprehensive_program_plot(
     save_path=None,
     save_name=None,
     figsize=None,
-    samples=None,
+    sample=None,
     square_plots=True,
     show=True,
     PDF=True
@@ -864,11 +861,11 @@ def create_comprehensive_program_plot(
 
     
     # Set default samples if not provided
-    if samples is None:
-        samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
+    if sample is None:
+        sample = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
     
     # Calculate figure dimensions
-    num_samples = len(samples)
+    num_samples = len(sample)
     
     # Set matplotlib backend to non-interactive to reduce memory usage
     plt.ioff()
@@ -927,6 +924,7 @@ def create_comprehensive_program_plot(
     ax21 = plot_violin(
         mdata = mdata,
         Target_Program = Target_Program, 
+        groupby = groupby,
         figsize=(5,3),  
         ax=ax21
         )
@@ -948,7 +946,6 @@ def create_comprehensive_program_plot(
 
     
     # Plot 3: Top Gene for program
-    '''
     ax3 = plot_top_gene_per_program(
         mdata=mdata, 
         Target_Program = Target_Program, 
@@ -959,7 +956,7 @@ def create_comprehensive_program_plot(
     ax3.set_title(f"Top Loading Genes for Program {Target_Program}", fontsize=20, fontweight='bold', loc='center')
     ax3.set_xlabel('Gene Loading Score (z-score)', fontsize=14, fontweight='bold', loc='center')
     ax3.set_ylabel('Gene Name', fontsize=14, fontweight='bold', loc='center')
-    '''
+    
     
      
     # Plot 4: GO enrichment 
@@ -978,8 +975,8 @@ def create_comprehensive_program_plot(
     # Loop through samples and create 4 plots per sample (Log2FC, Volcano, Dotplot, Waterfall)
     ax_index = 5  # Start after header axes (0-5)
     
-    for idx, samp in enumerate(samples):
-        file_name = f"{perturb_path_base}_{samp}_perturbation_association.txt" 
+    for idx, samp in enumerate(sample):
+        file_name = f"{perturb_path_base}_{samp}.txt" 
         Day = f'Day {idx}'
 
         # Plot 1: Log2FC plot
@@ -1063,8 +1060,8 @@ def create_comprehensive_program_plot(
         Target_Program = Target_Program,
         tagert_col_name=tagert_col_name, 
         plot_col_name=plot_col_name,
-        samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3'],
-        log2fc_col='log2FC', 
+        sample = sample,
+        log2fc_col=log2fc_col, 
         p_value= p_value,
         figsize=(15, 5),
         ax=ax22)

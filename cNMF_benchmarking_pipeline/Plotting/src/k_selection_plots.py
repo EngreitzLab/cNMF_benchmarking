@@ -19,8 +19,7 @@ import anndata as ad
 
 # collect all NMF runs 
 # important: i must use the same package inference (torch-nmf or sk-nmf) to call combine here
-def load_stablity_error_data(output_directory,run_name, components = [30, 50, 60, 80, 100, 200, 250, 300], 
-density_threshold = 0.5, local_neighborhood_size = 0.3):
+def load_stablity_error_data(output_directory,run_name, components = [30, 50, 60, 80, 100, 200, 250, 300]):
 
     cnmf_obj = cnmf.cNMF(output_dir=output_directory, name=run_name)
 
@@ -28,7 +27,7 @@ density_threshold = 0.5, local_neighborhood_size = 0.3):
     norm_counts = sc.read(cnmf_obj.paths['normalized_counts'])
     for k in components:
         stats.append(cnmf_obj.consensus(k, skip_density_and_return_after_stats=True, show_clustering=False, 
-        close_clustergram_fig=True, norm_counts=norm_counts, density_threshold = density_threshold,local_neighborhood_size = local_neighborhood_size).stats)
+        close_clustergram_fig=True, norm_counts=norm_counts, density_threshold = 2.0,local_neighborhood_size = 0.3).stats)
 
     stats = pd.DataFrame(stats)
 
@@ -40,6 +39,7 @@ density_threshold = 0.5, local_neighborhood_size = 0.3):
 
     return stats
 
+
 # plot NMF stability and error
 def plot_stablity_error(stats, folder_name = None, file_name = None):
     # Create the plot with two subplots
@@ -48,7 +48,7 @@ def plot_stablity_error(stats, folder_name = None, file_name = None):
     # Top subplot - Stability (using silhouette as stability metric)
     ax1.plot(stats['k'], stats['silhouette'], 'k-', linewidth=2)
     ax1.set_ylabel('Stability', fontsize=12)
-    ax1.set_xlim(0, 310)
+    #ax1.set_xlim(0, 310)
     #ax1.set_ylim(0.1, 0.4)  # Adjust based on your data range
     ax1.grid(True, alpha=0.3)
     ax1.tick_params(axis='both', which='major', labelsize=10)
@@ -57,7 +57,7 @@ def plot_stablity_error(stats, folder_name = None, file_name = None):
     ax2.plot(stats['k'], stats['prediction_error'], 'k-', linewidth=2)
     ax2.set_xlabel('k', fontsize=12)
     ax2.set_ylabel('Error', fontsize=12)
-    ax2.set_xlim(0, 310)
+    #ax2.set_xlim(0, 310)
     ax2.grid(True, alpha=0.3)
     ax2.tick_params(axis='both', which='major', labelsize=10)
 
@@ -66,13 +66,13 @@ def plot_stablity_error(stats, folder_name = None, file_name = None):
 
 
 # Load data for differeent enrichment test
-def load_enrichment_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 300]):
+def load_enrichment_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 300], sel_thresh = 2.0, pval = 0.05):
 
     # loading function 
     def load(k, term, folder):
         # read evaluation results
         df = pd.read_csv(folder, sep='\t')
-        df = df.loc[df['Adjusted P-value']<=0.05]
+        df = df.loc[df['Adjusted P-value']<=pval]
         df['num_programs'] = k
         df['test_term'] = term
 
@@ -83,10 +83,10 @@ def load_enrichment_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 30
 
     for k in components:
 
-        term_df.append(load(k, 'go_terms', '{}/{}/{}_GO_term_enrichment.txt'.format(folder,k,k)))
-        term_df.append(load(k, 'genesets', '{}/{}/{}_geneset_enrichment.txt'.format(folder,k,k)))
-        term_df.append(load(k, 'traits', '{}/{}/{}_trait_enrichment.txt'.format(folder,k,k)))
-        #term_df.append(load(k, 'motifs', '{}/{}/{}_motif_enrichment.txt'.format(folder,k,k)))
+        term_df.append(load(k, 'go_terms', '{}/{}_{}/{}_GO_term_enrichment.txt'.format(folder,k,sel_thresh,k)))
+        term_df.append(load(k, 'genesets', '{}/{}_{}/{}_geneset_enrichment.txt'.format(folder,k,sel_thresh,k)))
+        term_df.append(load(k, 'traits', '{}/{}_{}/{}_trait_enrichment.txt'.format(folder,k,sel_thresh,k)))
+        #term_df.append(load(k, 'motifs', '{}/{}_{}/{}_motif_enrichment.txt'.format(folder,k,sel_thresh,k)))
 
     term_df = pd.concat(term_df, ignore_index=True)
 
@@ -124,7 +124,7 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
     # Top subplot - Stability (using silhouette as stability metric)
     ax1.plot(count_df.index, count_df['go_terms'], 'k-', linewidth=2)
     ax1.set_ylabel('GO Terms', fontsize=12)
-    ax1.set_xlim(0, 310)
+    #ax1.set_xlim(0, 310)
     ax1.grid(True, alpha=0.3)
     ax1.tick_params(axis='both', which='major', labelsize=10)
 
@@ -132,7 +132,7 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
     ax2.plot(count_df.index, count_df['genesets'], 'k-', linewidth=2)
     ax2.set_xlabel('k', fontsize=12)
     ax2.set_ylabel('Genesets', fontsize=12)
-    ax2.set_xlim(0, 310)
+    #ax2.set_xlim(0, 310)
     ax2.grid(True, alpha=0.3)
     ax2.tick_params(axis='both', which='major', labelsize=10)
 
@@ -140,7 +140,7 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
     ax3.plot(count_df.index, count_df['traits'], 'k-', linewidth=2)
     ax3.set_xlabel('k', fontsize=12)
     ax3.set_ylabel('Traits', fontsize=12)
-    ax3.set_xlim(0, 310)
+    #ax3.set_xlim(0, 310)
     ax3.grid(True, alpha=0.3)
     ax3.tick_params(axis='both', which='major', labelsize=10)
 
@@ -149,15 +149,16 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
 
 
 # load perturbation data 
-def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80, 100, 200, 250, 300]):
+def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80, 100, 200, 250, 300], sel_thresh = 2.0,
+ samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']):
     
     # Compute no. of unique regulators
     test_stats_df = []
 
     for k in components:  
         # Run perturbation assocation
-        for samp in ['D0', 'sample_D1', 'sample_D2', 'sample_D3']:
-            test_stats_df_ = pd.read_csv('{}/{}/{}_perturbation_association_results_{}.txt'.format(folder,k,k,samp), sep='\t')
+        for samp in samples:
+            test_stats_df_ = pd.read_csv('{}/{}_{}/{}_perturbation_association_results_{}.txt'.format(folder,k,sel_thresh,k,samp), sep='\t')
             test_stats_df_['sample'] = samp
             test_stats_df_['K'] = k
             test_stats_df_['fdr'] = fdrcorrection(test_stats_df_['pval'])[1]
@@ -196,12 +197,12 @@ def plot_perturbation(test_stats_df, pval =0.000335, folder_name = None, file_na
 
 
 # load total explained variance
-def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 300]):
+def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 300], sel_thresh = 2.0):
 
     stats = {}
     for k in components:
     
-        input_path = f"{folder}/{k}/{k}_Explained_Variance_Summary.txt"
+        input_path = f"{folder}/{k}_{sel_thresh}/{k}_Explained_Variance_Summary.txt"
         df = pd.read_csv(input_path, sep = '\t', index_col = 0)
 
         stats[k] = df['Total'].values[0]
@@ -216,13 +217,13 @@ def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200,
 # plot NMF explained variance
 def plot_explained_variance(stats, folder_name=None, file_name=None):
     # Create the plot
-    fig, ax = plt.subplots(figsize=(4, 2))
+    fig, ax = plt.subplots(figsize=(5, 5))
 
     # Plot the data
     ax.plot(list(stats.keys()), list(stats.values()), 'k-', linewidth=2)
     ax.set_xlabel('Components')
     ax.set_ylabel('TotalExplained Variance')
-    ax.set_xlim(0, 310)
+    #ax.set_xlim(0, 310)
     ax.grid(True, alpha=0.3)
     ax.tick_params(axis='both', which='major', labelsize=10)
     

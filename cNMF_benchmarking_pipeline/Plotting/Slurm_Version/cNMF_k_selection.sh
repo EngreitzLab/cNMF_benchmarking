@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX_plot          # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX/Plot/k_selection/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX/Plot/k_selection/logs/%j.err       # Error file
+#SBATCH --job-name=111025_D0_IGVF_10iter_torch_halsvar_batch_e7_v100s_test          # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/cc-perturb-seq/Results/111025_D0_IGVF_10iter_torch_halsvar_batch_e7_v100s_test/Plot/k_selection/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/cc-perturb-seq/Results/111025_D0_IGVF_10iter_torch_halsvar_batch_e7_v100s_test/Plot/k_selection/logs/%j.err       # Error file
 #SBATCH --partition=engreitz            # partition name
 #SBATCH --time=1:00:00                  # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
 #SBATCH --cpus-per-task=1               # CPUs per task
-#SBATCH --mem=32G                       # Memory per node
+#SBATCH --mem=96G                       # Memory per node
 
 # Email notifications
 #SBATCH --mail-type=BEGIN              # Send email when job starts
@@ -18,8 +18,8 @@
 #SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
 
 # Define the cNMF case
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch"
-RUN_NAME="092525_100k_cells_10iter_torch_halsvar_batch_e7_RTX"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/cc-perturb-seq/Results"
+RUN_NAME="111025_D0_IGVF_10iter_torch_halsvar_batch_e7_v100s_test"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
@@ -52,8 +52,12 @@ echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Plotting/Slurm_Version/cNMF_k_selection.py\
         --output_directory "$OUT_DIR" \
         --run_name "$RUN_NAME" \
-        --save_folder_name "$LOG_DIR/Plot/k_selection"\
+        --save_folder_name "$LOG_DIR/Plot/k_selection" \
         --eval_folder_name "$LOG_DIR/Eval" \
+        --groupby "batch" \
+        --K 30 50 60 \
+        --sel_threshs 2.0 0.4 \
+        --samples 1 2 3
 
 
 # Calculate and print elapsed time at the end

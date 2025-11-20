@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--pdf_save_path',  type=str, required=True)
     parser.add_argument('--samples', nargs='+', default=['D0', 'sample_D1', 'sample_D2', 'sample_D3'])
     parser.add_argument('--square_plots',  action="store_true")  
-    parser.add_argument('--figsize', type=tuple_arg, default=(35, 35))
+    parser.add_argument('--figsize', type=float, nargs=2, default=(35, 35))
     parser.add_argument('--show',  action="store_true")  
     parser.add_argument('--PDF',  action="store_true")  
     parser.add_argument('--n_processes', type=int, default = -1) 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     print(f"there are {len(perturbed_gene_found)} perturbed gene found")
 
 
-    '''
+   
     # Graph all pdf 
     for gene in perturbed_gene_found:
 
@@ -95,9 +95,8 @@ if __name__ == '__main__':
             PDF = True,
             samples= ['D0', 'sample_D1', 'sample_D2', 'sample_D3'],
         )
-    '''
         
-    
+    '''
     print("Starting parallel gene processing...")                   
 
     try: 
@@ -129,7 +128,7 @@ if __name__ == '__main__':
     except Exception as e:                                                                                 
         print(f"ERROR in parallel_gene_processing: {e}")  
     
-
+    '''
 
     # merge pdf 
     if args.PDF:
