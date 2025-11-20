@@ -65,10 +65,12 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --mdata_guide_path "/oak/stanford/groups/engreitz/Users/ymo/cc-perturb-seq/Data/IGVF_D0_example.h5mu" \
         --guide_annotation_path "/oak/stanford/groups/engreitz/Users/ymo/cc-perturb-seq/Data/guide/guide_metadata_v43.tsv" \
         --gwas_data_path '/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/OpenTargets_L2G_Filtered.csv.gz' \
-        --reference_gtf_path "/oak/stanford/groups/engreitz/Users/opushkar/genome/IGVFFI9573KOZR.gtf.gz" 
+        --reference_gtf_path "/oak/stanford/groups/engreitz/Users/opushkar/genome/IGVFFI9573KOZR.gtf.gz" \
+        --sel_thresh 0.4 0.8 2.0 \
+        --K 30 50 60 80 100 200\
+        --FDR_method "StoreyQ"
+
         #--Perform_motif \
-        #--K \
-        #--sel_thresh \
 
 
 

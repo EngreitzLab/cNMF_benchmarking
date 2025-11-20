@@ -87,7 +87,8 @@ def compute_perturbation_association(
     reference_targets: Union[str, List[str]] = ['non-targeting'],
     balanced: bool = False,
     n_jobs: int = 1,
-    inplace: bool = True
+    inplace: bool = True,
+    FDR_method: Literal['BH', 'StoreyQ'] = 'StoreyQ'
 ):
     """Compute Mann-Whitney U test for cells targeted with a perturbation against a reference set of cells.
 
@@ -117,6 +118,8 @@ def compute_perturbation_association(
         number of threads to run processes on.
     inplace: Bool (default: True)
         update the mudata object inplace or return a copy
+    FDR_method( default: StoreyQ)
+        FDR methods for adj_pval
 
     Returns
     -------
@@ -240,7 +243,14 @@ def compute_perturbation_association(
     test_stats_df = pd.DataFrame(test_stats_df, columns=['{}_name'.format(level_key), 'program_name', 'ref_mean', 'test_mean', 'log2FC', 'stat', 'pval'])
 
     # Correct for multiple testing
-    test_stats_df['adj_pval'] = multipletests(test_stats_df['pval'], method='fdr_bh')[1]
+    if FDR_method == 'BH':
+        test_stats_df['adj_pval'] = multipletests(test_stats_df['pval'], method='fdr_bh')[1]
+    elif FDR_method == 'StoreyQ':
+        from multipy.fdr import qvalue
+        import builtins
+        if not hasattr(builtins, 'xrange'):
+            builtins.xrange = range
+        test_stats_df['adj_pval'] = qvalue(test_stats_df['pval'].values, threshold=0.05, verbose=False)[1]
 
     # Return only the evaluations if not in inplace mode
     if not inplace: return test_stats_df
@@ -258,19 +268,3 @@ def compute_perturbation_association(
         mdata[prog_key].uns['perturbation_association_{}_names'.format(level_key)] = test_stats_df['{}_name'.format(level_key)].unique().values
         
 	
-if __name__=='__main__':
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument('mudataObj_path')
-    parser.add_argument('-rt', '--reference_targets', nargs='+')
-    parser.add_argument('--pseudobulk', default=False, action='store_true') 
-    parser.add_argument('-pk', '--prog_key', default='prog', type=str) 
-    parser.add_argument('-n', '--n_jobs', default=1, type=int)
-    parser.add_argument('--output', action='store_false') 
-
-    args = parser.parse_args()
-
-    mdata = mudata.read(args.mudataObj_path)
-    compute_perturbation_association(mdata, prog_key=args.prog_key, pseudobulk=args.pseudobulk, 
-                                     reference_targets=args.reference_targets, n_jobs=args.n_jobs, 
-                                     inplace=args.output)

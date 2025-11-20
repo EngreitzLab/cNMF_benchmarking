@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--out_dir', help='path to make cnmf object', type=str, required=True)  
     parser.add_argument('--run_name', help='name of cnmf obj',type=str, required=True)  
     parser.add_argument('--K', nargs='*', type=int, default=None) # allow zero input 
-    parser.add_argument('--sel_thresh', nargs='*', type=int, default=None) # allow zero input 
+    parser.add_argument('--sel_thresh', nargs='*', type=float, default=None) # allow zero input 
 
     # running different tests
     parser.add_argument('--Perform_categorical', action="store_true")
@@ -67,7 +67,9 @@ if __name__ == '__main__':
     parser.add_argument('--data_key', help='access gene expression in mdata',type=str, default="rna") 
     parser.add_argument('--prog_key', help='access cNMF program in mdata',type=str,  default="cNMF") 
     parser.add_argument('--categorical_key', help='access cell condition in obs',type=str, default="sample")  
-    parser.add_argument('--organism', help='data species',type=str, default="human")  
+    parser.add_argument('--organism', help='data species',type=str, default="human") 
+    parser.add_argument('--FDR_method',type=str, default="StoreyQ")  
+
 
 
     args = parser.parse_args()
@@ -145,7 +147,7 @@ if __name__ == '__main__':
                                                                     collapse_targets=True,
                                                                     pseudobulk=False,
                                                                     reference_targets=reference_targets,
-                                                                    n_jobs=-1, inplace=False)
+                                                                    n_jobs=-1, inplace=False, FDR_method = args.FDR_method)
 
                     test_stats_df.to_csv('{}/{}_perturbation_association_results_{}.txt'.format(output_folder,k,samp), sep='\t', index=False)
         
