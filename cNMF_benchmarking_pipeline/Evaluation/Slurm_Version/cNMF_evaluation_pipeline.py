@@ -180,16 +180,15 @@ if __name__ == '__main__':
             # Run motif analysis 
             if args.Perform_motif:
 
+                ''' working in progress
                 fimo_thresh_enhancer = 1e-6
                 fimo_thresh_promoter = 1e-4
 
                 for samp in mdata['rna'].obs[args.categorical_key].unique():
                     for class_, thresh in [('enhancer', fimo_thresh_enhancer), 
                                         ('promoter', fimo_thresh_promoter)]:
-
                     
-                    
-                        loci_file = '/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/scE2G_links/EnhancerPredictionsAllPutative.ForVariantOverlap.shrunk150bp_D{}_{}.tsv'.format(i, class_)
+                        loci_file = '/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/scE2G_links/EnhancerPredictionsAllPutative.ForVariantOverlap.shrunk150bp_{}_{}.tsv'.format(samp, class_)
                         motif_match_df, motif_count_df, motif_enrichment_df = compute_motif_enrichment(
                             mdata, 
                             prog_key='cNMF',
@@ -208,6 +207,7 @@ if __name__ == '__main__':
                         motif_match_df.to_csv(os.path.join(args.out_dir, f'cNMF_{class_}_pearson_topn2000_{samp}_motif_match.txt'), sep='\t', index=False)
                         motif_count_df.to_csv(os.path.join(args.out_dir, f'cNMF_{class_}_pearson_topn2000_{samp}_motif_count.txt'), sep='\t', index=False)
                         motif_enrichment_df.to_csv(os.path.join(args.out_dir, f'cNMF_{class_}_pearson_topn2000_{samp}_motif_enrichment.txt'), sep='\t', index=False)
+                '''
 
             # Run explained variance
             if args.Perform_explained_variance:
