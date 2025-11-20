@@ -147,6 +147,41 @@ def Compile_Explained_variance(Explained_Variance_path):
     return df
 
 
+# combine methods for simple sheets
+def load_simple_sheets(mdata, out_dir, run_name, k, sel_thresh, num_gene = 300,  Sample = ['1', '2', '3']):
+
+    GO_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_GO_term_enrichment.txt'
+    Geneset_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_geneset_enrichment.txt'
+    Trait_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_trait_enrichment.txt'
+    Perturbation_path_base = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_perturbation_association_results'
+    Association_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_categorical_association_results.txt'
+    Explained_Variance_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_Explained_Variance.txt'
+
+    # compile program loadings 
+    df_Program_loading_long = compile_Program_loading_score_sheet_long(mdata, num_gene = num_gene)
+    df_Program_loading_flat = compile_Program_loading_score_sheet_flat(mdata, num_gene = num_gene)
+
+    # compile GO 
+    df_GO = Compile_GO_sheet(GO_path, gene_num = num_gene)
+
+    # compile Genests
+    df_Geneset = Compile_Geneset_sheet(Geneset_path,gene_num = num_gene)
+
+    # compile Trait
+    df_Trait = Compile_Trait_sheet(Trait_path, gene_num = num_gene)
+
+    # compile perturbation 
+    df_Perturbation = Compile_Perturbation_sheet(Perturbation_path_base, Sample = Sample)
+
+    # compile association 
+    df_Association = Compile_Association_sheet(Association_path, gene_num = num_gene)
+
+    # compile explained variance 
+    df_Explained_Variance = Compile_Explained_variance(Explained_Variance_path)
+
+    return df_Program_loading_long,df_Program_loading_flat, df_GO, df_Geneset, df_Trait, df_Perturbation, df_Association, df_Explained_Variance
+
+
 
 # calcaulte specicicity scores
 
@@ -274,17 +309,24 @@ def get_specificity_program(Perturbation_path, Sample = ["D0", "sample_D1", "sam
     return merged_df
 
 
+
 # load target summary
 
 #-------------- helper methods target summary--------------
 
-# Get cells with the guide per day
-def get_guide_cells_per_days(adata):
 
-    X = adata.obsm['guide_assignment'].T
+# Get cells with the guide per day
+def get_guide_cells_per_days(mdata, categorical_key = "sample", data_key = 'rna', prog_key = 'cNMF', guide_assignment_key = "guide_assignment",
+guide_targets_key = "guide_targets" ):
+
+    adata = mdata[data_key].copy()
+    program = mdata[prog_key].copy()
+
+
+    X = program.obsm[guide_assignment_key].T
     df = pd.DataFrame(X.toarray if hasattr(X, "toarray") else X,
-                    index =  adata.uns["guide_targets"],
-                    columns = adata.obs["sample"]
+                    index =  program.uns[guide_targets_key],
+                    columns = adata.obs[categorical_key]
                     )
                     
     df_merge = df.groupby(df.index).sum()
@@ -296,10 +338,12 @@ def get_guide_cells_per_days(adata):
     return df_merge
 
 # Get the gene expression average per day 
-def get_guide_mean_expr_per_day(adata):
+def get_guide_mean_expr_per_day(mdata, categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna', guide_targets_key = "guide_targets"):
+
+    adata = mdata[data_key].copy()
 
     # Extract perturbed genes and calculate mean expression across days
-    perturbed_genes = adata.uns["guide_targets"]
+    perturbed_genes = mdata[prog_key].uns[guide_targets_key]
 
     # Get expression data for perturbed genes
     gene_mask = adata.var_names.isin(perturbed_genes)
@@ -318,10 +362,10 @@ def get_guide_mean_expr_per_day(adata):
 
     # Add sample information and calculate mean per day
     expr_df_with_samples = expr_df.T
-    expr_df_with_samples['sample'] = adata.obs['sample'].values
+    expr_df_with_samples[categorical_key] = adata.obs[categorical_key].values
 
     # Calculate mean expression per gene per day
-    mean_expr_per_day = expr_df_with_samples.groupby('sample').mean().T
+    mean_expr_per_day = expr_df_with_samples.groupby(categorical_key).mean().T
 
     # Rename
     mean_expr_per_day.columns = [f'mean_expression_{col}' for col in mean_expr_per_day.columns]   
@@ -392,14 +436,14 @@ def get_significant_programs_df(Perturbation_path, Sample = ["D0", "sample_D1","
     return df_significant_programs
 
 # Get top correlation terms 
-def get_correlation_df(perturbation_path, days=["D0", "sample_D1", "sample_D2", "sample_D3"], top_n=5):
+def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2", "sample_D3"], top_n=5):
     """
     Create correlation table with top/bottom correlations for each gene across days
     """
     
     correlation_results_all_days = {}
 
-    for day in days:
+    for day in Sample:
 
         correlation_results = []
         perturb_path = f"{perturbation_path}_{day}.txt"
@@ -440,17 +484,22 @@ def get_correlation_df(perturbation_path, days=["D0", "sample_D1", "sample_D2", 
     
     return final_df
 
+
 #-------------- helper methods starget summary--------------
 
 
 # final function to compile target Summary sheet 
-def Compile_Target_Summary_sheet(adata, perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold= 0.05, top_n=5, T= 0.5):
+def Compile_Target_Summary_sheet(mdata, perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold= 0.05, 
+top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna', guide_targets_key = "guide_targets", guide_assignment_key = "guide_assignment",):
 
-    df_mean_expr_per_day = get_guide_mean_expr_per_day(adata)
-    df_guide_days = get_guide_cells_per_days(adata)
-    df_significant_program = get_significant_programs_df(perturbation_path ,Sample, adj_pval_threshold)
-    df_specificity_program =  get_specificity_program(perturbation_path, Sample, T = T)
-    df_correlation = get_correlation_df(perturbation_path ,Sample, top_n)
+
+    df_mean_expr_per_day = get_guide_mean_expr_per_day(mdata, categorical_key=categorical_key, prog_key=prog_key, data_key=data_key, 
+    guide_targets_key=guide_targets_key)
+    df_guide_days = get_guide_cells_per_days(mdata,  categorical_key=categorical_key, guide_assignment_key=guide_assignment_key, prog_key=prog_key, 
+    data_key=data_key, guide_targets_key=guide_targets_key)
+    df_significant_program = get_significant_programs_df(perturbation_path ,Sample=Sample, adj_pval_threshold=adj_pval_threshold)
+    df_specificity_program =  get_specificity_program(perturbation_path, Sample=Sample, T = T)
+    df_correlation = get_correlation_df(perturbation_path ,Sample=Sample, top_n=top_n)
 
     final_merged_df = pd.merge(
       df_mean_expr_per_day,
@@ -491,6 +540,7 @@ def Compile_Target_Summary_sheet(adata, perturbation_path, Sample = ["D0", "samp
 
 #-------------- helper methods summary--------------
 
+
 # get simply items ready in the summary sheet
 def simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance, Sample = ["D0", "sample_D1","sample_D2","sample_D3" ]):
 
@@ -527,7 +577,7 @@ def simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Expla
         df[f'sigfdr0.05_targets_sorted_abslog2fc_{samp}'] = [';'.join(df_Perturbation_D.loc[df_Perturbation_D['program_name'] == i].index.unique()) for i in range(k)]
 
 # make the program info in summary sheet
-def get_program_info_Summary_cols(mdata):
+def get_program_info_Summary_cols(mdata, categorical_key = "sample"):
 
     # create cell info col summary
     df_cell = pd.DataFrame(data=mdata['cNMF'].X, index=mdata['cNMF'].obs_names)
@@ -540,7 +590,7 @@ def get_program_info_Summary_cols(mdata):
     for i in range(k):
         df_cell_program = pd.DataFrame({
             "expression": df_cell.iloc[:, i],
-            "cell_type": mdata['rna'].obs["sample"].values  
+            "cell_type": mdata['rna'].obs[categorical_key].values  
         })
         
         df_mean = df_cell_program.groupby("cell_type")["expression"].mean()
@@ -579,11 +629,13 @@ def get_top_terms_Summary_cols(df_GO,df_Geneset):
 
 
 
+
 #-------------- helper methods summary--------------
 
 
 # compile summry sheet
-def Compile_Summary_sheet(mdata, df_GO, df_Geneset, df_Perturbation, df_Program_loading, df_Explained_Variance, Sample = ["D0", "sample_D1","sample_D2","sample_D3"]):
+def Compile_Summary_sheet(mdata, df_GO, df_Geneset, df_Perturbation, df_Program_loading, df_Explained_Variance, Sample = ["D0", "sample_D1","sample_D2","sample_D3"],
+categorical_key = "sample"):
 
     # set program #
     k = len(df_GO['program_name'].unique())
@@ -594,21 +646,15 @@ def Compile_Summary_sheet(mdata, df_GO, df_Geneset, df_Perturbation, df_Program_
     'Notes': [''] * k,
     'Automatic Timepoint': [''] * k }, index=pd.Index(range(k), name='program_name'))
 
-    simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance,  Sample = ["D0", "sample_D1","sample_D2","sample_D3"])
-    df_cell_info_cols = get_program_info_Summary_cols(mdata)
+    simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance,  Sample = Sample)
+    df_cell_info_cols = get_program_info_Summary_cols(mdata,categorical_key)
     df_top_terms = get_top_terms_Summary_cols(df_GO, df_Geneset)
 
     # refill automatic time point
-    df_mean = df_cell_info_cols[['Mean program score D0', 'Mean program score sample_D1','Mean program score sample_D2', 'Mean program score sample_D3']]
+    col_names = [f'Mean program score {samp}' for samp in Sample]
+    col_mapping = {col: idx for idx, col in enumerate(col_names)}     # Create mapping from column names to 0,1,2,3
+    df_mean = df_cell_info_cols[col_names]
     
-    # Create mapping from column names to 0,1,2,3
-    col_mapping = {
-        'Mean program score D0': 0,
-        'Mean program score sample_D1': 1,
-        'Mean program score sample_D2': 2,
-        'Mean program score sample_D3': 3
-    }
-
     df['Automatic Timepoint'] = df_mean.idxmax(axis=1).map(col_mapping)
 
     merged_df = pd.merge(
@@ -629,4 +675,4 @@ def Compile_Summary_sheet(mdata, df_GO, df_Geneset, df_Perturbation, df_Program_
     
 
     return final_merged_df
-    
+   
