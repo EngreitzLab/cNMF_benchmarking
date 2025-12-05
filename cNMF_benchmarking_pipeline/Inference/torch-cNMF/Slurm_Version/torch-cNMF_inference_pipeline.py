@@ -4,6 +4,7 @@ import cnmf
 import yaml
 import os
 import pandas as pd
+import muon as mu
 
 
 # Change path to wherever you have repo locally
@@ -14,15 +15,19 @@ from Inference.src import (
     rename_and_move_files_NMF, rename_all_NMF, compile_results
 )
 
+from Inference.src import (
+    check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_gene_names )
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-
+    
+    #IO
     parser.add_argument('--counts_fn', type=str, required=True)  
     parser.add_argument('--output_directory', type=str, required=True)
     parser.add_argument('--run_name', type=str, required=True)
 
+    # cNMF parameters 
     parser.add_argument('--K', nargs='*', type=int, default=None)
     parser.add_argument('--numiter', type = int, default = 10)
     parser.add_argument('--densify', action='store_true') # Flag: include --densify for True, omit for False
@@ -51,27 +56,35 @@ if __name__ == '__main__':
     parser.add_argument('--online_chunk_size', type = int, default = 5000)
     parser.add_argument('--online_chunk_max_iter', type = int, default = 200)
     parser.add_argument('--shuffle_cells', action="store_true")
+    parser.add_argument('--sel_thresh', nargs='*', type=float, default=None) 
+
+    # annotation parameters 
     parser.add_argument('--sk_cd_refit', action="store_true")
-    
+    parser.add_argument('--species', type=str, required=True)
     parser.add_argument('--parallel_running', action="store_true")
     parser.add_argument('--num_gene', type = int, default = 300)
-
-    parser.add_argument('--sel_thresh', nargs='*', type=float, default=None) 
     parser.add_argument('--run_refit_only', action="store_true")
+
+    # resourses 
+    parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations')
+    parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for checking gene names')
+
+    # keys
+    parser.add_argument('--data_key', help='access gene expression in mdata',type=str, default="rna") 
+    parser.add_argument('--prog_key', help='access cNMF program in mdata',type=str,  default="cNMF") 
+    parser.add_argument('--categorical_key', help='access cell condition in obs',type=str, default="sample")  
+    parser.add_argument('--guide_names_key', help='guide names in uns',type=str, default="guide_names")  
+    parser.add_argument('--guide_targets_key', help='guide targets in uns',type=str, default="guide_targets") 
 
 
     args = parser.parse_args()
 
     # either change the array here or run each component in parallel
     if args.K is None:
-        k_value = [30, 50, 60, 80, 100, 200, 250, 300]
-    else:
-        k_value = args.K
+        args.K = [30, 50, 60, 80, 100, 200, 250, 300]
 
     if args.sel_thresh is None:
-        sel_thresh_value = [0.4, 0.8, 2.0]
-    else:
-        sel_thresh_value = args.sel_thresh
+        args.sel_thresh = [0.4, 0.8, 2.0]
 
 
     # save comfigs used  
@@ -80,8 +93,6 @@ if __name__ == '__main__':
     os.makedirs((f'{args.output_directory}/{args.run_name}'), exist_ok=True)
 
     # Get args as dict
-    args.sel_thresh= sel_thresh_value
-    args.K=k_value
     args_dict = vars(args)
 
     # --- Capture Slurm environment info ---
@@ -116,14 +127,19 @@ if __name__ == '__main__':
     with open(f'{args.output_directory}/{args.run_name}/config_{job_id}.yml', 'w') as f:
         yaml.dump(config_to_save, f, default_flow_style=False, width=1000)
 
+    # check data format 
+    adata = mu.read(args.counts_fn)
+    valid = check_guide_names(adata, guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, 
+    categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
+    if not valid['is_valid']:
+        raise ValueError("Format is incorrect")
 
 
     # running 
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
-    print(f"{args.counts_fn} used for inference" )
 
 
-    cnmf_obj.prepare(counts_fn=args.counts_fn, components=k_value, n_iter=args.numiter, densify=args.densify, tpm_fn=args.tpm_fn, num_highvar_genes=args.numhvgenes, genes_file=args.genes_file,
+    cnmf_obj.prepare(counts_fn=args.counts_fn, components=args.K, n_iter=args.numiter, densify=args.densify, tpm_fn=args.tpm_fn, num_highvar_genes=args.numhvgenes, genes_file=args.genes_file,
                 init = args.init,  beta_loss = args.loss, 
                 algo = args.algo, mode = args.mode, tol=args.tol, n_jobs=args.n_jobs, 
                 seed = args.seed,  use_gpu = args.use_gpu, 
@@ -140,24 +156,24 @@ if __name__ == '__main__':
 
         cnmf_obj.factorize(total_workers=1)
 
-        cnmf_obj.combine()
+    cnmf_obj.combine()
 
-        cnmf_obj.k_selection_plot()
+    cnmf_obj.k_selection_plot()
 
     # Consensus plots with all k to choose thresh
     run_cnmf_consensus(cnmf_obj, 
-                       components=k_value, 
-                       density_thresholds=sel_thresh_value)
+                       components=args.K, 
+                       density_thresholds=args.sel_thresh)
 
     # Save all cNMF scores in separate mudata objects
-    compile_results(args.output_directory, args.run_name, components= k_value, sel_thresh = sel_thresh_value )
+    compile_results(args.output_directory, args.run_name, components= args.K, sel_thresh = args.sel_thresh )
 
 
     # annotation for all K
     os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
 
-    for i in sel_thresh_value:
-        for k in k_value:
+    for i in args.sel_thresh:
+        for k in args.K:
             df = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_score.k_{k}.dt_{sel_thresh}.txt'.format(
                                                                                     output_directory=args.output_directory,
                                                                                     run_name = args.run_name,
@@ -165,24 +181,19 @@ if __name__ == '__main__':
                                                                                     sel_thresh = str(i).replace('.','_')),
                                                                                     sep='\t', index_col=0)   
             overlap = get_top_indices_fast(df, gene_num=args.num_gene)
-            annotate_genes_to_excel(overlap, f'{args.output_directory}/{args.run_name}/Annotation/{k}_{i}.xlsx')
+            annotate_genes_to_excel(overlap, species = args.species, output_file = f'{args.output_directory}/{args.run_name}/Annotation/{k}_{i}.xlsx')
 
 
 
     # combine the parallel ran K value into "run_name_all" file 
-    if args.parallel_running and isinstance(k_value, int):
+    if args.parallel_running and isinstance(args.K, int):
 
-        file_name_input_new = f"{args.output_directory}/{args.run_name}_{k_value}.spectra.k_{k_value}.iter"
-        file_name_output_new = f"{args.run_name}_all.spectra.k_{k_value}.iter"
-
-        source_folder_new = f"{args.output_directory}/{args.run_name}_{k_value}/cnmf_tmp"
-
-        rename_all_NMF(source_folder = args.output_directory ,
-                                destination_folder = f"{args.utput_directory}_all/cnmf_tmp",
+        rename_all_NMF(source_folder = f"{args.utput_directory}/{args.run_name}" ,
+                                destination_folder = f"{args.utput_directory}/{args.run_name}_all/cnmf_tmp",
                                 file_name_input = args.run_name,
                                 file_name_output = f"{args.run_name}_all",
                                 len = args.numiter, 
-                                components = k_value)
+                                components = [args.K])
 
 
 

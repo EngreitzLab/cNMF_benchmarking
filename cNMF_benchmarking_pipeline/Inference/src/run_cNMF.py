@@ -40,7 +40,7 @@ def compile_results(output_directory, run_name, sel_thresh = [2.0], components =
                                                                                         sel_thresh = str(i).replace('.','_')),
                                                                                         sep='\t', index_col=0)
 
-        loadings = pd.read_csv('{output_directory}/{run_name}/{run_name}.spectra.k_{k}.dt_{sel_thresh}.consensus.txt'.format(
+        loadings = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_score.k_{k}.dt_{sel_thresh}.txt'.format(
                                                                                         output_directory=output_directory,
                                                                                         run_name = run_name,
                                                                                         k=k,
@@ -80,9 +80,13 @@ def compile_results(output_directory, run_name, sel_thresh = [2.0], components =
                                                                                 run_name = run_name,
                                                                                 k=k,
                                                                                 sel_thresh = str(i).replace('.','_')))
-
         # Make mdata
         mdata = muon.MuData({'rna': adata_, 'cNMF': prog_data})
+        mdata['rna'].var_names = mdata['rna'].var['gene_names']
+        mdata['cNMF'].uns['guide_names'] = mdata['rna'].uns['guide_names']
+        mdata['cNMF'].uns['guide_targets'] = mdata['rna'].uns['guide_targets']
+        mdata['cNMF'].obsm['guide_assignment'] = mdata['rna'].obsm['guide_assignment'].toarray()
+
 
         os.makedirs((f'{output_directory}/{run_name}/adata'), exist_ok=True)
         mdata.write('{output_directory}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(
@@ -119,7 +123,7 @@ def get_top_indices_fast(df, gene_num = 300):
 
 
 # annotate genes in excel given a df with rows for each program, cols for genes    
-def annotate_genes_to_excel(df, output_file='gene_annotations.xlsx'):
+def annotate_genes_to_excel(df, species = 'human', output_file='gene_annotations.xlsx'):
     
     # Initialize MyGene
     mg = mygene.MyGeneInfo()
@@ -143,7 +147,7 @@ def annotate_genes_to_excel(df, output_file='gene_annotations.xlsx'):
             genes, 
             scopes='symbol,alias,ensembl.gene',  # Multiple search scopes
             fields='symbol,name,entrezgene,summary,type_of_gene',
-            species='human',
+            species=species,
             returnall=True
         )
         
@@ -275,3 +279,6 @@ def rename_all(file_name_input, file_name_output, source_dir, dest_dir, componen
     for k in components:
 
         data = rename_and_move_files(k, file_name_input, file_name_output, source_dir, dest_dir, second = second)
+
+
+

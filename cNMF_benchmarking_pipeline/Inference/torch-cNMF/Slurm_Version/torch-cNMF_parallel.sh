@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par        # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/v100/101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par/logs/%A_%a.out       # Output file (fixed double slash)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/v100/101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par/logs/%A_%a.err     # Error file (fixed double slash)
+#SBATCH --job-name=120325_100k_cells_10iter_allhvg_torch_halsvar_batch_e7_h100_par        # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Results/120325_100k_cells_10iter_allhvg_torch_halsvar_batch_e7_h100_par/logs/%A_%a.out       # Output file (fixed double slash)
+#SBATCH --error=//oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Results/120325_100k_cells_10iter_allhvg_torch_halsvar_batch_e7_h100_par/logs/%A_%a.err     # Error file (fixed double slash)
 #SBATCH --partition=gpu                # partition name
 #SBATCH --array=1-8                    # Run parallel jobs (array indices 1-#)
 #SBATCH --time=15:00:00                # Time limit 
@@ -32,8 +32,8 @@ K_VALUES=(30 50 60 80 100 200 250 300)
 K=${K_VALUES[$((SLURM_ARRAY_TASK_ID-1))]}
 
 # Configuration - Set your log directory here (fixed to match SLURM paths)
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/batch/v100"
-RUN_NAME="101025_100k_cells_10iter_torch_halsvar_batch_e7_v100s_par"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Results"
+RUN_NAME="120325_100k_cells_10iter_allhvg_torch_halsvar_batch_e7_h100_par"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Create logs directory if it doesn't exist
@@ -98,26 +98,28 @@ nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 # Run the Python script (CPU-only for now)
 echo "Running Python script with (K=$K)..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_inference_pipeline.py \
-        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad" \
+        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Data/eRZ53_56_filtered_cNMF.h5ad"\
         --output_directory "$OUT_DIR/$RUN_NAME" \
         --run_name "${RUN_NAME}_${K}" \
-        --algo "halsvar" \
-        --mode "batch" \
+        --algo "halsvar"\
+        --mode "batch"\
         --tol 1e-7 \
         --batch_max_iter 1000 \
         --batch_hals_max_iter 1000 \
         --batch_hals_tol 0.005 \
         --densify \
-        --online_chunk_size 50000 \
+        --online_chunk_size 200000 \
         --online_max_pass 1000 \
         --online_chunk_max_iter 1000 \
         --numiter 10 \
         --online_usage_tol 0.005 \
         --online_spectra_tol 0.005 \
-        --K $K \
-        --sk_cd_refit \
         --use_gpu \
-        --parallel_running 
+        --numhvgenes 33882 \
+        --species mouse
+        #--run_refit_only \
+        #--K 80 100 200 250 300 \
+        #--sk_cd_refit \
         #--shuffle_cells
 
 # Record end time and calculate duration
