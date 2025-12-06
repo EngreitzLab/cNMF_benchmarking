@@ -14,9 +14,9 @@ from Inference.src import (
     run_cnmf_consensus, get_top_indices_fast, annotate_genes_to_excel, \
     rename_and_move_files_NMF, rename_all_NMF, compile_results
 )
-
+ 
 from Inference.src import (
-    check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_gene_names )
+    check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_format )
 
 if __name__ == '__main__':
 
@@ -61,13 +61,14 @@ if __name__ == '__main__':
     # annotation parameters 
     parser.add_argument('--sk_cd_refit', action="store_true")
     parser.add_argument('--species', type=str, required=True)
+    parser.add_argument('--check_format', action="store_true")
     parser.add_argument('--parallel_running', action="store_true")
     parser.add_argument('--num_gene', type = int, default = 300)
     parser.add_argument('--run_refit_only', action="store_true")
 
     # resourses 
-    parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations')
-    parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for checking gene names')
+    parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations', default=None)
+    parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for checking gene names', default=None)
 
     # keys
     parser.add_argument('--data_key', help='access gene expression in mdata',type=str, default="rna") 
@@ -75,6 +76,7 @@ if __name__ == '__main__':
     parser.add_argument('--categorical_key', help='access cell condition in obs',type=str, default="sample")  
     parser.add_argument('--guide_names_key', help='guide names in uns',type=str, default="guide_names")  
     parser.add_argument('--guide_targets_key', help='guide targets in uns',type=str, default="guide_targets") 
+    parser.add_argument('--guide_assignment_key', help='guide assignment in obsm',type=str, default="guide_assignment_key") 
 
 
     args = parser.parse_args()
@@ -128,11 +130,12 @@ if __name__ == '__main__':
         yaml.dump(config_to_save, f, default_flow_style=False, width=1000)
 
     # check data format 
-    adata = mu.read(args.counts_fn)
-    valid = check_guide_names(adata, guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, 
-    categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
-    if not valid['is_valid']:
-        raise ValueError("Format is incorrect")
+    if args.check_format:
+        adata = mu.read(args.counts_fn)
+        valid = check_guide_names(adata, guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, 
+        categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
+        if not valid['is_valid']:
+            raise ValueError("Format is incorrect")
 
 
     # running 
@@ -165,13 +168,8 @@ if __name__ == '__main__':
                        components=args.K, 
                        density_thresholds=args.sel_thresh)
 
-    # Save all cNMF scores in separate mudata objects
-    compile_results(args.output_directory, args.run_name, components= args.K, sel_thresh = args.sel_thresh )
-
-
     # annotation for all K
     os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
-
     for i in args.sel_thresh:
         for k in args.K:
             df = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_score.k_{k}.dt_{sel_thresh}.txt'.format(
@@ -194,6 +192,11 @@ if __name__ == '__main__':
                                 file_name_output = f"{args.run_name}_all",
                                 len = args.numiter, 
                                 components = [args.K])
+
+    # Save all cNMF scores in separate mudata objects
+    compile_results(args.output_directory, args.run_name, components= args.K, sel_thresh = args.sel_thresh,
+     guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, categorical_key= args.categorical_key, 
+     guide_assignment_key = args.guide_assignment_key )
 
 
 

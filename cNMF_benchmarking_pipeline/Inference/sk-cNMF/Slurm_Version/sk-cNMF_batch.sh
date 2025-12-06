@@ -60,7 +60,8 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --numhvgenes 2000 \
         --numiter 10 \
         --run_refit_only \
-        --species "human"
+        --species "human" \
+        --check_format
 
 # Calculate and print elapsed time at the end
 END_TIME=$(date +%s)

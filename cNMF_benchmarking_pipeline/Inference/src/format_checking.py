@@ -9,7 +9,8 @@ import scanpy as sc
 import mygene
 import numpy as np
 
-def check_data_format(adata, guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch'):
+def check_data_format(adata, guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch',
+guide_assignment_key = 'guide_assignment'):
     """
     Validate that the AnnData object has the correct format for cNMF analysis.
     
@@ -84,8 +85,8 @@ def check_data_format(adata, guide_names_key = "guide_names", guide_targets_key 
         print(f"WARNING: Not found adata.obsm['guide_assignment'] \n")
         is_valid = False
     else:
-        guide_assignment = adata.obsm['guide_assignment']
-        print(f"Found adata.obsm['guide_assignment']\n")
+        guide_assignment = adata.obsm[guide_assignment_key]
+        print(f"Found adata.obsm['{guide_assignment_key}']\n")
         
         # Ensure guide_assignment is in dense format (required for downstream analysis)
         try:
@@ -93,19 +94,20 @@ def check_data_format(adata, guide_names_key = "guide_names", guide_targets_key 
             is_sparse = sp.issparse(guide_assignment)
             
             if is_sparse:
-                print("WARNING: 'guide_assignment' is sparse. Converting to dense array...")
+                print(f"WARNING: '{guide_assignment_key}' is sparse. Converting to dense array...")
                 dense_array = guide_assignment.toarray()
-                adata.obsm['guide_assignment'] = dense_array
-                print(f"'guide_assignment' converted to dense array (shape: {dense_array.shape}) \n")
+                adata.obsm[guide_assignment_key] = dense_array
+                print(f"'{guide_assignment_key}' converted to dense array (shape: {dense_array.shape}) \n")
             else:
-                print(f"'guide_assignment' is already dense (shape: {guide_assignment.shape}) \n")
+                print(f"'{guide_assignment_key}' is already dense (shape: {guide_assignment.shape}) \n")
         except Exception as e:
-            print(f"WARNING: Error checking 'guide_assignment' sparsity: {e} \n")
+            print(f"WARNING: Error checking '{guide_assignment_key}' sparsity: {e} \n")
             is_valid = False
 
     return is_valid
 
-def check_guide_names(adata, guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch', reference_gtf_path=None, guide_annotation_path = None):
+def check_guide_names(adata, guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch', 
+reference_gtf_path=None, guide_annotation_path = None, guide_assignment_key = 'guide_assignment'):
     """
     Validate gene names consistency across RNA modality and cNMF guide names,
     with optional reference GTF validation.
@@ -144,7 +146,8 @@ def check_guide_names(adata, guide_names_key = "guide_names", guide_targets_key 
         'gtf_validation': None
      }
 
-    results['is_valid'] = check_data_format(adata,  guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, categorical_key= categorical_key)
+    results['is_valid'] = check_data_format(adata,  guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, 
+    categorical_key= categorical_key, guide_assignment_key = guide_assignment_key)
     
     rna_gene_names = set(adata.var_names)
 
@@ -314,7 +317,8 @@ def _validate_against_reference_gtf(rna_gene_names, gtf_path):
     
     return validation
       
-def check_mdata_gene_names(mdata, prog_key = 'cNMF', data_key = 'rna', guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch', reference_gtf_path=None, guide_annotation_path = None):
+def check_mdata_format(mdata, prog_key = 'cNMF', data_key = 'rna', guide_names_key = "guide_names", guide_targets_key = "guide_targets", 
+categorical_key= 'batch', reference_gtf_path=None, guide_annotation_path = None, guide_assignment_key = 'guide_assignment'):
     """
     Validate gene names consistency in a MuData object containing both RNA and cNMF modalities.
     
@@ -355,7 +359,9 @@ def check_mdata_gene_names(mdata, prog_key = 'cNMF', data_key = 'rna', guide_nam
 
     # Validate RNA data format
     rna_adata = mdata[data_key]
-    is_valid= check_data_format(rna_adata, guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, categorical_key= categorical_key)
+    is_valid= check_guide_names(rna_adata, guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, 
+    categorical_key= categorical_key, guide_assignment_key=guide_assignment_key, reference_gtf_path=reference_gtf_path,
+    guide_annotation_path=guide_annotation_path)
 
     # Validate cNMF program modality exists
     if prog_key not in mdata.mod:
@@ -367,7 +373,9 @@ def check_mdata_gene_names(mdata, prog_key = 'cNMF', data_key = 'rna', guide_nam
 
     # Validate cNMF program data format
     cnmf_adata = mdata[prog_key]
-    is_valid = check_data_format(cnmf_adata, guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, categorical_key= categorical_key)
+    is_valid = check_guide_names(cnmf_adata, guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, 
+    categorical_key= categorical_key,guide_assignment_key=guide_assignment_key, reference_gtf_path=None,
+    guide_annotation_path= None)
 
     # Check if PCA loadings exist in variable metadata (varm)
     if 'loadings' not in cnmf_adata.varm:

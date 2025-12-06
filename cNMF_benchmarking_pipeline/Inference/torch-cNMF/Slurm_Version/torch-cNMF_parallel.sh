@@ -101,6 +101,12 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Data/eRZ53_56_filtered_cNMF.h5ad"\
         --output_directory "$OUT_DIR/$RUN_NAME" \
         --run_name "${RUN_NAME}_${K}" \
+        --data_key "rna" \
+        --prog_key "cNMF" \
+        --categorical_key "sample" \
+        --guide_names_key "guide_names" \
+        --guide_targets_key "guide_targets" \
+        --guide_assignment_key "guide_assignment_key" \
         --algo "halsvar"\
         --mode "batch"\
         --tol 1e-7 \
@@ -116,11 +122,16 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --online_spectra_tol 0.005 \
         --use_gpu \
         --numhvgenes 33882 \
-        --species mouse
+        --species "mouse" \
+        --check_format \
         #--run_refit_only \
         #--K 80 100 200 250 300 \
         #--sk_cd_refit \
         #--shuffle_cells
+        #--guide_annotation_path
+        #--reference_gtf_path
+        #--parallel_running
+
 
 # Record end time and calculate duration
 END_TIME=$(date +%s)

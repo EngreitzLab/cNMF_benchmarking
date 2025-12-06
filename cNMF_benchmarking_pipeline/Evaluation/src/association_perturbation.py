@@ -66,10 +66,10 @@ def compute_perturbation_association_(
     # Calculate log2FC
     ref_mean = np.mean(reference_data_)
     test_mean = np.mean(test_data_)
-    log2fc = np.log2(test_mean / ref_mean)
-
+    log2fc = np.log2((test_mean + 1e-9) / (ref_mean + 1e-9))
+    
     # Compute Mann-Whitney U test
-    results = stats.mannwhitneyu(test_data_, reference_data_)
+    results = stats.mannwhitneyu(test_data_, reference_data_, alternative='two-sided') #, method = 'asymptotic')
 
     # Append to test stats df
     test_stats_df.append([level_name, program, ref_mean, test_mean, log2fc, results[0][0], results[1][0]])

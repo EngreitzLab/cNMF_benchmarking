@@ -67,7 +67,8 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --max_NMF_iter 1000 \
         --tol 1e-7 \
         --seed 142 \
-        --species "human"
+        --species "human" \
+        --check_format
 
 
 

@@ -95,6 +95,12 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/shuffled_100K_250genes.h5ad" \
         --output_directory "$OUT_DIR" \
         --run_name "$RUN_NAME" \
+        --data_key "rna" \
+        --prog_key "cNMF" \
+        --categorical_key "sample" \
+        --guide_names_key "guide_names" \
+        --guide_targets_key "guide_targets" \
+        --guide_assignment_key "guide_assignment_key" \
         --algo "halsvar" \
         --mode "online" \
         --tol 1e-7 \
@@ -111,8 +117,12 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --run_refit_only  \
         --K 60 80 100 200 250 300 \
         --use_gpu \
+        --species "human" \
+        --check_format \
+        #--shuffle_cells
+        #--guide_annotation_path
+        #--reference_gtf_path
         #--sk_cd_refit \
-        #--shuffle_cells \
 
 # After the python command
 if [ $? -ne 0 ]; then

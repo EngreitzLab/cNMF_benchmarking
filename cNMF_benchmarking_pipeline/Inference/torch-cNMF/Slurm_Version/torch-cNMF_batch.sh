@@ -96,6 +96,12 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad"\
         --output_directory "$OUT_DIR" \
         --run_name "$RUN_NAME" \
+        --data_key "rna" \
+        --prog_key "cNMF" \
+        --categorical_key "sample" \
+        --guide_names_key "guide_names" \
+        --guide_targets_key "guide_targets" \
+        --guide_assignment_key "guide_assignment_key" \
         --algo "halsvar"\
         --mode "batch"\
         --tol 1e-7 \
@@ -112,9 +118,12 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --run_refit_only \
         --K 300 \
         --sk_cd_refit \
-        #--use_gpu \
+        --species "human" \
+        --use_gpu \
+        --check_format \
         #--shuffle_cells
-
+        #--guide_annotation_path
+        #--reference_gtf_path
 
 
 # Record end time and calculate duration
