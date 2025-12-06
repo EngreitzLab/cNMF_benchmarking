@@ -42,3 +42,22 @@
     |sk_cd_refit| bool | False | Use sk-cd refit function if True, use torch refit if False |
     | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
 
+## Additional Parameters for Annotation and Compilation
+
+    | Parameter | Type | Default | Description |
+    |-----------|------|---------|-------------|
+    | output_directory | str | - | Directory to save output files |
+    | species | str | - | Species for gene annotation (required) |
+    | check_format | bool | False | Validate input data format against reference files |
+    | parallel_running | bool | False | Enable parallel processing mode for multiple K values |
+    | num_gene | int | 300 | Number of top genes to include in annotation |
+    | run_refit_only | bool | False | Skip factorization and only run consensus/refit steps |
+    | guide_annotation_path | str | None | Path to file containing guide information |
+    | reference_gtf_path | str | None | Path to reference GTF file for gene name validation |
+    | data_key | str | "rna" | Key to access gene expression data in MuData object |
+    | prog_key | str | "cNMF" | Key to access cNMF programs in MuData object |
+    | categorical_key | str | "sample" | Key to access cell condition information in obs |
+    | guide_names_key | str | "guide_names" | Key to access guide names in uns |
+    | guide_targets_key | str | "guide_targets" | Key to access guide targets in uns |
+    | guide_assignment_key | str | "guide_assignment_key" | Key to access guide assignments in obsm |
+

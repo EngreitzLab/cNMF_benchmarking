@@ -22,5 +22,25 @@
     | max_NMF_iter | int | 1000 | Maximum number of iterations per individual NMF run |
     | algo | str | "halsvar" | Algorithm choice: "mu", "halsvar" |
     | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
+    | tol | float | 1e-4 | Tolerance for convergence check |
+
+## Additional Parameters for Annotation and Compilation
+
+    | Parameter | Type | Default | Description |
+    |-----------|------|---------|-------------|
+    | output_directory | str | - | Directory to save output files |
+    | species | str | - | Species for gene annotation (required) |
+    | check_format | bool | False | Validate input data format against reference files |
+    | run_refit_only | bool | False | Skip factorization and only run consensus/refit steps |
+    | parallel_running | bool | False | Enable parallel processing mode for multiple K values |
+    | num_gene | int | 300 | Number of top genes to include in annotation |
+    | guide_annotation_path | str | None | Path to file containing guide information |
+    | reference_gtf_path | str | None | Path to reference GTF file for gene name validation |
+    | data_key | str | "rna" | Key to access gene expression data in MuData object |
+    | prog_key | str | "cNMF" | Key to access cNMF programs in MuData object |
+    | categorical_key | str | "sample" | Key to access cell condition information in obs |
+    | guide_names_key | str | "guide_names" | Key to access guide names in uns |
+    | guide_targets_key | str | "guide_targets" | Key to access guide targets in uns |
+    | guide_assignment_key | str | "guide_assignment_key" | Key to access guide assignments in obsm |
 
 
