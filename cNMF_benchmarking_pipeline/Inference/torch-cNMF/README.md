@@ -7,6 +7,7 @@
 * Singularity Container can be found in https://hub.docker.com/r/igvf/torch-cnmf/tags
 
 ## cNMF Parameters 
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | counts_fn | str | - | Path to input counts matrix. If extension is .h5ad, .mtx, mtx.gz, or .npz, data is loaded accordingly. Otherwise assumed to be tab-delimited text. If .mtx or .mtx.gz, assumed to be in 10x-Genomics-formatted mtx directory. |
@@ -43,6 +44,7 @@
 | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
 
 ## Additional Parameters for Annotation and Compilation
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | output_directory | str | - | Directory to save output files |
