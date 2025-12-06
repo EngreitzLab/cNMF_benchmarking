@@ -40,17 +40,16 @@
 | online_usage_tol | float | 0.05 | Tolerance for updating W in each chunk during online learning |
 | online_spectra_tol | float | 0.05 | Tolerance for updating H in each chunk during online learning |
 | shuffle_cells | bool | False | Shuffle cells in obs and guide assignment in obsm to do online learning is recommanded |
-|sk_cd_refit| bool | False | Use sk-cd refit function if True, use torch refit if False |
+| sk_cd_refit| bool | False | Use sk-cd refit function if True, use torch refit if False |
 | sel_thresh | int | - | Threshold for filtering NMF runs during consensus step|
 
 ## Additional Parameters for Annotation and Compilation
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| output_directory | str | - | Directory to save output files |
 | species | str | - | Species for gene annotation (required) |
 | check_format | bool | False | Validate input data format against reference files |
-| parallel_running | bool | False | Enable parallel processing mode for multiple K values |
+| parallel_running | bool | False | Compile files after parallel mode for multiple K values |
 | num_gene | int | 300 | Number of top genes to include in annotation |
 | run_refit_only | bool | False | Skip factorization and only run consensus/refit steps |
 | guide_annotation_path | str | None | Path to file containing guide information |

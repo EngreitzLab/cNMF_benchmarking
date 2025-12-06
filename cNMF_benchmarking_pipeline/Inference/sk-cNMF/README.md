@@ -30,11 +30,10 @@
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| output_directory | str | - | Directory to save output files |
 | species | str | - | Species for gene annotation (required) |
 | check_format | bool | False | Validate input data format against reference files |
 | run_refit_only | bool | False | Skip factorization and only run consensus/refit steps |
-| parallel_running | bool | False | Enable parallel processing mode for multiple K values |
+| parallel_running | bool | False | Compile files after parallel mode for multiple K values |
 | num_gene | int | 300 | Number of top genes to include in annotation |
 | guide_annotation_path | str | None | Path to file containing guide information |
 | reference_gtf_path | str | None | Path to reference GTF file for gene name validation |
