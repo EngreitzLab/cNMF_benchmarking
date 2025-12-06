@@ -11,6 +11,7 @@ We break down the accessment into vanilla NMF methods and cNMF methods. The form
 Understand the difference between different cNMF methods. Both Jupyter Notebook version and Slurm version are avalible to run inference, evaluation, and plotting seperately and all-together. 
 
 ### Inference
+
 Versions of cNMF:
 
 1. CPU powered cNMF
@@ -27,18 +28,18 @@ Versions of cNMF:
 
 
 ### Evaluation
-#### Basic metric evaluation:
+Basic metric evaluation:
   * Speed
   * Memory usage
 
-#### Statisitical evaluation:
+ Statistical evaluation:
   * Reconstructive error
   * Stability with silhouette score
   * Euclidean distance clustermap 
   * Correlation clustermap
   * Top 300 gene overlap clustermap
 
-#### Biologcoal metrics: 
+ Biologcoal metrics: 
   * Goodness of fit 
   * Variation across category levels
   * Gene-set enrichment
@@ -47,11 +48,38 @@ Versions of cNMF:
   * Perturbation sensitivity
 
 ### Plotting
-  * K-selection plots: Stability &Error, GO/Genesets/Trait enrichment, perturbation sensitivity, explained variances, program dot plot by conditions 
-  * Compare model plots (with same K): clustermap and boxplots for shared gene, GO/Genesets/Trait enrichment, perturbation sensitivity; coefficient of variances
-  * Program QC plots: program UMAP, program violin plot, program loading correlations, top GO term plot, top loading genes, volcano plot + dot plot + waterfall plot + bar plot for regulated programs per condition of cells example for one gene
-  * Perturbed-gene plots: gene UMAP, guide UMAP, gene dotplot, gene loading correlations, top loading programs, volcano plot + dot plot + waterfall plot + bar plot for regulated programs per condition of cells  example for one program
-  * Excel summarization: Integrate mdata + evaluation results information together  example for K=30, density threshold = 0.4
+K-selection plots: 
+  * Stability &Error
+  * GO/Genesets/Trait enrichment
+  * perturbation sensitivity
+  * explained variances
+  * program dot plot by conditions 
+
+Compare model plots (with same K): 
+  * clustermap and boxplots for shared gene
+  * GO/Genesets/Trait enrichment
+  * perturbation sensitivity
+  * coefficient of variance
+
+Program QC plots
+  * program UMAP
+  * program violin plot
+  * program loading correlations
+  * top GO term plot
+  * top loading genes
+  * volcano plot + dot plot + waterfall plot + bar plot for regulated programs per condition of cells
+
+Perturbed-gene plots
+  * gene UMAP
+  * guide UMAP
+  * gene dotplot
+  * gene loading correlations
+  * top-loading programs
+  * volcano plot + dot plot + waterfall plot + bar plot for regulated programs per condition of cells
+  * Heatmap plot for regulator expression in conditions  
+
+Excel summarization: 
+  * Integrate the mdata + evaluation results information together   
 
 ## NMF benchmarking
 
