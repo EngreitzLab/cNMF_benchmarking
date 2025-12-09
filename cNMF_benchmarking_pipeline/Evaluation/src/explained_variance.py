@@ -8,12 +8,42 @@ import re
 from cnmf import cNMF
 from sklearn.decomposition import PCA
 
-# for explained variance
 def compute_Var(X):
-        return np.sum(np.var(X, axis=0, ddof=1))
+    """
+    Calculate total variance across all features in a matrix.
+    
+    Parameters
+    ----------
+    X : array-like
+        Input matrix where variance is computed across rows for each column
+        
+    Returns
+    -------
+    float
+        Sum of variances across all columns
+    """
+    return np.sum(np.var(X, axis=0, ddof=1))
 
-# for explained variance
 def computeVarianceExplained(X, H, Var_X, i):
+    """
+    Calculate variance explained by a specific gene program component.
+    
+    Parameters
+    ----------
+    X : array-like
+        Original data matrix
+    H : array-like or pd.DataFrame
+        Gene program matrix (components x genes)
+    Var_X : float
+        Total variance of original data
+    i : int
+        Index of the specific component to analyze
+        
+    Returns
+    -------
+    float
+        Fraction of variance explained by component i
+    """
     if not isinstance(H, (pd.DataFrame)):
         B_k = X @ H[i,:].T / np.sqrt((np.asarray(H[i,:])**2).sum())
         numerator = compute_Var(X - np.outer(B_k, H[i,:]))
@@ -23,14 +53,34 @@ def computeVarianceExplained(X, H, Var_X, i):
     return (1 - numerator / Var_X)
 
 
-# given cnmf_obj, normalized X array and components k, calculate explained variance
 def compute_explained_variance(cnmf_obj, X, k, output_folder, thre = '2.0'):
+    """
+    Compute explained variance for all gene programs in a cNMF factorization.
+    
+    Parameters
+    ----------
+    cnmf_obj : cnmf.cNMF
+        Fitted cNMF object containing file paths
+    X : array-like
+        Normalized gene expression matrix (cells x genes)
+    k : int
+        Number of components/gene programs
+    output_folder : str
+        Directory to save variance results
+    thre : str, default '2.0'
+        Threshold parameter for consensus matrices
+        
+    Returns
+    -------
+    None
+        Saves variance metrics to TSV files in output_folder
+    """
 
-    # check X is sparce 
+    # Convert sparse matrix to dense if needed 
     if hasattr(X, 'toarray'):
         X = X.toarray()
 
-    # read median for W and H
+    # Load consensus gene program matrices (W: usage, H: spectra)
     thre_name = (thre).replace('.', '_')
     H_path = cnmf_obj.paths['consensus_spectra__txt'] % (k, thre_name) ## median_spectra_file
     H_df = pd.read_csv(H_path, sep='\t', index_col=0).T
@@ -50,13 +100,13 @@ def compute_explained_variance(cnmf_obj, X, k, output_folder, thre = '2.0'):
     V_k = np.empty([k])
 
 
-    # calculate each program's variance 
+    # Calculate variance explained by each individual program 
     for i in range(k):
         V_k[i] = computeVarianceExplained(X, H.T, Var_X, i)
 
     ProgramID = ['K' + str(k) + '_' + str(i+1) for i in range(k)]
 
-    # save data 
+    # Save variance metrics and summary statistics to files 
     metrics_df = pd.DataFrame({'VarianceExplained': V_k,
                                 'ProgramID': ProgramID })
 
