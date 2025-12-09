@@ -25,18 +25,9 @@ from Evaluation.src import (
 )
 
 
-from Evaluation.src import (
-    rename_gene_mygene,
-    rename_gene_dictionary,
-    check_evaluation_pipeline_format,
-    check_gene_names
-)
+from Inference.src import (
+    check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_format )
 
-def _assign_guide(mdata, mdata_guide):
-        mdata['rna'].var_names = mdata['rna'].var['symbol']
-        mdata['cNMF'].uns['guide_names'] = mdata_guide['guide'].var['guide_id']
-        mdata['cNMF'].uns['guide_targets'] = mdata_guide['guide'].var['intended_target_name']
-        mdata['cNMF'].obsm['guide_assignment'] = mdata_guide['guide'].layers['guide_assignment'].toarray()
 
 if __name__ == '__main__':
     
@@ -59,7 +50,7 @@ if __name__ == '__main__':
     # resourses 
     parser.add_argument('--X_normalized_path', type=str,  help='path to normalized input cell x gene matrix from cNMF pipeline', required=True)
     parser.add_argument('--mdata_guide_path', type=str,  help='path to mdata with correct guide assignments', required=True)
-    parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations', required=True)
+    parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations')
     parser.add_argument('--gwas_data_path', type=str,  help='path to file with gwas information for trait enrichment test', required=True)
     parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for checking gene names')
 
@@ -67,6 +58,9 @@ if __name__ == '__main__':
     parser.add_argument('--data_key', help='access gene expression in mdata',type=str, default="rna") 
     parser.add_argument('--prog_key', help='access cNMF program in mdata',type=str,  default="cNMF") 
     parser.add_argument('--categorical_key', help='access cell condition in obs',type=str, default="sample")  
+    parser.add_argument('--guide_names_key', help='guide names in uns',type=str, default="guide_names")  
+    parser.add_argument('--guide_targets_key', help='guide targets in uns',type=str, default="guide_targets") 
+    parser.add_argument('--guide_assignment_key', help='guide assignment in obsm',type=str, default="guide_assignment_key") 
     parser.add_argument('--organism', help='data species',type=str, default="human") 
     parser.add_argument('--FDR_method',type=str, default="StoreyQ")  
 
@@ -99,9 +93,13 @@ if __name__ == '__main__':
     X = X_norm.X
 
     # list of non-targeting guides
-    df_target = pd.read_csv(args.guide_annotation_path, sep = "\t", index_col = 0)
-    df_target_non = df_target[df_target["targeting"] == False]
-    reference_targets = df_target_non.index.values.tolist()
+    if args.guide_annotation_path is not None:
+        df_target = pd.read_csv(args.guide_annotation_path, sep = "\t", index_col = 0)
+        df_target_non = df_target[not df_target["targeting"]]
+        reference_targets = df_target_non.index.values.tolist()
+    else: 
+        reference_targets = ["non-targeting"]
+
 
     # read guide
     mdata_guide = mu.read(args.mdata_guide_path)
@@ -119,20 +117,15 @@ if __name__ == '__main__':
                                                                                     k=k,
                                                                                     sel_thresh = str(sel_thresh).replace('.','_'))) 
             # assign guide
-            _assign_guide(mdata, mdata_guide)   
-
-            # checks for correct mdata format
-            if not check_evaluation_pipeline_format(mdata,prog_key=args.prog_key):
-                raise ValueError("mdata format is incorrect")
-
-            valid = check_gene_names(mdata,prog_key=args.prog_key, data_key=args.data_key,categorical_key=args.categorical_key,reference_gtf_path=args.reference_gtf_path)
-            if not  valid["is_valid"]:
-                raise ValueError("mdata gene naming is incorrect")
+            valid = check_mdata_format(mdata, guide_names_key = args.guide_names_key, prog_key = args.prog_key, data_key = args.data_key, guide_targets_key = args.guide_targets_key, 
+            categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
+            if not valid['is_valid']:
+                raise ValueError("Format is incorrect")
 
 
             # Run categorical assocation
             if args.Perform_categorical: 
-                results_df, posthoc_df = compute_categorical_association(mdata, prog_key='cNMF', categorical_key=args.categorical_key, 
+                results_df, posthoc_df = compute_categorical_association(mdata, prog_key=args.prog_key, categorical_key=args.categorical_key, 
                                                                         pseudobulk_key=None, test='dunn', n_jobs=-1, inplace=False)
 
                 results_df.to_csv('{}/{}_categorical_association_results.txt'.format(output_folder,k), sep='\t', index=False) # This was made wide form to insert into .var of the program anndata.
@@ -148,7 +141,6 @@ if __name__ == '__main__':
                                                                     pseudobulk=False,
                                                                     reference_targets=reference_targets,
                                                                     n_jobs=-1, inplace=False, FDR_method = args.FDR_method)
-
                     test_stats_df.to_csv('{}/{}_perturbation_association_results_{}.txt'.format(output_folder,k,samp), sep='\t', index=False)
         
 

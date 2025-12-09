@@ -68,8 +68,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --reference_gtf_path "/oak/stanford/groups/engreitz/Users/opushkar/genome/IGVFFI9573KOZR.gtf.gz" \
         --sel_thresh 0.4 0.8 2.0 \
         --K 30 50 60 80 100 200\
-        --FDR_method "StoreyQ"
-
+        --FDR_method "StoreyQ
         #--Perform_motif \
 
 
