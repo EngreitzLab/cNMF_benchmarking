@@ -64,3 +64,21 @@ The evaluation pipeline tests cNMF programs against various criteria to assess t
 | --Perform_explained_variance | Enable explained variance analysis |
 | --Perform_motif | Enable motif enrichment analysis |
 
+
+## Output Organization
+
+```
+├── Eval/ 
+├── k_density_threshold/ 
+├── k_categorical_association_posthoc.csv 
+├── k_categorical_association_results.csv 
+├── k_explained_variance_summary.csv 
+├── k_explained_variance.csv 
+├── k_geneset_enrichment.csv 
+├── k_go_term_enrichment.csv 
+├── k_perturbation_association_d0.csv 
+├── k_perturbation_association_d1.csv 
+├── k_perturbation_association_d2.csv 
+├── k_perturbation_association_d3.csv 
+└── k_trait_enrichment.csv
+```
