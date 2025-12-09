@@ -109,6 +109,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --guide_assignment_key "guide_assignment_key" \
         --algo "halsvar"\
         --mode "batch"\
+        --init "random" \
         --tol 1e-7 \
         --batch_max_iter 1000 \
         --batch_hals_max_iter 1000 \

@@ -53,6 +53,7 @@ echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/sk-cNMF/Slurm_Version/sk-cNMF_batch_inference_pipeline.py\
         --counts_fn  "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/1M_250gene.h5ad"\
         --output_directory "$OUT_DIR" \
+        --init "random" \
         --run_name "$RUN_NAME" \
         --algo "cd" \
         --max_NMF_iter 1000 \

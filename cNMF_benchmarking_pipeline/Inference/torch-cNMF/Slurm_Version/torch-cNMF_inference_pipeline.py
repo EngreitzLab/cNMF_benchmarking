@@ -34,12 +34,12 @@ if __name__ == '__main__':
     parser.add_argument('--tpm_fn', type = str, default = None)
     parser.add_argument('--numhvgenes', type = int, default = 5451)
     parser.add_argument('--genes_file', type = str, default = None)
-    parser.add_argument('--init', type = str, default = 'random')
     parser.add_argument('--loss', default = 'frobenius')
     parser.add_argument('--algo', type = str, default = 'mu')
     parser.add_argument('--mode', type = str, default = 'batch')
     parser.add_argument('--tol', type = float, default = 1e-4)
     parser.add_argument('--n_jobs', type = int, default = -1)
+    parser.add_argument('--init', type = str, default = 'random')
     parser.add_argument('--seed', type = int, default = 14)
     parser.add_argument('--use_gpu', action="store_true") # Flag: include --use_gpu for True, omit for False
     parser.add_argument('--alpha_usage', type = float, default = 0.0)
@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
 
     cnmf_obj.prepare(counts_fn=args.counts_fn, components=args.K, n_iter=args.numiter, densify=args.densify, tpm_fn=args.tpm_fn, num_highvar_genes=args.numhvgenes, genes_file=args.genes_file,
-                init = args.init,  beta_loss = args.loss, 
+                beta_loss = args.loss, init = args.init,
                 algo = args.algo, mode = args.mode, tol=args.tol, n_jobs=args.n_jobs, 
                 seed = args.seed,  use_gpu = args.use_gpu, 
                 alpha_usage = args.alpha_usage, alpha_spectra = args.alpha_spectra, 

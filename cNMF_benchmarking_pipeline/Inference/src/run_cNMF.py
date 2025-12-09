@@ -108,6 +108,7 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
             mdata['cNMF'].obsm[guide_assignment_key] = adata_.obsm[guide_assignment_key] 
             mdata['cNMF'].obsm['X_pca'] = adata_.obsm['X_pca']
             mdata['cNMF'].obsm['X_umap'] = adata_.obsm['X_umap']
+            mdata['rna'].var['var_names'] = adata_.var_names
 
 
             os.makedirs((f'{output_directory}/{run_name}/adata'), exist_ok=True)

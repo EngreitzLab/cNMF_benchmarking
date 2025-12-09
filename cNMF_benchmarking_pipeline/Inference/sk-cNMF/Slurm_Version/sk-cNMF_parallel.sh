@@ -62,6 +62,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad" \
         --output_directory "$OUT_DIR" \
         --run_name "${RUN_NAME}_${K}" \
+        --init "random" \
         --algo "cd" \
         --K $K \
         --max_NMF_iter 1000 \
