@@ -124,7 +124,7 @@ B+1
 }.
 ```
 
-4. Null Model Testing
+### 2.5 Null Model Testing
 Using the beta_hat matrix (program p × gene g), perform leave-one-out validation:
 
 Compare beta_hat[i] vs beta_hat[b-i] for each gene
