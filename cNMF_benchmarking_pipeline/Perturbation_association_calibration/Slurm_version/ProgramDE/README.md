@@ -3,7 +3,7 @@
 ## Overview
 A pipeline for testing differential effect (DE) of gene targets on gene programs. This pipeline implements a Conditional Randomization Test (CRT) to assess the statistical significance of perturbations.
 
-The core analysis pipeline lives in the `src.sceptre` module. Github for this test: https://github.com/edtnguyen/programDE/tree/main (Written by Tri Nguyen) 
+The core analysis pipeline lives in the `src.sceptre` module. Environment downloading guide on the github for this test: https://github.com/edtnguyen/programDE/tree/main (Written by Tri Nguyen). 
 
 ---
 
