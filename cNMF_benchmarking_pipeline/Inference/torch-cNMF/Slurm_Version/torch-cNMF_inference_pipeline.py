@@ -40,7 +40,7 @@ if __name__ == '__main__':
     parser.add_argument('--genes_file', type = str, help = "path to file containing list of genes to use instead of HVG selection", default = None)
     parser.add_argument('--loss', help = "loss function for NMF (default: 'frobenius')", default = 'frobenius')
     parser.add_argument('--algo', type = str, help = "NMF algorithm to use: 'mu' (multiplicative update) or 'cd' (coordinate descent) (default: 'mu')", default = 'mu')
-    parser.add_argument('--mode', type = str, help = "NMF mode: 'batch' or 'online' (default: 'batch')", default = 'batch')
+    parser.add_argument('--mode', type = str, help = "NMF mode: 'batch' or 'online' or 'dataloader' (default: 'batch')", default = 'batch')
     parser.add_argument('--tol', type = float, help = "tolerance for convergence (default: 1e-4)", default = 1e-4)
     parser.add_argument('--n_jobs', type = int, help = "number of parallel jobs (-1 uses all available cores, default: -1)", default = -1)
     parser.add_argument('--init', type = str, help = "initialization method for NMF: 'random', 'nndsvd', 'nndsvda', or 'nndsvdar' (default: 'random')", default = 'random')

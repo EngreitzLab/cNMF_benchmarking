@@ -3,7 +3,7 @@
 * GPU powered cNMF
 * Individual NMF inference using: [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
 * consensus NMF using: [torch-cNMF](https://github.com/ymo6/torch_based_cNMF) 
-* To run torch-cNMF, create a new conda environment with `conda env create -f environment.yml --name torch-cNMF` with the provided yml file, then run `pip install git+https://github.com/ymo6/torch_based_cNMF.git` in the terminal
+* To run torch-cNMF, create a new conda environment with `conda env create -f environment.yml --name torch-cNMF` with the provided yml file, then run `pip install git+https://github.com/ymo6/torch_based_cNMF.git` and `pip install git+https://github.com/ymo6/nmf-torch.git` in the terminal
 * Singularity Container can be found in https://hub.docker.com/r/igvf/torch-cnmf/tags
 
 ## cNMF Parameters 
@@ -23,7 +23,7 @@
 | alpha_usage | float | 0.0 | Regularization parameter for NMF corresponding to alpha_W |
 | alpha_spectra | float | 0.0 | Regularization parameter for NMF corresponding to alpha_H |
 | use_gpu | bool | False | Whether to use GPU |
-| mode | str | "batch" | Learning mode: "batch" or "online". Online only works when beta=2.0 |
+| mode | str | "batch" | Learning mode: "batch" or "online" or "dataloader. Online/dataloader only works when beta=2.0 |
 | algo | str | "halsvar" | Algorithm choice: "mu", "halsvar" |
 | init | str | "nndsvdar" | Initialization method: "random", "nndsvd", "nndsvda", "nndsvdar" |
 | tol | float | 1e-4 | Tolerance used for convergence check |
@@ -60,4 +60,4 @@
 | guide_names_key | str | "guide_names" | Key to access guide names in uns |
 | guide_targets_key | str | "guide_targets" | Key to access guide targets in uns |
 | guide_assignment_key | str | "guide_assignment_key" | Key to access guide assignments in obsm |
-
+| nmf_seeds_path | str | None |path to .npy file containing custom NMF seeds for reproducibility |

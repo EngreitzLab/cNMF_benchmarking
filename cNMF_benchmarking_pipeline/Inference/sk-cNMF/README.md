@@ -43,5 +43,6 @@
 | guide_names_key | str | "guide_names" | Key to access guide names in uns |
 | guide_targets_key | str | "guide_targets" | Key to access guide targets in uns |
 | guide_assignment_key | str | "guide_assignment_key" | Key to access guide assignments in obsm |
+| nmf_seeds_path | str | None |path to .npy file containing custom NMF seeds for reproducibility |
 
 
