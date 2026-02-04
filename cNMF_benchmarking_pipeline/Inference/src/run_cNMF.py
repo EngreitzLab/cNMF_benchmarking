@@ -49,6 +49,11 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
         sel_thresh: List of density threshold values to process
         components: List of k values (number of components) to process
     """
+
+
+    adata_ = anndata.read_h5ad('{output_directory}/{run_name}/cnmf_tmp/{run_name}.tpm.h5ad'.format(
+                                                                                    output_directory=output_directory,
+                                                                                    run_name = run_name))
        
     for i in sel_threshs:
         for k in components:
@@ -82,9 +87,6 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
                                                                                             k=k,
                                                                                             sel_thresh = i), sep='\t')
 
-            adata_ = anndata.read_h5ad('{output_directory}/{run_name}/cnmf_tmp/{run_name}.tpm.h5ad'.format(
-                                                                                            output_directory=output_directory,
-                                                                                            run_name = run_name))
             adata_.var_names_make_unique()
             adata_.obs_names_make_unique()
 

@@ -107,7 +107,7 @@ guide_assignment_key = 'guide_assignment'):
     return is_valid
 
 def check_guide_names(adata, guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch', 
-reference_gtf_path=None, guide_annotation_path = None, guide_assignment_key = 'guide_assignment'):
+reference_gtf_path=None, guide_annotation_path = None, guide_assignment_key = 'guide_assignment', check_var_names_align_with_guide_targets= True):
     """
     Validate gene names consistency across RNA modality and cNMF guide names,
     with optional reference GTF validation.
@@ -168,18 +168,26 @@ reference_gtf_path=None, guide_annotation_path = None, guide_assignment_key = 'g
     else:
         guide_gene_targets = set(guide_targets)
         guide_gene_names = set(guide_names)
-    
-    # Find guide targets that are missing from RNA gene names
-    guide_not_in_rna = guide_gene_targets - rna_gene_names
-    print(f"Found {len(guide_gene_targets)} gene names in adata.var_names")
 
-    if guide_not_in_rna:
-        print(f"WARNING: {len(guide_not_in_rna)}/{len(guide_gene_targets)} gene names in guide_targets but NOT in adata.var. \n \
-            This might be caused by mismatch between gene symbol vs Ensembl ID or some perturbed genes are not expressed in the dataset. ")
-        print(f"Examples: {list(guide_not_in_rna)[:5]}\n")
-        results['missing_from_rna'] = sorted(list(guide_not_in_rna))
-    else:
-        print("All guide_targets found in RNA gene names\n")
+    # check equal length
+    if len(guide_targets)!=len(guide_names) and len(guide_gene_targets)!=((adata.obsm[guide_assignment_key]).shape[1]):
+         print(f"WARNING: guide_targets and guide_names and guide_assignment col should be equal length but not in here\n")
+         results['is_valid'] = False
+
+    if check_var_names_align_with_guide_targets:
+
+        # Find guide targets that are missing from RNA gene names
+        guide_not_in_rna = guide_gene_targets - rna_gene_names
+        print(f"Found {len(guide_gene_targets)} genes in gene_targets")
+
+        if guide_not_in_rna:
+            print(f"WARNING: {len(guide_not_in_rna)}/{len(guide_gene_targets)} gene names in guide_targets but NOT in adata.var. \n \
+                This might be caused by mismatch between gene symbol vs Ensembl ID or some perturbed genes are not expressed in the dataset. \
+                Might cause issue in evalutation or plotting if naming conventions are different.")
+            print(f"Examples: {list(guide_not_in_rna)[:5]}\n")
+            results['missing_from_rna'] = sorted(list(guide_not_in_rna))
+        else:
+            print("All guide_targets found in RNA gene names\n")
     
     # Optional: validate against reference GTF file
     if reference_gtf_path is None:
@@ -361,7 +369,7 @@ categorical_key= 'batch', reference_gtf_path=None, guide_annotation_path = None,
     rna_adata = mdata[data_key]
     is_valid= check_guide_names(rna_adata, guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, 
     categorical_key= categorical_key, guide_assignment_key=guide_assignment_key, reference_gtf_path=reference_gtf_path,
-    guide_annotation_path=guide_annotation_path)
+    guide_annotation_path=guide_annotation_path,check_var_names_align_with_guide_targets = True)
 
     # Validate cNMF program modality exists
     if prog_key not in mdata.mod:
@@ -374,8 +382,8 @@ categorical_key= 'batch', reference_gtf_path=None, guide_annotation_path = None,
     # Validate cNMF program data format
     cnmf_adata = mdata[prog_key]
     is_valid = check_guide_names(cnmf_adata, guide_names_key = guide_names_key, guide_targets_key = guide_targets_key, 
-    categorical_key= categorical_key,guide_assignment_key=guide_assignment_key, reference_gtf_path=None,
-    guide_annotation_path= None)
+    categorical_key= categorical_key,guide_assignment_key=guide_assignment_key, reference_gtf_path = None,
+    guide_annotation_path=guide_annotation_path, check_var_names_align_with_guide_targets = False)
 
     # Check if PCA loadings exist in variable metadata (varm)
     if 'loadings' not in cnmf_adata.varm:
