@@ -10,18 +10,14 @@
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
 #SBATCH --mem=128G                      # Memory per node
-##SBATCH --gres=gpu:1                   # Request 1 GPU
-##SBATCH -C GPU_SKU:V100S_PCIE
+#SBATCH --gres=gpu:1                   # Request 1 GPU (for future use)
+##SBATCH --constraint="GPU_MEM:32GB|GPU_MEM:48GB|GPU_MEM:80GB"  # Request specific GPU type if available
+#SBATCH -C GPU_SKU:V100S_PCIE
 
-# Optional: Request specific GPU type if available
-##SBATCH --constraint="GPU_MEM:32GB" # GPU memory constraint 
 
 # Email notifications
-#SBATCH --mail-type=BEGIN              # Send email when job starts
-#SBATCH --mail-type=END                # Send email when job ends
-#SBATCH --mail-type=FAIL               # Send email if job fails
-#SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
-
+#SBATCH --mail-type=BEGIN,END,FAIL      # Send email at start, end, and on failure
+#SBATCH --mail-user=ymo@stanford.edu    # Email address
 
 START_TIME=$(date +%s)
 
@@ -49,8 +45,8 @@ echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 # Activate conda base environment
 echo "Activating conda base environment..."
-source activate torch-cNMF
-#source activate torch-nmf-cd
+eval "$(conda shell.bash hook)"
+conda activate torch-cNMF
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"
@@ -96,12 +92,6 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad"\
         --output_directory "$OUT_DIR" \
         --run_name "$RUN_NAME" \
-        --data_key "rna" \
-        --prog_key "cNMF" \
-        --categorical_key "sample" \
-        --guide_names_key "guide_names" \
-        --guide_targets_key "guide_targets" \
-        --guide_assignment_key "guide_assignment_key" \
         --algo "halsvar"\
         --mode "batch"\
         --init "random" \
@@ -109,22 +99,33 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --batch_max_iter 1000 \
         --batch_hals_max_iter 1000 \
         --batch_hals_tol 0.005 \
-        --densify \
-        --online_chunk_size 100000 \
+        --online_chunk_size 200000 \
         --online_max_pass 1000 \
         --online_chunk_max_iter 1000 \
-        --numiter 10 \
+        --numiter 100 \
         --online_usage_tol 0.005 \
         --online_spectra_tol 0.005 \
-        --run_refit_only \
-        --K 300 \
-        --sk_cd_refit \
         --species "human" \
         --use_gpu \
-        --check_format \
-        #--shuffle_cells
-        #--guide_annotation_path
-        #--reference_gtf_path
+        --run_factorize \
+        --run_refit \
+        --run_complie_annotation \
+        --sel_thresh 0.2 2.0 \
+        --numhvgenes 17538 \
+        --K 50 \
+        #--nmf_seeds_path \
+        #--densify \
+        #--check_format \
+        #--data_key "rna" \
+        #--prog_key "cNMF" \
+        #--categorical_key "sample" \
+        #--guide_names_key "guide_names" \
+        #--guide_targets_key "guide_targets" \
+        #--guide_assignment_key "guide_assignment" \
+        #--shuffle_cells \
+        #--guide_annotation_path \
+        #--reference_gtf_path \
+
 
 
 # Record end time and calculate duration

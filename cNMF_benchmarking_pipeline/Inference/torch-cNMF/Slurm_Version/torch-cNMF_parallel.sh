@@ -12,16 +12,12 @@
 #SBATCH --cpus-per-task=1              # CPUs per task (keeping 1 core as requested)
 #SBATCH --mem=80G                      # Memory per node
 #SBATCH --gres=gpu:1                   # Request 1 GPU (for future use)
+##SBATCH --constraint="GPU_MEM:32GB|GPU_MEM:48GB|GPU_MEM:80GB"  # Request specific GPU type if available
 #SBATCH -C GPU_SKU:V100S_PCIE
 
-# Optional: Request specific GPU type if available
-##SBATCH --constraint="GPU_MEM:32GB" # GPU memory constraint
-
 # Email notifications
-#SBATCH --mail-type=BEGIN              # Send email when job starts
-#SBATCH --mail-type=END                # Send email when job ends
-#SBATCH --mail-type=FAIL               # Send email if job fails
-#SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
+#SBATCH --mail-type=BEGIN,END,FAIL      # Send email at start, end, and on failure
+#SBATCH --mail-user=ymo@stanford.edu    # Email address
 
 START_TIME=$(date +%s)
 
@@ -37,7 +33,7 @@ RUN_NAME="120325_100k_cells_10iter_allhvg_torch_halsvar_batch_e7_h100_par"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Create logs directory if it doesn't exist
-mkdir -p "$LOG_DIR/logs"
+mkdir -p "$OUT_DIR/logs"
 
 # Print job and system information for debugging
 echo "Job started at: $(date)"
@@ -57,14 +53,15 @@ echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
 # Activate conda base environment
 echo "Activating conda base environment..."
-source activate torch-cNMF
+eval "$(conda shell.bash hook)"
+conda activate torch-cNMF
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"
 echo "Python path: $(which python)"
 
 # Start resource monitoring
-MONITOR_LOG="$LOG_DIR/logs/resource_monitor_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log"
+MONITOR_LOG="$OUT_DIR/logs/resource_monitor_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log"
 
 # Function to monitor resources
 monitor_resources() {
@@ -101,12 +98,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Data/eRZ53_56_filtered_cNMF.h5ad"\
         --output_directory "$OUT_DIR/$RUN_NAME" \
         --run_name "${RUN_NAME}_${K}" \
-        --data_key "rna" \
-        --prog_key "cNMF" \
-        --categorical_key "sample" \
-        --guide_names_key "guide_names" \
-        --guide_targets_key "guide_targets" \
-        --guide_assignment_key "guide_assignment_key" \
+        --K $K \
         --algo "halsvar"\
         --mode "batch"\
         --init "random" \
@@ -114,24 +106,35 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --batch_max_iter 1000 \
         --batch_hals_max_iter 1000 \
         --batch_hals_tol 0.005 \
-        --densify \
         --online_chunk_size 200000 \
         --online_max_pass 1000 \
         --online_chunk_max_iter 1000 \
-        --numiter 10 \
+        --numiter 20 \
         --online_usage_tol 0.005 \
         --online_spectra_tol 0.005 \
         --use_gpu \
-        --numhvgenes 33882 \
-        --species "mouse" \
-        --check_format \
-        #--run_refit_only \
-        #--K 80 100 200 250 300 \
+        --numhvgenes 17538 \
+        --run_factorize \
+        --species "human" \
+        #--nmf_seeds_path \
+        #--densify \
+        #--run_refit \
+        #--run_complie_annotation \
+        #--data_key "rna" \
+        #--prog_key "cNMF" \
+        #--sel_thresh 2.0 \
+        #--categorical_key "sample" \
+        #--guide_names_key "guide_names" \
+        #--guide_targets_key "guide_targets" \
+        #--guide_assignment_key "guide_assignment" \
+        #--check_format \
         #--sk_cd_refit \
-        #--shuffle_cells
-        #--guide_annotation_path
-        #--reference_gtf_path
-        #--parallel_running
+        #--shuffle_cells \
+        #--guide_annotation_path \
+        #--reference_gtf_path \
+        #--parallel_running \
+        #--run_complie_annotation \
+
 
 
 # Record end time and calculate duration
