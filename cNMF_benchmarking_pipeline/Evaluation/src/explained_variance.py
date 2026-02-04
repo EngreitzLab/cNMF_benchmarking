@@ -81,7 +81,7 @@ def compute_explained_variance(cnmf_obj, X, k, output_folder, thre = '2.0'):
         X = X.toarray()
 
     # Load consensus gene program matrices (W: usage, H: spectra)
-    thre_name = (thre).replace('.', '_')
+    thre_name = str(thre).replace('.', '_')
     H_path = cnmf_obj.paths['consensus_spectra__txt'] % (k, thre_name) ## median_spectra_file
     H_df = pd.read_csv(H_path, sep='\t', index_col=0).T
     H = H_df.to_numpy()

@@ -69,7 +69,7 @@ def compute_perturbation_association_(
     log2fc = np.log2((test_mean + 1e-9) / (ref_mean + 1e-9))
     
     # Compute Mann-Whitney U test
-    results = stats.mannwhitneyu(test_data_, reference_data_, alternative='two-sided') #, method = 'asymptotic')
+    results = stats.mannwhitneyu(test_data_, reference_data_, alternative='two-sided', nan_policy='omit') #, method = 'asymptotic')
 
     # Append to test stats df
     test_stats_df.append([level_name, program, ref_mean, test_mean, log2fc, results[0][0], results[1][0]])
@@ -241,6 +241,12 @@ def compute_perturbation_association(
     
     # Create DataFrame
     test_stats_df = pd.DataFrame(test_stats_df, columns=['{}_name'.format(level_key), 'program_name', 'ref_mean', 'test_mean', 'log2FC', 'stat', 'pval'])
+
+    # correct invalid p-value by resetting to 1
+    p = test_stats_df['pval'].copy()
+    invalid = (~np.isfinite(p)) | (p < 0) | (p > 1)
+    p[invalid] = 1.0
+    test_stats_df['pval'] = p
 
     # Correct for multiple testing
     if FDR_method == 'BH':

@@ -29,6 +29,11 @@ from Inference.src import (
     check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_format )
 
 
+def _assign_guide(mdata):
+    mdata[args.data_key].obsm[args.guide_assignment_key] = mdata[args.data_key].obsm[args.guide_assignment_key].toarray()
+    mdata[args.prog_key].obsm[args.guide_assignment_key] = mdata[args.prog_key].obsm[args.guide_assignment_key].toarray()
+
+
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser()
@@ -49,7 +54,6 @@ if __name__ == '__main__':
 
     # resourses 
     parser.add_argument('--X_normalized_path', type=str,  help='path to normalized input cell x gene matrix from cNMF pipeline', required=True)
-    parser.add_argument('--mdata_guide_path', type=str,  help='path to mdata with correct guide assignments', required=True)
     parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations')
     parser.add_argument('--gwas_data_path', type=str,  help='path to file with gwas information for trait enrichment test', required=True)
     parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for checking gene names')
@@ -60,10 +64,12 @@ if __name__ == '__main__':
     parser.add_argument('--categorical_key', help='access cell condition in obs',type=str, default="sample")  
     parser.add_argument('--guide_names_key', help='guide names in uns',type=str, default="guide_names")  
     parser.add_argument('--guide_targets_key', help='guide targets in uns',type=str, default="guide_targets") 
-    parser.add_argument('--guide_assignment_key', help='guide assignment in obsm',type=str, default="guide_assignment_key") 
+    parser.add_argument('--guide_assignment_key', help='guide assignment in obsm',type=str, default="guide_assignment") 
     parser.add_argument('--organism', help='data species',type=str, default="human") 
     parser.add_argument('--FDR_method',type=str, default="StoreyQ")  
 
+   # check format
+    parser.add_argument('--check_format', help = 'check if have all necessary info', action="store_true")
 
 
     args = parser.parse_args()
@@ -101,9 +107,6 @@ if __name__ == '__main__':
         reference_targets = ["non-targeting"]
 
 
-    # read guide
-    mdata_guide = mu.read(args.mdata_guide_path)
-
     for sel_thresh in args.sel_thresh:
         for k in args.K:  
             
@@ -116,11 +119,17 @@ if __name__ == '__main__':
                                                                                     run_name =args.run_name,
                                                                                     k=k,
                                                                                     sel_thresh = str(sel_thresh).replace('.','_'))) 
-            # assign guide
-            valid = check_mdata_format(mdata, guide_names_key = args.guide_names_key, prog_key = args.prog_key, data_key = args.data_key, guide_targets_key = args.guide_targets_key, 
-            categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
-            if not valid['is_valid']:
-                raise ValueError("Format is incorrect")
+
+             # assign guide                                                                            
+            _assign_guide(mdata)
+
+
+            #check format is right
+            if args.check_format:
+                valid = check_mdata_format(mdata, guide_names_key = args.guide_names_key, prog_key = args.prog_key, data_key = args.data_key, guide_targets_key = args.guide_targets_key, 
+                categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
+                if not valid['is_valid']:
+                    raise ValueError("Format is incorrect")
 
 
             # Run categorical assocation
@@ -134,7 +143,7 @@ if __name__ == '__main__':
 
             # Run perturbation assocation
             if args.Perform_perturbation: 
-                for samp in mdata['rna'].obs[args.categorical_key].unique():
+                for samp in mdata[args.data_key].obs[args.categorical_key].unique():
                     mdata_ = mdata[mdata['rna'].obs[args.categorical_key]==samp]
                     test_stats_df = compute_perturbation_association(mdata_, prog_key=args.prog_key, 
                                                                     collapse_targets=True,
@@ -205,5 +214,5 @@ if __name__ == '__main__':
 
             # Run explained variance
             if args.Perform_explained_variance:
-                compute_explained_variance(cnmf_obj, X, k, output_folder = output_folder)
+                compute_explained_variance(cnmf_obj, X, k, output_folder = output_folder, thre = str(sel_thresh) )
 

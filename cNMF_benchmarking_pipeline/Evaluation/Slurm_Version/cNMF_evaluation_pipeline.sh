@@ -12,10 +12,8 @@
 #SBATCH --mem=96G                       # Memory per node
 
 # Email notifications
-#SBATCH --mail-type=BEGIN              # Send email when job starts
-#SBATCH --mail-type=END                # Send email when job ends
-#SBATCH --mail-type=FAIL               # Send email if job fails
-#SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
+#SBATCH --mail-type=BEGIN,END,FAIL      # Send email at start, end, and on failure
+#SBATCH --mail-user=ymo@stanford.edu    # Email address
 
 # Define the cNMF case
 OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/cc-perturb-seq/Results"
@@ -39,8 +37,10 @@ echo "Log directory: $LOG_DIR"
 mkdir -p "$LOG_DIR/Eval/logs"
 
 # Activate conda base environment
-echo "Activating conda base environment..."
-source activate NMF_Benchmarking
+echo "Activating conda environment..."
+eval "$(conda shell.bash hook)"
+conda activate NMF_Benchmarking
+
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"
@@ -70,6 +70,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --K 30 50 60 80 100 200\
         --FDR_method "StoreyQ
         #--Perform_motif \
+        #--check_format \
 
 
 
