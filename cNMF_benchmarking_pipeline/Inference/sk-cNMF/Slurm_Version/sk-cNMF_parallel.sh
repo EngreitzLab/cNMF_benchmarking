@@ -13,10 +13,8 @@
 #SBATCH --mem=32G                       # Memory per node
 
 # Email notifications
-#SBATCH --mail-type=BEGIN              # Send email when job starts
-#SBATCH --mail-type=END                # Send email when job ends
-#SBATCH --mail-type=FAIL               # Send email if job fails
-#SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
+#SBATCH --mail-type=BEGIN,END,FAIL      # Send email at start, end, and on failure
+#SBATCH --mail-user=ymo@stanford.edu    # Email address
 
 # Define the cNMF case
 OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/sk-cNMF_evaluation/100525_100k_10iter_1000batiter_sk_cd_e7_seed42"
@@ -45,11 +43,12 @@ echo "Log directory: $LOG_DIR"
 
 
 # Create logs directory if it doesn't exist
-mkdir -p "$LOG_DIR/logs"
+mkdir -p "$OUT_DIR/logs"
 
 # Activate conda base environment
 echo "Activating conda base environment..."
-source activate sk-cNMF
+eval "$(conda shell.bash hook)"
+conda activate sk-cNMF
 
 echo "Active conda environment: $CONDA_DEFAULT_ENV"
 echo "Python version: $(python --version)"
@@ -64,14 +63,19 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --run_name "${RUN_NAME}_${K}" \
         --init "random" \
         --algo "cd" \
-        --K $K \
+        --K 50 \
+        --numiter 10 \
         --max_NMF_iter 1000 \
-        --tol 1e-7 \
-        --seed 142 \
+        --numhvgenes 17538 \
+        --tol 1e-4 \
+        --seed 14 \
         --species "human" \
-        --check_format
-
-
+        --sel_thresh 0.2 2.0 \
+        --run_refit \
+        --run_complie_annotation \
+        --run_factorize \
+        --nmf_seedsnmf_seeds "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/10_seeds_14_${K}.npy"
+        #--check_format \
 
 
 # Calculate and print elapsed time at the end

@@ -5,6 +5,7 @@ import yaml
 import os
 import pandas as pd
 import muon as mu
+import numpy as np
 
 # Change path to wherever you have repo locally
 sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline')
@@ -26,6 +27,8 @@ if __name__ == '__main__':
     parser.add_argument('--counts_fn', type=str, required=True)  
     parser.add_argument('--output_directory', type=str, required=True)
     parser.add_argument('--run_name', type=str, required=True)
+    parser.add_argument('--nmf_seeds_path', type=str, required=True)
+
 
     # cNMF parameters 
     parser.add_argument('--numiter', type = int, default = 10)
@@ -42,9 +45,11 @@ if __name__ == '__main__':
     # annotation parameters 
     parser.add_argument('--species', type=str, required=True)
     parser.add_argument('--check_format', action="store_true")
-    parser.add_argument('--run_refit_only', action="store_true")
     parser.add_argument('--parallel_running', action="store_true")
     parser.add_argument('--num_gene', type = int, default = 300)
+    parser.add_argument('--run_refit', action="store_true")
+    parser.add_argument('--run_complie_annotation', action="store_true")
+    parser.add_argument('--run_factorize', action="store_true")
 
     # resourses 
     parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations',  default=None)
@@ -69,8 +74,19 @@ if __name__ == '__main__':
     if args.sel_thresh is None:
         args.sel_thresh = [0.4, 0.8, 2.0]
 
-    args_dict = vars(args)
 
+    # read seeds
+    if args.nmf_seeds_path is not None:
+        nmf_seeds = np.load(args.nmf_seeds_path)
+    else:
+        nmf_seeds = None
+
+
+
+    # create output directory       
+    os.makedirs((f'{args.output_directory}/{args.run_name}'), exist_ok=True)
+
+    args_dict = vars(args)
 
    # --- Capture Slurm environment info ---
     slurm_info = {
@@ -117,33 +133,45 @@ if __name__ == '__main__':
 
     cnmf_obj.prepare(counts_fn= args.counts_fn, components= args.K, n_iter= args.numiter,  densify=False, tpm_fn=None, seed= args.seed,
                      beta_loss = args.loss,num_highvar_genes=args.numhvgenes, genes_file=None,
-                     alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=args.max_NMF_iter, algo = args.algo, tol = args.tol)
+                     alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=args.max_NMF_iter, algo = args.algo, tol = args.tol, nmf_seeds = nmf_seeds)
 
-    if not args.run_refit_only:
+    if args.run_factorize:
+
         cnmf_obj.factorize(total_workers = 1)
 
-    cnmf_obj.combine()
+    if args.run_refit:
 
-    cnmf_obj.k_selection_plot()
+        cnmf_obj.combine()
 
-    # Consensus plots with all k to choose thresh
-    run_cnmf_consensus(cnmf_obj, 
-                        components=args.K, 
-                        density_thresholds=args.sel_thresh)
+        cnmf_obj.k_selection_plot()
 
-    # annotation for all K
-    os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
+        # Consensus plots with all k to choose thresh
+        run_cnmf_consensus(cnmf_obj, 
+                            components=args.K, 
+                            density_thresholds=args.sel_thresh)
 
-    for i in args.sel_thresh:
-        for k in args.K:
-            df = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_scores.k_{k}.dt_{sel_thresh}.txt'.format(
-                                                                                    output_directory=args.output_directory,
-                                                                                    run_name = args.run_name,
-                                                                                    k=k,
-                                                                                    sel_thresh = str(i).replace('.','_')),
-                                                                                    sep='\t', index_col=0)   
-            overlap = get_top_indices_fast(df, gene_num=args.num_gene)
-            annotate_genes_to_excel(overlap, species = args.species, output_file= f'{args.output_directory}/{args.run_name}/Annotation/{k}.xlsx')
+
+    if args.run_complie_annotation:
+
+        # Save all cNMF scores in separate mudata objects
+        compile_results(args.output_directory, args.run_name, components= args.K, sel_threshs = args.sel_thresh,
+        guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, categorical_key= args.categorical_key, 
+        guide_assignment_key = args.guide_assignment_key )
+
+        # annotation for all K
+        os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
+
+        # annotation for all K
+        for i in args.sel_thresh:
+            for k in args.K:
+                df = pd.read_csv('{output_directory}/{run_name}/{run_name}.gene_spectra_scores.k_{k}.dt_{sel_thresh}.txt'.format(
+                                                                                        output_directory=args.output_directory,
+                                                                                        run_name = args.run_name,
+                                                                                        k=k,
+                                                                                        sel_thresh = str(i).replace('.','_')),
+                                                                                        sep='\t', index_col=0)   
+                overlap = get_top_indices_fast(df, gene_num=args.num_gene)
+                annotate_genes_to_excel(overlap, species = args.species, output_file= f'{args.output_directory}/{args.run_name}/Annotation/{k}.xlsx')
 
 
 
@@ -158,10 +186,6 @@ if __name__ == '__main__':
                                 components = [args.K])
 
 
-    # Save all cNMF scores in separate mudata objects
-    compile_results(args.output_directory, args.run_name, components= args.K, sel_thresh = args.sel_thresh,
-     guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, categorical_key= args.categorical_key, 
-     guide_assignment_key = args.guide_assignment_key )
 
 
 
