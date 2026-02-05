@@ -168,7 +168,7 @@ if __name__ == '__main__':
 
     if args.run_factorize:
 
-        cnmf_obj.factorize(total_workers=1)
+        cnmf_obj.factorize(total_workers = 1,skip_completed_runs=True) 
 
     if args.run_refit:
 
