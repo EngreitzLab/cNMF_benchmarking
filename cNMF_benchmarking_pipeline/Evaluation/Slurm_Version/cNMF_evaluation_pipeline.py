@@ -39,37 +39,37 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     #IO info
-    parser.add_argument('--out_dir', help='path to make cnmf object', type=str, required=True)  
-    parser.add_argument('--run_name', help='name of cnmf obj',type=str, required=True)  
-    parser.add_argument('--K', nargs='*', type=int, default=None) # allow zero input 
-    parser.add_argument('--sel_thresh', nargs='*', type=float, default=None) # allow zero input 
+    parser.add_argument('--out_dir', help='Directory containing cNMF output files to evaluate', type=str, required=True)
+    parser.add_argument('--run_name', help='Name of the cNMF run to evaluate (must match name used during inference)', type=str, required=True)
+    parser.add_argument('--K', nargs='*', type=int, default=None, help='List of K values (number of components) to evaluate. If not provided, defaults to [30, 50, 60, 80, 100, 200, 250, 300]')
+    parser.add_argument('--sel_thresh', nargs='*', type=float, default=None, help='List of density thresholds to evaluate. If not provided, defaults to [0.4, 0.8, 2.0]') 
 
     # running different tests
-    parser.add_argument('--Perform_categorical', action="store_true")
-    parser.add_argument('--Perform_perturbation', action="store_true")
-    parser.add_argument('--Perform_geneset', action="store_true")
-    parser.add_argument('--Perform_trait', action="store_true")
-    parser.add_argument('--Perform_explained_variance', action="store_true")
-    parser.add_argument('--Perform_motif', action="store_true")
+    parser.add_argument('--Perform_categorical', action="store_true", help='If set, compute categorical association between programs and sample labels (Kruskal-Wallis test)')
+    parser.add_argument('--Perform_perturbation', action="store_true", help='If set, compute perturbation association between programs and guide perturbations')
+    parser.add_argument('--Perform_geneset', action="store_true", help='If set, perform gene set enrichment analysis (Reactome and GO terms) on program genes')
+    parser.add_argument('--Perform_trait', action="store_true", help='If set, perform GWAS trait enrichment analysis on program genes')
+    parser.add_argument('--Perform_explained_variance', action="store_true", help='If set, compute explained variance for each K value')
+    parser.add_argument('--Perform_motif', action="store_true", help='If set, perform transcription factor motif enrichment analysis')
 
-    # resourses 
-    parser.add_argument('--X_normalized_path', type=str,  help='path to normalized input cell x gene matrix from cNMF pipeline', required=True)
-    parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations')
-    parser.add_argument('--gwas_data_path', type=str,  help='path to file with gwas information for trait enrichment test', required=True)
-    parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for checking gene names')
+    # resources
+    parser.add_argument('--X_normalized_path', type=str,  help='Path to normalized cell x gene matrix (.h5ad) from cNMF pipeline (required for explained variance)', required=True)
+    parser.add_argument('--guide_annotation_path', type=str,  help='Path to tab-separated file with guide annotations including "targeting" column to identify non-targeting controls (optional)')
+    parser.add_argument('--gwas_data_path', type=str,  help='Path to GWAS data file for trait enrichment analysis (required for trait enrichment)', required=True)
+    parser.add_argument('--reference_gtf_path', type=str,  help='Path to reference GTF file for validating gene names during format checking (optional)')
 
     # keys
-    parser.add_argument('--data_key', help='access gene expression in mdata',type=str, default="rna") 
-    parser.add_argument('--prog_key', help='access cNMF program in mdata',type=str,  default="cNMF") 
-    parser.add_argument('--categorical_key', help='access cell condition in obs',type=str, default="sample")  
-    parser.add_argument('--guide_names_key', help='guide names in uns',type=str, default="guide_names")  
-    parser.add_argument('--guide_targets_key', help='guide targets in uns',type=str, default="guide_targets") 
-    parser.add_argument('--guide_assignment_key', help='guide assignment in obsm',type=str, default="guide_assignment") 
-    parser.add_argument('--organism', help='data species',type=str, default="human") 
-    parser.add_argument('--FDR_method',type=str, default="StoreyQ")  
+    parser.add_argument('--data_key', help='Key to access gene expression data in MuData object (default: rna)', type=str, default="rna")
+    parser.add_argument('--prog_key', help='Key to access cNMF programs in MuData object (default: cNMF)', type=str, default="cNMF")
+    parser.add_argument('--categorical_key', help='Key in .obs to access cell condition/sample labels for categorical association (default: sample)', type=str, default="sample")
+    parser.add_argument('--guide_names_key', help='Key in .uns to access guide names (default: guide_names)', type=str, default="guide_names")
+    parser.add_argument('--guide_targets_key', help='Key in .uns to access guide target genes (default: guide_targets)', type=str, default="guide_targets")
+    parser.add_argument('--guide_assignment_key', help='Key in .obsm to access guide assignment matrix (default: guide_assignment)', type=str, default="guide_assignment")
+    parser.add_argument('--organism', help='Organism/species for enrichment analysis (default: human)', type=str, default="human")
+    parser.add_argument('--FDR_method', help='Method for FDR correction in perturbation association (default: StoreyQ)', type=str, default="StoreyQ")  
 
    # check format
-    parser.add_argument('--check_format', help = 'check if have all necessary info', action="store_true")
+    parser.add_argument('--check_format', help='If set, validate MuData format and check for all necessary keys and annotations before running evaluation', action="store_true")
 
 
     args = parser.parse_args()
