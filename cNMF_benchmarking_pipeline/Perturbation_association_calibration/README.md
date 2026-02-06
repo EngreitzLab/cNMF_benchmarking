@@ -1,54 +1,143 @@
 # Perturbation Association Calibration
 
-Statistical validation tool for perturbation association tests in cNMF analysis.
+This folder contains three statistical tests for evaluating perturbation effects on gene programs identified by cNMF. Each test provides different statistical frameworks for assessing whether perturbations significantly affect gene program activity.
 
-## Purpose
+## Overview of Tests
 
-This module validates the statistical properties of perturbation association tests by generating null distributions and comparing them against real perturbation results. It ensures that p-values are properly calibrated and false positive rates are controlled.
+### 1. U-test Perturbation Calibration
+**Location:** `JupterNote_Version/U-test_perturbation_calibration.ipynb` and `Slurm_version/U-test_perturbation_calibration/`
 
-## Methodology
+**Description:** Computes perturbation association tests on real and fake (calibration) data using Mann-Whitney U-test to evaluate the statistical properties of perturbation detection methods.
 
-The calibration performs two main analyses:
+**Method:**
+- Uses non-parametric Mann-Whitney U-test to compare program usage between perturbed and control cells
+- Tests both real perturbations and synthetic calibration data (non-targeting guides)
+- Evaluates false positive rates through QQ plots comparing observed vs. expected p-value distributions
 
-1. **Real Perturbation Test**: Analyzes actual perturbation effects on cNMF programs
-2. **Null/Fake Perturbation Test**: Generates null distribution by randomly reassigning non-targeting guides as "targeting"
+**Key Features:**
+- Non-parametric approach (no distributional assumptions)
+- Calibration analysis to assess statistical validity
+- Suitable for initial exploratory analysis
 
-The results are compared using QQ plots to assess statistical calibration.
+---
 
-## Parameters
+### 2. ProgramDE
+**Location:** `JupterNote_Version/ProgramDE.ipynb` and `Slurm_version/ProgramDE/`
 
-### Required Parameters
+**Description:** Uses SCEPTRE-inspired methodology with conditional randomization tests (CRT) to test perturbation effects on gene programs while accounting for technical covariates.
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| out_dir | str | Path to cNMF object directory |
-| run_name | str | Name of cNMF object |
-| save_path | str | Directory to save output figures |
-| X_normalized_path | str | Path to normalized input cell x gene matrix |
-| mdata_guide_path | str | Path to mdata with guide assignments |
-| gwas_data_path | str | Path to GWAS information file |
+**Method:**
+- Employs conditional randomization tests (CRT) to generate null distributions
+- Groups non-targeting controls (NTC) to create ensemble null models
+- Performs permutation-based testing (default: 1023 permutations)
+- Accounts for covariates (e.g., batch effects, cell cycle)
 
-### Optional Parameters
+**Key Features:**
+- Robust to covariates through permutation framework
+- Controls for multiple testing through ensemble NTC groups
+- Provides empirical null distributions
+- More computationally intensive but statistically rigorous
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| guide_annotation_path | str | None | Path to guide annotation file |
-| guide_annotation_key | str | "non-targeting" | Key for guide annotation |
-| reference_gtf_path | str | None | Path to reference GTF file |
-| data_key | str | "rna" | Key to access gene expression in mdata |
-| prog_key | str | "cNMF" | Key to access cNMF programs in mdata |
-| categorical_key | str | "sample" | Key to access cell conditions in obs |
-| organism | str | "human" | Data species |
-| FDR_method | str | "StoreyQ" | FDR correction method |
-| num_runs | list of int | [10] | Number of calibration iterations |
-| num_guides | list of int | [5] | Number of guides for calibration |
-| components | list of int | None | K values to test |
-| sel_threshs | list of float | None | Selection thresholds |
+**Parameters:**
+- `--n_permutations`: Number of permutations (default: 1023)
+- `--group_size`: Number of guides to group for ensemble testing (default: 6)
+- `--covariates`: List of covariates to include in the model
+- `--NTC_guides`: Names of non-targeting control guides
 
-### Flags
+---
 
-| Flag | Description |
-|------|-------------|
-| --compute_real_pertubration_test | Compute real perturbation associations |
-| --compute_fake_pertubration_test | Compute null/fake perturbation associations |
+### 3. Matched Cell ProgramDE
+**Location:** `Slurm_version/Matched_cell_programDE/`
 
+**Description:** Performs statistical testing using propensity score matching and regression with G-computation to identify significant perturbation effects on gene programs. Written by Tony Zeng.
+
+**Method:**
+
+#### Pipeline Steps:
+
+1. **Cell Matching with Propensity Score Model**
+   ```
+   logit(πc) = log(Pr(Tc = 1|Xc) / (1 - Pr(Tc = 1|Xc))) = γ⊤Xc
+   ```
+   Select matched cells (perturbed vs unperturbed) to reduce confounding.
+
+2. **Program Score Transformation**
+   ```
+   Ỹck = log(Pck + ψk)
+   ```
+   Apply log transformation with adaptive pseudocount to program scores.
+
+3. **Regression with G-computation**
+   ```
+   Ỹck = β0 + βgTc + β⊤XcXc + ϵck
+   ```
+   - `Tc`: treatment indicator (1 for perturbed, 0 for unperturbed)
+   - G-computation estimates `beta_effect` by computing difference in predicted outcomes:
+     - `Ŷ_treatment`: predicted value when setting Tc = 1 for all cells
+     - `Ŷ_control`: predicted value when setting Tc = 0 for all cells
+     - `beta_effect = mean(Ŷ_treatment) - mean(Ŷ_control)`
+
+4. **Variance Estimation**
+   Use delta method to calculate variance and standard deviation of effect size.
+
+5. **Statistical Testing**
+   Compare `(beta_effect, std)` to normal distribution using two-sided test to obtain p-values.
+
+**Null Model Testing:**
+For null model validation, group 6 guides into 1 pseudo gene and follow the same process to generate null p-value distributions.
+
+**Key Features:**
+- Causal inference framework using propensity score matching
+- Accounts for confounding covariates through matching
+- G-computation provides interpretable effect sizes
+- Variance estimation through delta method
+- Written in R with detailed documentation
+
+---
+
+## Folder Structure
+
+```
+Perturbation_association_calibration/
+├── README.md (this file)
+├── JupterNote_Version/
+│   ├── U-test_perturbation_calibration.ipynb
+│   └── ProgramDE.ipynb
+└── Slurm_version/
+    ├── U-test_perturbation_calibration/
+    │   ├── U-test_perturbation_calibration.py
+    │   └── U-test_perturbation_calibration.sh
+    ├── ProgramDE/
+    │   ├── ProgramDE.py
+    │   └── ProgramDE.sh
+    └── Matched_cell_programDE/
+        ├── run_matching_de_batch.R
+        ├── run.sh
+        ├── environment.yml
+        └── README.md
+```
+
+## Choosing a Test
+
+**Use U-test when:**
+- Performing initial exploratory analysis
+- Need fast, non-parametric testing
+- Want to assess overall calibration properties
+
+**Use ProgramDE when:**
+- Need robust covariate adjustment
+- Want permutation-based statistical rigor
+- Have sufficient computational resources for permutation tests
+
+**Use Matched Cell ProgramDE when:**
+- Strong confounding is suspected
+- Want interpretable causal effect sizes
+- Need propensity score matching framework
+- Prefer regression-based approach
+
+## Notes
+
+- All tests require muon/scanpy objects with cNMF program usage scores
+- Guide assignment and metadata must be properly formatted
+- Non-targeting control guides are required for null model calibration
+- Environment files are provided for each test where applicable
