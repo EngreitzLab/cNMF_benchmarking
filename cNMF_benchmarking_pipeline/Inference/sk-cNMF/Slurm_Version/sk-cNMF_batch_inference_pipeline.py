@@ -24,44 +24,44 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     #IO
-    parser.add_argument('--counts_fn', type=str, required=True)  
-    parser.add_argument('--output_directory', type=str, required=True)
-    parser.add_argument('--run_name', type=str, required=True)
-    parser.add_argument('--nmf_seeds_path', type=str, required=True)
+    parser.add_argument('--counts_fn', type=str, required=True, help='Path to input counts file (e.g., .h5mu or .h5ad)')
+    parser.add_argument('--output_directory', type=str, required=True, help='Directory where all outputs will be saved')
+    parser.add_argument('--run_name', type=str, required=True, help='Name for this cNMF run (used for output file naming)')
+    parser.add_argument('--nmf_seeds_path', type=str, required=True, help='Path to .npy file containing NMF random seeds')
 
 
-    # cNMF parameters 
-    parser.add_argument('--numiter', type = int, default = 10)
-    parser.add_argument('--numhvgenes', type = int, default = 5451)
-    parser.add_argument('--seed', type = int, default = 14)
-    parser.add_argument('--K', nargs='*', type=int, default=None) # allow zero input 
-    parser.add_argument('--init', type = str, default = 'random')
-    parser.add_argument('--loss', default = 'frobenius')
-    parser.add_argument('--algo', type = str, default = 'mu')
-    parser.add_argument('--max_NMF_iter', type = int , default = 500)
-    parser.add_argument('--tol', type = float , default = 1e4)
-    parser.add_argument('--sel_thresh', nargs='*', type=float, default=[2.0])  
+    # cNMF parameters
+    parser.add_argument('--numiter', type = int, default = 10, help='Number of NMF replicates to run (default: 10)')
+    parser.add_argument('--numhvgenes', type = int, default = 5451, help='Number of highly variable genes to use (default: 5451)')
+    parser.add_argument('--seed', type = int, default = 14, help='Random seed for reproducibility (default: 14)')
+    parser.add_argument('--K', nargs='*', type=int, default=None, help='List of K values (number of components) to test. If not provided, defaults to [30, 50, 60, 80, 100, 200, 250, 300]')
+    parser.add_argument('--init', type = str, default = 'random', help='Initialization method for NMF (default: random)')
+    parser.add_argument('--loss', default = 'frobenius', help='Loss function for NMF (default: frobenius)')
+    parser.add_argument('--algo', type = str, default = 'mu', help='Algorithm for NMF optimization (default: mu - multiplicative update)')
+    parser.add_argument('--max_NMF_iter', type = int , default = 500, help='Maximum number of iterations for NMF (default: 500)')
+    parser.add_argument('--tol', type = float , default = 1e4, help='Tolerance for NMF convergence (default: 1e4)')
+    parser.add_argument('--sel_thresh', nargs='*', type=float, default=[2.0], help='Density threshold(s) for consensus matrix filtering. If not provided, defaults to [0.4, 0.8, 2.0]')  
 
-    # annotation parameters 
-    parser.add_argument('--species', type=str, required=True)
-    parser.add_argument('--check_format', action="store_true")
-    parser.add_argument('--parallel_running', action="store_true")
-    parser.add_argument('--num_gene', type = int, default = 300)
-    parser.add_argument('--run_refit', action="store_true")
-    parser.add_argument('--run_complie_annotation', action="store_true")
-    parser.add_argument('--run_factorize', action="store_true")
+    # annotation parameters
+    parser.add_argument('--species', type=str, required=True, help='Species for gene annotation (e.g., human, mouse)')
+    parser.add_argument('--check_format', action="store_true", help='If set, validate input data format before running cNMF')
+    parser.add_argument('--parallel_running', action="store_true", help='If set, enables parallel processing mode for combining results from multiple K values')
+    parser.add_argument('--num_gene', type = int, default = 300, help='Number of top genes to use for program annotation (default: 300)')
+    parser.add_argument('--run_refit', action="store_true", help='If set, run the combine and consensus steps after factorization')
+    parser.add_argument('--run_complie_annotation', action="store_true", help='If set, compile results and generate gene annotations for all K values')
+    parser.add_argument('--run_factorize', action="store_true", help='If set, run the NMF factorization step')
 
-    # resourses 
-    parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide informations',  default=None)
-    parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for checking gene names', default=None)
+    # resources
+    parser.add_argument('--guide_annotation_path', type=str,  help='Path to file with guide annotations and metadata (optional)',  default=None)
+    parser.add_argument('--reference_gtf_path', type=str,  help='Path to reference GTF file for validating gene names (optional)', default=None)
 
     # keys
-    parser.add_argument('--data_key', help='access gene expression in mdata',type=str, default="rna") 
-    parser.add_argument('--prog_key', help='access cNMF program in mdata',type=str,  default="cNMF") 
-    parser.add_argument('--categorical_key', help='access cell condition in obs',type=str, default="sample")  
-    parser.add_argument('--guide_names_key', help='guide names in uns',type=str, default="guide_names")  
-    parser.add_argument('--guide_targets_key', help='guide targets in uns',type=str, default="guide_targets") 
-    parser.add_argument('--guide_assignment_key', help='guide assignment in obsm',type=str, default="guide_assignment_key") 
+    parser.add_argument('--data_key', help='Key to access gene expression data in MuData object (default: rna)', type=str, default="rna")
+    parser.add_argument('--prog_key', help='Key to store cNMF programs in MuData object (default: cNMF)', type=str, default="cNMF")
+    parser.add_argument('--categorical_key', help='Key in .obs to access cell condition/sample labels (default: sample)', type=str, default="sample")
+    parser.add_argument('--guide_names_key', help='Key in .uns to access guide names (default: guide_names)', type=str, default="guide_names")
+    parser.add_argument('--guide_targets_key', help='Key in .uns to access guide target genes (default: guide_targets)', type=str, default="guide_targets")
+    parser.add_argument('--guide_assignment_key', help='Key in .obsm to access guide assignment matrix (default: guide_assignment_key)', type=str, default="guide_assignment_key") 
 
 
 
