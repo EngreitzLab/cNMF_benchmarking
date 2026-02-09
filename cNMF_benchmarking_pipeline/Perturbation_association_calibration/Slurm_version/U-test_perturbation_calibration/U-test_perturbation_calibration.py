@@ -349,6 +349,11 @@ if __name__ == "__main__":
     if args.sel_thresh is None:
         args.sel_thresh = [0.4, 0.8, 2.0]
 
+    # save comfigs used         
+    args_dict = vars(args)
+    job_id = os.environ.get('SLURM_JOB_ID')
+    with open(f'{args.out_dir}/{args.run_name}/Eval/config_{job_id}.yml', 'w') as f:
+        yaml.dump(args_dict, f, default_flow_style=False, width=1000)
 
 
     print("=" * 80)
