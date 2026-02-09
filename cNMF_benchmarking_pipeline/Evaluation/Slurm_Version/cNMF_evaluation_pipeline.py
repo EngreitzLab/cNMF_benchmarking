@@ -1,13 +1,11 @@
 import os
 import sys
 import yaml
-import logging
-import mudata
+
 import muon as mu
 import pandas as pd
 import numpy as np
 import argparse
-import mygene
 import cnmf
 import scanpy as sc
 
@@ -29,9 +27,14 @@ from Inference.src import (
     check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_format )
 
 
-def _assign_guide(mdata):
-    mdata[args.data_key].obsm[args.guide_assignment_key] = mdata[args.data_key].obsm[args.guide_assignment_key].toarray()
-    mdata[args.prog_key].obsm[args.guide_assignment_key] = mdata[args.prog_key].obsm[args.guide_assignment_key].toarray()
+def _assign_guide(mdata,_data_guide):
+    mdata[args.data_key].obsm[args.guide_assignment_key] = _data_guide.obsm[args.guide_assignment_key].toarray()
+    mdata[args.prog_key].obsm[args.guide_assignment_key] = _data_guide.obsm[args.guide_assignment_key].toarray()
+
+    mdata[args.prog_key].uns[args.guide_names_key] = _data_guide.uns[args.guide_names_key] 
+    mdata[args.prog_key].uns[args.guide_targets_key] = _data_guide.uns[args.guide_targets_key] 
+    mdata[args.data_key].uns[args.guide_names_key] = _data_guide.uns[args.guide_names_key] 
+    mdata[args.data_key].uns[args.guide_targets_key] = _data_guide.uns[args.guide_targets_key] 
 
 
 if __name__ == '__main__':
@@ -57,6 +60,7 @@ if __name__ == '__main__':
     parser.add_argument('--guide_annotation_path', type=str,  help='Path to tab-separated file with guide annotations including "targeting" column to identify non-targeting controls (optional)')
     parser.add_argument('--gwas_data_path', type=str,  help='Path to GWAS data file for trait enrichment analysis (required for trait enrichment)', required=True)
     parser.add_argument('--reference_gtf_path', type=str,  help='Path to reference GTF file for validating gene names during format checking (optional)')
+    parser.add_argument('--data_guide_path', type=str,  help='Path to mdata that contains additional information (optional)')
 
     # keys
     parser.add_argument('--data_key', help='Key to access gene expression data in MuData object (default: rna)', type=str, default="rna")
@@ -101,10 +105,14 @@ if __name__ == '__main__':
     # list of non-targeting guides
     if args.guide_annotation_path is not None:
         df_target = pd.read_csv(args.guide_annotation_path, sep = "\t", index_col = 0)
-        df_target_non = df_target[not df_target["targeting"]]
+        df_target_non = df_target[df_target["targeting"]==False]
         reference_targets = df_target_non.index.values.tolist()
     else: 
         reference_targets = ["non-targeting"]
+
+
+    # read data guide
+    _data_guide = sc.read(args.data_guide_path)
 
 
     for sel_thresh in args.sel_thresh:
@@ -120,8 +128,8 @@ if __name__ == '__main__':
                                                                                     k=k,
                                                                                     sel_thresh = str(sel_thresh).replace('.','_'))) 
 
-             # assign guide                                                                            
-            _assign_guide(mdata)
+             # assign information                                                                            
+            _assign_guide(mdata,_data_guide)
 
 
             #check format is right
@@ -157,16 +165,16 @@ if __name__ == '__main__':
             if args.Perform_geneset:
                 pre_res = compute_geneset_enrichment(mdata, prog_key=args.prog_key, data_key=args.data_key, prog_nam=None,
                                                     organism=args.organism, library='Reactome_2022', method="fisher",
-                                                    database='enrichr', loading_rank_thresh=300, n_jobs=-1, 
-                                                    inplace=False, user_geneset=None)
+                                                    database='enrichr', n_top=300, n_jobs=-1, 
+                                                    inplace=False, user_geneset=None, use_loadings_gene=True) # use all background genes 
                 pre_res.to_csv('{}/{}_geneset_enrichment.txt'.format(output_folder,k), sep='\t', index=False)
 
 
                 # GO Term enrichment
                 pre_res = compute_geneset_enrichment(mdata, prog_key=args.prog_key, data_key=args.data_key, prog_nam=None,
                                                     organism=args.organism, library='GO_Biological_Process_2023', method="fisher",
-                                                    database='enrichr', loading_rank_thresh=300, n_jobs=-1, 
-                                                    inplace=False, user_geneset=None)
+                                                    database='enrichr', n_top=300, n_jobs=-1, 
+                                                    inplace=False, user_geneset=None, use_loadings_gene=True) # use all background genes 
                 pre_res.to_csv('{}/{}_GO_term_enrichment.txt'.format(output_folder,k), sep='\t', index=False)
 
 
@@ -176,7 +184,7 @@ if __name__ == '__main__':
                                                         prog_key=args.prog_key, prog_nam=None, data_key=args.data_key, 
                                                         library='OT_GWAS', n_jobs=-1, inplace=False, 
                                                         key_column='trait_efos', gene_column='gene_name', 
-                                                        method='fisher', loading_rank_thresh=300)
+                                                        method='fisher', n_top=300, use_loadings_gene=False) # use all background genes inter. expressed gene
                 pre_res_trait.to_csv('{}/{}_trait_enrichment.txt'.format(output_folder,k), sep='\t', index=False)
 
 
