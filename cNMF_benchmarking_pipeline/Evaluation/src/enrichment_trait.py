@@ -257,6 +257,7 @@ def compute_trait_enrichment(
     max_size=2000,
     n_top=500, 
     low_cutoff=-np.inf, 
+    use_loadings_gene=False,
     **kwargs
 ):
     """Compute Trait enrichment using open-targets GWAS"""
@@ -286,6 +287,7 @@ def compute_trait_enrichment(
         n_top=n_top,
         n_jobs=n_jobs, 
         inplace=inplace, 
+        use_loadings_gene=use_loadings_gene,
         **kwargs
     ))
 

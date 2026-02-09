@@ -191,6 +191,7 @@ def perform_fisher_enrich(
     loadings, 
     geneset, 
     n_top=500,
+    use_loadings_gene = True,
     **kwargs
 ):
     """Run Fisher enrichment on each gene program in the loadings matrix.
@@ -227,6 +228,11 @@ def perform_fisher_enrich(
 
     # Find the intersection of genes present in the mudata object and in the library
     background_genes = set(value for sublist in geneset.values() for value in sublist)
+
+    if use_loadings_gene: # if True, only use expressed genes as background genes
+        expressed_gene_list = set(loadings.index)
+        background_genes = background_genes.intersection(expressed_gene_list)
+
     
     enr_res = pd.DataFrame()
     for i in tqdm(loadings.columns, desc='Running Fisher enrichment', unit='programs'):
@@ -329,6 +335,7 @@ def compute_geneset_enrichment(
     n_top: int = 2000,
     n_jobs: int = 1,
     inplace: bool = True,
+    use_loadings_gene = True, # True = use all oncology gene, False = use interact expresseed gene 
     **kwargs
 ) -> Optional[pd.DataFrame]:
 
@@ -425,6 +432,7 @@ def compute_geneset_enrichment(
             loadings=loadings,
             geneset=geneset,
             n_top=n_top,
+            use_loadings_gene=use_loadings_gene,
             **kwargs
         )
         
