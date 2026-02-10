@@ -542,8 +542,12 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
     ax.set_xlabel("Day", fontsize=10, fontweight='bold', loc='center')
     
     # Get labels and set ticks properly
-    label = list(adata_new.obs[groupby].cat.categories)
-    
+    # Check if it's already categorical
+    if hasattr(adata_new.obs[groupby], 'cat'):
+        label = list(adata_new.obs[groupby].cat.categories)
+    else:
+        label = list(adata_new.obs[groupby].unique())
+        
     # Set both ticks and labels together
     tick_positions = range(len(label))
     ax.set_xticks(tick_positions)
@@ -581,6 +585,8 @@ def compute_gene_correlation_matrix(mdata, file_to_dictionary =  None):
 
     # Calculate correlation matrix
     gene_correlation = df_rename.corr()
+    gene_correlation = gene_correlation.fillna(0)
+
 
     return gene_correlation
 
@@ -603,8 +609,8 @@ def analyze_correlations(gene_correlation, Target, top_num=5, save_path=None,
     sorted_correlations = target_correlations.sort_values(ascending=False)
     
     # Get top and bottom gene
-    top = sorted_correlations.head(top_num)
-    bottom = sorted_correlations.tail(top_num)
+    top = sorted_correlations[sorted_correlations > 0].head(top_num)
+    bottom = sorted_correlations[sorted_correlations < 0].tail(top_num)
     
     # Combine for plotting
     combined_correlations = pd.concat([bottom, top])
@@ -663,29 +669,29 @@ def analyze_correlations(gene_correlation, Target, top_num=5, save_path=None,
 
 # helper method for computing waterfall corr
 def compute_gene_waterfall_cor(perturb_path):
-    import numpy as np
-    from scipy.stats import pearsonr
-
     df = pd.read_csv(perturb_path, sep='\t', index_col=0)
 
     # Pre-process: create matrix with genes as rows, programs as columns
     pivot_df = df.pivot_table(index='target_name', columns='program_name', values='log2FC')
 
-    # Compute correlation matrix using numpy - much faster
-    corr_matrix = np.corrcoef(pivot_df.values)
+    # Compute correlation matrix using pandas .corr() - handles NaN gracefully
+    corr_matrix = pivot_df.T.corr()
 
-    # Convert back to dictionary format if needed
-    genes = pivot_df.index.tolist()
+    # Convert to dictionary format
+    genes = corr_matrix.index.tolist()
     correlations = {}
 
-    for i, target_gene in enumerate(genes):
+    for target_gene in genes:
         correlations[target_gene] = {
-            gene: corr_matrix[i, j]
-            for j, gene in enumerate(genes)
+            gene: corr_matrix.loc[target_gene, gene]
+            for gene in genes
             if gene != target_gene
         }
 
     return correlations
+
+
+    
 
 
 
@@ -768,7 +774,7 @@ def create_gene_correlation_waterfall(waterfall_correlation, Target_Gene, top_nu
 # graph one big svg or pdf 
 def create_comprehensive_plot(
     mdata,
-    perturb_path,
+    perturb_path_base,
     file_to_dictionary,
     Target_Gene,
     gene_correlation,
@@ -924,8 +930,7 @@ def create_comprehensive_plot(
     ax_index = 5  # Start after header axes (0-4)
     
     for idx, samp in enumerate(sample):
-        file_name = f"{perturb_path}_{samp}.txt" 
-        Day = f'Day {idx}'
+        file_name = f"{perturb_path_base}_{samp}.txt" 
 
         # Plot 1: Log2FC plot
         current_ax = axes[ax_index]
@@ -937,12 +942,12 @@ def create_comprehensive_plot(
             p_value=p_value,
             figsize=(4, 3),
             ax=current_ax,
-            Day=Day
+            Day=samp
         )
         ax_index += 1
         current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel("Program Name", fontsize=14, fontweight='bold', loc='center')
-        current_ax.set_title(f"Program Log2 Fold-Change, {Day} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
+        current_ax.set_title(f"Program Log2 Fold-Change, {samp} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
 
         # Plot 2: Volcano plot
         current_ax = axes[ax_index]
@@ -954,10 +959,10 @@ def create_comprehensive_plot(
             p_value=p_value,
             figsize=(5, 3), 
             ax=current_ax,
-            Day=Day
+            Day=samp
         )
         ax_index += 1
-        current_ax.set_title(f"Volcano Plot, {Day} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
+        current_ax.set_title(f"Volcano Plot, {samp} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
         current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel("Adjusted p-value, -log10", fontsize=14, fontweight='bold', loc='center')
         for t in text:
@@ -970,12 +975,13 @@ def create_comprehensive_plot(
             mdata=mdata, 
             program_list=df["program_name"].tolist(),
             Target=Target_Gene,
+            groupby=groupby,
             figsize=(5, 3),
             ax=current_ax,
-            Day=Day
+            Day=samp
         )
         ax_index += 1
-        current_ax.set_title(f"Perturbed Program Loading Scores, {Day} \n {Target_Gene}", fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_title(f"Perturbed Program Loading Scores, {samp} \n {Target_Gene}", fontsize=18, fontweight='bold', loc='center')
         current_ax.set_ylabel('Program Name', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_xlabel("Day", fontsize=14, fontweight='bold', loc='center')
         
@@ -985,11 +991,11 @@ def create_comprehensive_plot(
             waterfall_correlation=waterfall_correlation[samp],
             Target_Gene=Target_Gene,
             ax=current_ax,
-            Day=Day,
+            Day=samp,
             figsize=(3, 4),
         )
         ax_index += 1
-        current_ax.set_title(f"Gene Perturbation Correlation, {Day} \n {Target_Gene}", fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_title(f"Gene Perturbation Correlation, {samp} \n {Target_Gene}", fontsize=18, fontweight='bold', loc='center')
         current_ax.set_ylabel(f'Correlation of Program\nExpression with\n{Target_Gene} Perturbation', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_xlabel('Perturbed Genes', fontsize=14, fontweight='bold', loc='center')
 
@@ -1026,7 +1032,7 @@ def create_comprehensive_plot(
 
 def process_single_gene(Target_Gene,     
                         mdata,
-                        perturb_path,
+                        perturb_path_base,
                         file_to_dictionary,
                         top_program=10,
                         groupby='sample',
@@ -1049,7 +1055,7 @@ def process_single_gene(Target_Gene,
 
         create_comprehensive_plot(
             mdata=mdata,
-            perturb_path=perturb_path,
+            perturb_path_base=perturb_path_base,
             Target_Gene=Target_Gene,
             file_to_dictionary=file_to_dictionary,
             top_program=top_program,
@@ -1079,7 +1085,7 @@ def process_single_gene(Target_Gene,
 
 def parallel_gene_processing(perturbed_gene_list, 
                         mdata,
-                        perturb_path,
+                        perturb_path_base,
                         file_to_dictionary,
                         top_program=10,
                         groupby='sample',
@@ -1105,7 +1111,7 @@ def parallel_gene_processing(perturbed_gene_list,
     process_func = partial(
             process_single_gene,
             mdata=mdata,
-            perturb_path=perturb_path,
+            perturb_path_base=perturb_path_base,
             file_to_dictionary=file_to_dictionary,
             top_program=top_program,
             groupby=groupby,

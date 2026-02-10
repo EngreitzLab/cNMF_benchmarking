@@ -63,6 +63,12 @@ def plot_stablity_error(stats, folder_name = None, file_name = None):
 
     if folder_name and file_name:
         fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight" )#  transparent=True)
+    
+    plt.show()
+    plt.close(fig)
+
+
+    
 
 
 # Load data for differeent enrichment test
@@ -83,10 +89,10 @@ def load_enrichment_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 30
 
     for k in components:
 
-        term_df.append(load(k, 'go_terms', '{}/{}_{}/{}_GO_term_enrichment.txt'.format(folder,k,sel_thresh,k)))
-        term_df.append(load(k, 'genesets', '{}/{}_{}/{}_geneset_enrichment.txt'.format(folder,k,sel_thresh,k)))
-        term_df.append(load(k, 'traits', '{}/{}_{}/{}_trait_enrichment.txt'.format(folder,k,sel_thresh,k)))
-        #term_df.append(load(k, 'motifs', '{}/{}_{}/{}_motif_enrichment.txt'.format(folder,k,sel_thresh,k)))
+        term_df.append(load(k, 'go_terms', '{}/{}_{}/{}_GO_term_enrichment.txt'.format(folder,k,str(sel_thresh).replace('.','_'),k)))
+        term_df.append(load(k, 'genesets', '{}/{}_{}/{}_geneset_enrichment.txt'.format(folder,k,str(sel_thresh).replace('.','_'),k)))
+        term_df.append(load(k, 'traits', '{}/{}_{}/{}_trait_enrichment.txt'.format(folder,k,str(sel_thresh).replace('.','_'),k)))
+        #term_df.append(load(k, 'motifs', '{}/{}_{}/{}_motif_enrichment.txt'.format(folder,k,str(sel_thresh).replace('.','_'),k)))
 
     term_df = pd.concat(term_df, ignore_index=True)
 
@@ -99,14 +105,14 @@ def load_enrichment_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 30
 
 
     #print out some stats
-    print("min go_terms is", count_df['go_terms'].min())
-    print("max go_terms is", count_df['go_terms'].max())
+    print(f"min go_terms for {sel_thresh} is", count_df['go_terms'].min())
+    print(f"max go_terms for {sel_thresh} is", count_df['go_terms'].max())
 
-    print("min genesets is", count_df['genesets'].min())
-    print("max genesets is", count_df['genesets'].max())
+    print(f"min genesets for {sel_thresh} is", count_df['genesets'].min())
+    print(f"max genesets for {sel_thresh} is", count_df['genesets'].max())
 
-    print("min traits is", count_df['traits'].min())
-    print("max traits is", count_df['traits'].max())
+    print(f"min traits for {sel_thresh}  is", count_df['traits'].min())
+    print(f"max traits for {sel_thresh}  is", count_df['traits'].max())
 
     #print("min motif is", count_df['motifs'].min())
     #print("max motif is", count_df['motifs'].max())
@@ -147,6 +153,9 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
     if folder_name and file_name:
         fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")# transparent=True)
 
+    plt.show()
+    plt.close(fig)
+
 
 # load perturbation data 
 def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80, 100, 200, 250, 300], sel_thresh = 2.0,
@@ -158,16 +167,16 @@ def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80
     for k in components:  
         # Run perturbation assocation
         for samp in samples:
-            test_stats_df_ = pd.read_csv('{}/{}_{}/{}_perturbation_association_results_{}.txt'.format(folder,k,sel_thresh,k,samp), sep='\t')
+            test_stats_df_ = pd.read_csv('{}/{}_{}/{}_perturbation_association_results_{}.txt'.format(folder,k,str(sel_thresh).replace('.','_'),k,samp), sep='\t')
             test_stats_df_['sample'] = samp
             test_stats_df_['K'] = k
-            test_stats_df_['fdr'] = fdrcorrection(test_stats_df_['pval'])[1]
+            #test_stats_df_['fdr'] = fdrcorrection(test_stats_df_['pval'])[1]
             test_stats_df.append(test_stats_df_)
             
     test_stats_df = pd.concat(test_stats_df, ignore_index=True)
 
     # pring some stats
-    plotting_df = test_stats_df.loc[test_stats_df.pval< pval, ['K','target_name']].drop_duplicates().groupby(['K']).count().reset_index()
+    plotting_df = test_stats_df.loc[test_stats_df.adj_pval < pval, ['K','target_name']].drop_duplicates().groupby(['K']).count().reset_index()
 
     print("min regulators is", plotting_df["target_name"].min())
     print("max regulators is", plotting_df["target_name"].max())
@@ -181,19 +190,25 @@ def plot_perturbation(test_stats_df, pval =0.000335, folder_name = None, file_na
     fig, axs = plt.subplots(ncols=1, nrows=2,figsize=(5, 5))
 
     axs[0].set_title(f'Unique regulators of progams per sample (pval <= {str(pval)})', fontsize=10)
-    plotting_df = test_stats_df.loc[test_stats_df.pval<=pval, ['K', 'sample','target_name']].drop_duplicates().groupby(['K', 'sample']).count().reset_index()
+    plotting_df = test_stats_df.loc[test_stats_df.adj_pval<=pval, ['K', 'sample','target_name']].drop_duplicates().groupby(['K', 'sample']).count().reset_index()
     sns.lineplot(x='K', y='target_name', hue='sample', data=plotting_df, ax=axs[0])
     axs[0].set_ylabel('# Regulators', fontsize=10)
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
 
     axs[1].set_title(f'Unique regulators of progams (pval <= {str(pval)})', fontsize=10)
-    plotting_df = test_stats_df.loc[test_stats_df.pval<=pval, ['K','target_name']].drop_duplicates().groupby(['K']).count().reset_index()
+    plotting_df = test_stats_df.loc[test_stats_df.adj_pval<=pval, ['K','target_name']].drop_duplicates().groupby(['K']).count().reset_index()
     sns.lineplot(x='K', y='target_name', data=plotting_df, color='black', ax=axs[1])
     axs[1].set_ylabel('# Regulators', fontsize=10)
 
     if folder_name and file_name:
         fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")#  transparent=True)
+
+    plt.show()
+    plt.close(fig)
+
+    return plotting_df
+
 
 
 # load total explained variance
@@ -202,7 +217,7 @@ def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200,
     stats = {}
     for k in components:
     
-        input_path = f"{folder}/{k}_{sel_thresh}/{k}_Explained_Variance_Summary.txt"
+        input_path = f"{folder}/{k}_{str(sel_thresh).replace('.','_')}/{k}_Explained_Variance_Summary.txt"
         df = pd.read_csv(input_path, sep = '\t', index_col = 0)
 
         stats[k] = df['Total'].values[0]
@@ -232,6 +247,7 @@ def plot_explained_variance(stats, folder_name=None, file_name=None):
         fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight") # transparent=True)
     
     plt.show()
+    plt.close(fig)
 
 
 
@@ -294,7 +310,7 @@ def load_stablity_error_data(output_directory, run_name, local_neighborhood_size
                                                                                 output_directory=output_directory,
                                                                                 run_name = run_name,
                                                                                 k=k,
-                                                                                sel_thresh = f"{density_threshold}".replace('.','_'))
+                                                                                sel_thresh = str(sel_thresh).replace('.','_')
 
         stats.append(load_stablity_error_data_(k, cnmf_obj, norm_counts, rf_usages_path, density_threshold, local_neighborhood_size))
 

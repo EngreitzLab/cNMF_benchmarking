@@ -12,10 +12,8 @@
 #SBATCH --mem=96G                       # Memory per node
 
 # Email notifications
-#SBATCH --mail-type=BEGIN              # Send email when job starts
-#SBATCH --mail-type=END                # Send email when job ends
-#SBATCH --mail-type=FAIL               # Send email if job fails
-#SBATCH --mail-user=ymo@stanford.edu   # the email address sent 
+#SBATCH --mail-type=BEGIN,END,FAIL      # Send email at start, end, and on failure
+#SBATCH --mail-user=ymo@stanford.edu    # Email address
 
 # Define the cNMF case
 OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/cc-perturb-seq/Results"

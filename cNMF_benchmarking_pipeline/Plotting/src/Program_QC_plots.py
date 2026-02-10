@@ -178,7 +178,9 @@ def top_GO_per_program(GO_path, Target_Program, num_term = 5, p_value_name = "Ad
     df = pd.read_csv(GO_path, sep='\t', index_col=0)
 
     # local to a program and isolate Term
-    df_program = df.loc[df['program_name'] == Target_Program]
+    'program_name' in df.columns
+    df.index.name == 'program_name'
+    df_program = df.loc[Target_Program]
 
     # rename index
     df_program.index = df_program['Term']
@@ -252,6 +254,8 @@ def compute_program_correlation_matrix(mdata):
     df =  pd.DataFrame(data=mdata['cNMF'].X, index =mdata['cNMF'].obs_names )
 
     program_correlation = df.corr()
+    program_correlation = program_correlation.fillna(0)
+
 
     return program_correlation
 
@@ -272,9 +276,8 @@ save_path=None, save_name = None, figsize = (5, 4),show=False, ax=None):
     sorted_correlations = target_correlations.sort_values(ascending=True)
     
     # Get top and bottom gene
-    top = sorted_correlations.head(num_program)
-    bottom = sorted_correlations.tail(num_program)
-
+    top = sorted_correlations[sorted_correlations > 0].head(num_program)
+    bottom = sorted_correlations[sorted_correlations < 0].tail(num_program)
 
     # Combine for plotting
     combined_correlations = pd.concat([bottom, top])
@@ -731,8 +734,6 @@ def perturbed_gene_dotplot(mdata, Target_Program, groupby="sample", gene_list=No
 
 # helper method for computing waterfall corr
 def compute_program_waterfall_cor(perturb_path):
-    import numpy as np
-    from scipy.stats import pearsonr
 
     df = pd.read_csv(perturb_path, sep='\t', index_col=0)
 
@@ -740,21 +741,21 @@ def compute_program_waterfall_cor(perturb_path):
     pivot_df = df.pivot_table(index='program_name', columns='target_name', values='log2FC')
 
     # Compute correlation matrix using numpy - much faster
-    corr_matrix = np.corrcoef(pivot_df.values)
+    corr_matrix = pivot_df.T.corr()
 
     # Convert back to dictionary format if needed
-    programs = pivot_df.index.tolist()
+    programs = corr_matrix.index.tolist()
     correlations = {}
 
-    for i, target_program in enumerate(programs):
+    for target_program in programs:
         correlations[target_program] = {
-            program: corr_matrix[i, j]
-            for j, program in enumerate(programs)
-            if program != target_program
+            gene: corr_matrix.loc[target_program, gene]
+            for gene in programs
+            if gene != target_program
         }
 
-
     return correlations
+
 
 
 # plot the waterfall plot for genes that have simliar program loading scores when perturbed 
@@ -977,7 +978,6 @@ def create_comprehensive_program_plot(
     
     for idx, samp in enumerate(sample):
         file_name = f"{perturb_path_base}_{samp}.txt" 
-        Day = f'Day {idx}'
 
         # Plot 1: Log2FC plot
         current_ax = axes[ax_index]
@@ -989,12 +989,12 @@ def create_comprehensive_program_plot(
             p_value=p_value,
             figsize=(4, 3),
             ax=current_ax,
-            Day=Day
+            Day=samp
         )
         ax_index += 1
         current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel("Regulator Name", fontsize=14, fontweight='bold', loc='center')
-        current_ax.set_title(f"Regulator Effect on Program Expression, \n Program {Target_Program}, {Day}", fontsize=20, fontweight='bold', loc='center')
+        current_ax.set_title(f"Regulator Effect on Program Expression, \n Program {Target_Program}, {samp}", fontsize=20, fontweight='bold', loc='center')
 
 
         # Plot 2: Volcano plot
@@ -1009,10 +1009,10 @@ def create_comprehensive_program_plot(
             p_value=p_value,
             figsize=(5, 3), 
             ax=current_ax,
-            Day=Day
+            Day=samp
         )
         ax_index += 1
-        current_ax.set_title(f"Volcano Plot for Program Expression, \n Program {Target_Program}, {Day}", fontsize=20, fontweight='bold', loc='center')
+        current_ax.set_title(f"Volcano Plot for Program Expression, \n Program {Target_Program}, {samp}", fontsize=20, fontweight='bold', loc='center')
         current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel(" -log10 Adjusted p-value", fontsize=14, fontweight='bold', loc='center')
         for t in text:
@@ -1028,9 +1028,9 @@ def create_comprehensive_program_plot(
             groupby=groupby,
             figsize=(5, 3),
             ax=current_ax,
-            Day=Day
+            Day=samp
         )
-        current_ax.set_title(f"Regulator Expression \n Program {Target_Program}, {Day} ", fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_title(f"Regulator Expression \n Program {Target_Program}, {samp} ", fontsize=18, fontweight='bold', loc='center')
         current_ax.set_ylabel('Regulator Name', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_xlabel("Conditions", fontsize=14, fontweight='bold', loc='center')
         ax_index += 1
@@ -1042,11 +1042,11 @@ def create_comprehensive_program_plot(
             Target_Program=Target_Program,
             top_num=top_enrichned_term,
             ax=current_ax,
-            Day=Day,
+            Day=samp,
             figsize=(3, 4),
         )
         ax_index += 1
-        current_ax.set_title(f"Programs Regulated by Similiar Regulators \n Program {Target_Program}, {Day}", fontsize=18, fontweight='bold', loc='center')
+        current_ax.set_title(f"Programs Regulated by Similiar Regulators \n Program {Target_Program}, {samp}", fontsize=18, fontweight='bold', loc='center')
         current_ax.set_ylabel(f'Correlation of Perturbed Genes\n Effect on Program {Target_Program}', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_xlabel('Program Name', fontsize=14, fontweight='bold', loc='center')
         for t in text:

@@ -246,6 +246,37 @@ def consensus_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2,
     print("max value:", sorted_overlap.max().max())
    
 
+#return cNMF run results
+def return_cNMF_matrix(k, output_dir, run_name,sel_thresh=2.0):
+
+    def get_gene_score_path(output_dir, run_name, k, sel_thresh):
+            return '{output_dir}/{run_name}/{run_name}.gene_spectra_score.k_{k}.dt_{sel_thresh}.txt'.format(
+                                                                                        output_dir=output_dir,
+                                                                                        run_name = run_name,
+                                                                                        k=k,
+                                                                                        sel_thresh = str(sel_thresh).replace('.','_'))
+    def get_gene_median_path(output_dir, run_name, k, sel_thresh):
+            return '{output_dir}/{run_name}/{run_name}.spectra.k_{k}.dt_{sel_thresh}.consensus.txt'.format(
+                                                                                        output_dir=output_dir,
+                                                                                        run_name = run_name,
+                                                                                        k=k,
+                                                                                        sel_thresh = str(sel_thresh).replace('.','_'))
+
+    def get_program_path(output_dir, run_name, k, sel_thresh):
+          return '{output_dir}/{run_name}/{run_name}.usages.k_{k}.dt_{sel_thresh}.consensus.txt'.format(
+                                                                                        output_dir=output_dir,
+                                                                                        run_name = run_name,
+                                                                                        k=k,
+                                                                                        sel_thresh = str(sel_thresh).replace('.','_'))
+
+
+    # read in as df 
+    gene_median = pd.read_csv(get_gene_median_path(output_dir, run_name, k, sel_thresh), sep="\t" , index_col = 0)
+    gene_score = pd.read_csv(get_gene_score_path(output_dir, run_name, k, sel_thresh), sep="\t" , index_col = 0)
+    program = pd.read_csv(get_program_path(output_dir, run_name, k, sel_thresh), sep="\t" , index_col = 0)
+
+    return gene_median, gene_score,program
+
 
 
 # plot boxplot for each K values' max shared genes
@@ -624,23 +655,24 @@ def build_overlap_matrix(dict1, dict2):
 
 
 
-def GO_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2,
+def GO_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2, sel_thresh_1 = 2.0, sel_thresh_2 = 2.0, 
 figsize = (5,5), pval = 0.05, title = "Shared GO torch-halsv-batch vs sk-cd (K=100)"):
 
-    def get_gene_path(output_dir, run_name, k):
+    def get_gene_path(output_dir, run_name, k, sel_thresh):
         """Helper to build path consistently"""
 
-        return '{output_dir}/{run_name}/Eval/{k}/{k}_GO_term_enrichment.txt'.format(output_dir=output_dir,
+        return '{output_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_GO_term_enrichment.txt'.format(output_dir=output_dir,
                                                             run_name = run_name,
+                                                            sel_thresh = str(sel_thresh).replace('.', '_'),
                                                             k=k)
                                                 
 
     # read in as df 
-    path_1 = get_gene_path(output_dir_1, run_name_1, k)
-    path_2 = get_gene_path(output_dir_2, run_name_2, k)
+    path_1 = get_gene_path(output_dir_1, run_name_1, k, sel_thresh_1)
+    path_2 = get_gene_path(output_dir_2, run_name_2, k, sel_thresh_2)
 
-    combined_df_1 = pd.read_csv(get_gene_path(output_dir_1, run_name_1, k), sep="\t" , index_col = 0)
-    combined_df_2 = pd.read_csv(get_gene_path(output_dir_2, run_name_2, k), sep="\t" , index_col = 0)
+    combined_df_1 = pd.read_csv(path_1, sep="\t" , index_col = 0)
+    combined_df_2 = pd.read_csv(path_2, sep="\t" , index_col = 0)
 
     gene_list_1 = compute_gene_list_GO(k, combined_df_1, pval)
     gene_list_2 = compute_gene_list_GO(k, combined_df_2, pval)
@@ -669,26 +701,28 @@ figsize = (5,5), pval = 0.05, title = "Shared GO torch-halsv-batch vs sk-cd (K=1
 
 
 
-def perturbation_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2,
+def perturbation_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2, condition, sel_thresh_1 = 2.0, sel_thresh_2 = 2.0, 
 figsize = (5,5), pval = 0.05, title = "Shared unique regulators torch-halsv-batch vs sk-cd (K=100)"):
 
-    def get_gene_path(output_dir, run_name, k):
+    def get_gene_path(output_dir, run_name, k, sel_thresh, condition):
         """Helper to build path consistently"""
 
-        return '{output_dir}/{run_name}/Eval'.format(output_dir=output_dir,
+        return '{output_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_perturbation_association_results_{condition}.txt'.format(output_dir=output_dir,
                                                             run_name = run_name,
-                                                            k=k)
+                                                            sel_thresh = str(sel_thresh).replace('.', '_'),
+                                                            k=k,
+                                                            condition = condition )
                                                 
 
     # read in as df 
-    path_1 = get_gene_path(output_dir_1, run_name_1, k)
-    path_2 = get_gene_path(output_dir_2, run_name_2, k)
+    path_1 = get_gene_path(output_dir_1, run_name_1, k, sel_thresh_1, condition)
+    path_2 = get_gene_path(output_dir_2, run_name_2, k, sel_thresh_2, condition)
 
     combined_df_1 = load_combined_matrix(k, path_1)
     combined_df_2 = load_combined_matrix(k, path_2)
 
-    gene_list_1 = compute_gene_list_perturbation(k, combined_df_1,pval)
-    gene_list_2 = compute_gene_list_perturbation(k, combined_df_2,pval)
+    gene_list_1 = compute_gene_list_perturbation(k, combined_df_1, pval)
+    gene_list_2 = compute_gene_list_perturbation(k, combined_df_2, pval)
 
     overlap_matrix = build_overlap_matrix(gene_list_1,gene_list_2)
 
@@ -714,23 +748,24 @@ figsize = (5,5), pval = 0.05, title = "Shared unique regulators torch-halsv-batc
 
 
 
-def geneset_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2,
+def geneset_clustermap(k, output_dir_1, output_dir_2, run_name_1, run_name_2, sel_thresh_1 = 2.0, sel_thresh_2 = 2.0, 
 figsize = (5,5), pval = 0.05, title = "Shared genesets torch-halsv-batch vs sk-cd (K=100)"):
 
-    def get_gene_path(output_dir, run_name, k):
+    def get_gene_path(output_dir, run_name, k, sel_thresh):
         """Helper to build path consistently"""
 
-        return '{output_dir}/{run_name}/Eval/{k}/{k}_geneset_enrichment.txt'.format(output_dir=output_dir,
+        return '{output_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_geneset_enrichment.txt'.format(output_dir=output_dir,
+                                                            sel_thresh = str(sel_thresh).replace('.', '_'),
                                                             run_name = run_name,
                                                             k=k)
                                                 
 
     # read in as df 
-    path_1 = get_gene_path(output_dir_1, run_name_1, k)
-    path_2 = get_gene_path(output_dir_2, run_name_2, k)
+    path_1 = get_gene_path(output_dir_1, run_name_1, k, sel_thresh_1)
+    path_2 = get_gene_path(output_dir_2, run_name_2, k, sel_thresh_2)
 
-    combined_df_1 = pd.read_csv(get_gene_path(output_dir_1, run_name_1, k), sep="\t" , index_col = 0)
-    combined_df_2 = pd.read_csv(get_gene_path(output_dir_2, run_name_2, k), sep="\t" , index_col = 0)
+    combined_df_1 = pd.read_csv(path_1, sep="\t" , index_col = 0)
+    combined_df_2 = pd.read_csv(path_2, sep="\t" , index_col = 0)
 
     gene_list_1 = compute_gene_list_GO(k, combined_df_1, pval)
     gene_list_2 = compute_gene_list_GO(k, combined_df_2, pval)

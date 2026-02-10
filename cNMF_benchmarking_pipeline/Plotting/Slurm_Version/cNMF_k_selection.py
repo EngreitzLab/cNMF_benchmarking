@@ -58,7 +58,7 @@ if __name__ == '__main__':
     args_dict = vars(args)    
     job_id = os.environ.get('SLURM_JOB_ID')
 
-    os.makedirs((f'{args.output_directory}/{args.run_name}/Plot/k_selection'), exist_ok=True)
+    os.makedirs(f'{args.save_folder_name}', exist_ok=True)
     with open(f'{args.save_folder_name}/config_{job_id}.yml', 'w') as f:
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)
 
@@ -84,7 +84,9 @@ if __name__ == '__main__':
 
         # Motif (working in progress)
 
+
+    # program doplots
     for sel_thresh in sel_thresh_value:
         for k in k_value:
-            fig = programs_dotplots(k, args.output_directory, args.run_name, sel_thresh = sel_thresh, groupby=args.groupby, figsize=(4, 15),
+            fig = programs_dotplots(k, args.output_directory, args.run_name, sel_thresh = sel_thresh, groupby=args.groupby, figsize=(4, 30),
             show = False, save_name=f"Program_dotplot_{k}_{sel_thresh}", save_path = args.save_folder_name, ax = None)

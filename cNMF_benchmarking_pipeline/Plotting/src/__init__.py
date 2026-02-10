@@ -16,7 +16,7 @@ from .k_quality_plots import program_corr,program_euclidean, top_genes_overlap,s
                                 trait_clustermap, geneset_clustermap,perturbation_clustermap,\
                                 GO_clustermap,build_overlap_matrix,compute_gene_list_GO,\
                                 compute_gene_list_perturbation,load_combined_matrix,\
-                                kmean_cluster, NMF_clustermap,plot_coefficient_variance
+                                kmean_cluster, NMF_clustermap,plot_coefficient_variance,return_cNMF_matrix
                             
 
 # gene QC plots
