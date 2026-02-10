@@ -120,7 +120,7 @@ def Compile_Perturbation_sheet(Perturbation_path, Sample = ["D0", "sample_D1","s
 
     combined_conditions = []
     for samp in Sample: 
-        df = pd.read_csv(f"{Perturbation_path}_{samp}.txt", sep = "\t", index_col = 0)
+        df = pd.read_csv(f"{Perturbation_path}_{samp}.txt", sep = "\t")
         df['Sample'] = samp
         combined_conditions.append(df)
 
@@ -148,14 +148,14 @@ def Compile_Explained_variance(Explained_Variance_path):
 
 
 # combine methods for simple sheets
-def load_simple_sheets(mdata, out_dir, run_name, k, sel_thresh, num_gene = 300,  Sample = ['1', '2', '3']):
+def load_simple_sheets(mdata, out_dir, run_name, k, sel_thresh, num_gene = 300, perturbation_file_name = "perturbation_association_results", Sample = ['1', '2', '3']):
 
-    GO_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_GO_term_enrichment.txt'
-    Geneset_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_geneset_enrichment.txt'
-    Trait_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_trait_enrichment.txt'
-    Perturbation_path_base = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_perturbation_association_results'
-    Association_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_categorical_association_results.txt'
-    Explained_Variance_path = f'{out_dir}/{run_name}/Eval/{k}_{sel_thresh}/{k}_Explained_Variance.txt'
+    GO_path = f'{out_dir}/{run_name}/Eval/{k}_{str(sel_thresh).replace(".","_")}/{k}_GO_term_enrichment.txt'
+    Geneset_path = f'{out_dir}/{run_name}/Eval/{k}_{str(sel_thresh).replace(".","_")}/{k}_geneset_enrichment.txt'
+    Trait_path = f'{out_dir}/{run_name}/Eval/{k}_{str(sel_thresh).replace(".","_")}/{k}_trait_enrichment.txt'
+    Perturbation_path_base = f'{out_dir}/{run_name}/Eval/{k}_{str(sel_thresh).replace(".","_")}/{k}_{perturbation_file_name}'
+    Association_path = f'{out_dir}/{run_name}/Eval/{k}_{str(sel_thresh).replace(".","_")}/{k}_categorical_association_results.txt'
+    Explained_Variance_path = f'{out_dir}/{run_name}/Eval/{k}_{str(sel_thresh).replace(".","_")}/{k}_Explained_Variance.txt'
 
     # compile program loadings 
     df_Program_loading_long = compile_Program_loading_score_sheet_long(mdata, num_gene = num_gene)
@@ -409,29 +409,19 @@ def get_significant_programs_df(Perturbation_path, Sample = ["D0", "sample_D1","
 
     for gene, days_data in significant_programs.items():
         row = {'target_name': gene}
-        for day in ["D0", "sample_D1", "sample_D2", "sample_D3"]:
-            programs = days_data.get(day, [])
-            row[f'significant programs {day}'] = ', '.join(map(str, programs)) if programs else ''
+        for samp in Sample:
+            programs = days_data.get(samp, [])
+            row[f'significant programs {samp}'] = ', '.join(map(str, programs)) if programs else ''
         sig_prog_data.append(row)
 
     df_significant_programs = pd.DataFrame(sig_prog_data)
     df_significant_programs = df_significant_programs.set_index('target_name')
 
-    df_significant_programs['# programs D0'] = df_significant_programs['significant programs D0'].apply(
-        lambda x: str(len(x.split(','))) if x and x != '' else 0
-    )
+    for samp in Sample:
+        df_significant_programs[f'# programs {samp}'] = df_significant_programs[f'significant programs {samp}'].apply(
+            lambda x: str(len(x.split(','))) if x and x != '' else 0
+        )
 
-    df_significant_programs['# programs D1'] = df_significant_programs['significant programs sample_D1'].apply(
-        lambda x: str(len(x.split(','))) if x and x != '' else  0
-    )
-
-    df_significant_programs['# programs D2'] = df_significant_programs['significant programs sample_D2'].apply(
-        lambda x: str(len(x.split(','))) if x and x != '' else 0
-    )
-
-    df_significant_programs['# programs D3'] = df_significant_programs['significant programs sample_D3'].apply(
-        lambda x: str(len(x.split(','))) if x and x != '' else 0
-    )
 
     return df_significant_programs
 
@@ -461,10 +451,13 @@ def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2"
             top_negative = corr_series.tail(top_n)
             
             # Format as strings
-            top_pos_targets = '; '.join(top_positive.index.tolist())
+            #top_pos_targets = '; '.join([str(x) for x in top_positive.index.tolist()])
             top_pos_values = '; '.join([f"{x:.3f}" for x in top_positive.values])
-            top_neg_targets = '; '.join(top_negative.index.tolist())
+            #top_neg_targets = '; '.join([str(x) for x in top_negative.index.tolist()])
             top_neg_values = '; '.join([f"{x:.3f}" for x in top_negative.values])
+
+            top_pos_targets = '; '.join(top_positive.index.tolist())
+            top_neg_targets = '; '.join(top_negative.index.tolist())
             
             correlation_results.append({
                 'target_name': gene,
@@ -572,9 +565,16 @@ def simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Expla
 
     # create perturbation gene summary col
     for samp in Sample:
-        df_Perturbation_D = df_Perturbation_enriched.loc[df_Perturbation_enriched['Sample'] == samp]
-        df_Perturbation_D_program = df_Perturbation_D.loc[df_Perturbation_D['program_name'] == 0]
-        df[f'sigfdr0.05_targets_sorted_abslog2fc_{samp}'] = [';'.join(df_Perturbation_D.loc[df_Perturbation_D['program_name'] == i].index.unique()) for i in range(k)]
+        df_Perturbation_D = df_Perturbation_enriched.loc[df_Perturbation_enriched['Sample'] == samp] # make for each condition
+
+        targets_list = []
+        for i in range(k):
+            matching = df_Perturbation_D.loc[df_Perturbation_D['program_name'] == i] # for each program
+            unique_indices = matching["target_name"].unique()                                  # find unique programs
+            joined = ';'.join([str(x) for x in unique_indices])                      # join them 
+            targets_list.append(joined)
+
+        df[f'sigfdr0.05_targets_sorted_abslog2fcd_{samp}'] = targets_list
 
 # make the program info in summary sheet
 def get_program_info_Summary_cols(mdata, categorical_key = "sample"):
