@@ -152,22 +152,20 @@ if __name__ == '__main__':
     # running 
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
 
-
     cnmf_obj.prepare(counts_fn=args.counts_fn, components=args.K, n_iter=args.numiter, densify=args.densify, tpm_fn=args.tpm_fn, num_highvar_genes=args.numhvgenes, genes_file=args.genes_file,
-                beta_loss = args.loss, init = args.init,
-                algo = args.algo, mode = args.mode, tol=args.tol, n_jobs=args.n_jobs, 
-                seed = args.seed,  use_gpu = args.use_gpu, 
-                alpha_usage = args.alpha_usage, alpha_spectra = args.alpha_spectra, 
-                l1_ratio_usage = args.l1_ratio_usage, l1_ratio_spectra = args.l1_ratio_spectra,
-                online_usage_tol = args.online_usage_tol, online_spectra_tol = args.online_spectra_tol,
-                fp_precision = args.fp_precision, 
-                batch_max_iter = args.batch_max_iter, batch_hals_tol = args.batch_hals_tol, batch_hals_max_iter = args.batch_hals_max_iter,
-                online_max_pass = args.online_max_pass, online_chunk_size = args.online_chunk_size, online_chunk_max_iter = args.online_chunk_max_iter,
-                shuffle_cells = args.shuffle_cells, sk_cd_refit =args.sk_cd_refit, nmf_seeds = nmf_seeds )
+    beta_loss = args.loss, init = args.init,
+    algo = args.algo, mode = args.mode, tol=args.tol, n_jobs=args.n_jobs, 
+    seed = args.seed,  use_gpu = args.use_gpu, 
+    alpha_usage = args.alpha_usage, alpha_spectra = args.alpha_spectra, 
+    l1_ratio_usage = args.l1_ratio_usage, l1_ratio_spectra = args.l1_ratio_spectra,
+    online_usage_tol = args.online_usage_tol, online_spectra_tol = args.online_spectra_tol,
+    fp_precision = args.fp_precision, 
+    batch_max_iter = args.batch_max_iter, batch_hals_tol = args.batch_hals_tol, batch_hals_max_iter = args.batch_hals_max_iter,
+    online_max_pass = args.online_max_pass, online_chunk_size = args.online_chunk_size, online_chunk_max_iter = args.online_chunk_max_iter,
+    shuffle_cells = args.shuffle_cells, sk_cd_refit =args.sk_cd_refit, nmf_seeds = nmf_seeds )
 
 
     if args.run_factorize:
-
         cnmf_obj.factorize(total_workers = 1,skip_completed_runs=True) 
 
     if args.run_refit:
@@ -180,7 +178,6 @@ if __name__ == '__main__':
         run_cnmf_consensus(cnmf_obj, 
                         components=args.K, 
                         density_thresholds=args.sel_thresh)
-
 
     if args.run_complie_annotation:
 
@@ -201,8 +198,6 @@ if __name__ == '__main__':
                                                                                         sep='\t', index_col=0)   
                 overlap = get_top_indices_fast(df, gene_num=args.num_gene)
                 annotate_genes_to_excel(overlap, species = args.species, output_file = f'{args.output_directory}/{args.run_name}/Annotation/{k}_{i}.xlsx')
-
-
 
     # combine the parallel ran K value into "run_name_all" file 
     if args.parallel_running and isinstance(args.K, int):

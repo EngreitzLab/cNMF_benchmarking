@@ -27,7 +27,7 @@ if __name__ == '__main__':
     parser.add_argument('--counts_fn', type=str, required=True, help='Path to input counts file (e.g., .h5mu or .h5ad)')
     parser.add_argument('--output_directory', type=str, required=True, help='Directory where all outputs will be saved')
     parser.add_argument('--run_name', type=str, required=True, help='Name for this cNMF run (used for output file naming)')
-    parser.add_argument('--nmf_seeds_path', type=str, required=True, help='Path to .npy file containing NMF random seeds')
+    parser.add_argument('--nmf_seeds_path', type=str, help='Path to .npy file containing NMF random seeds', default = None)
 
 
     # cNMF parameters
@@ -82,7 +82,6 @@ if __name__ == '__main__':
         nmf_seeds = None
 
 
-
     # create output directory       
     os.makedirs((f'{args.output_directory}/{args.run_name}'), exist_ok=True)
 
@@ -132,8 +131,8 @@ if __name__ == '__main__':
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
 
     cnmf_obj.prepare(counts_fn= args.counts_fn, components= args.K, n_iter= args.numiter,  densify=False, tpm_fn=None, seed= args.seed,
-                     beta_loss = args.loss,num_highvar_genes=args.numhvgenes, genes_file=None,
-                     alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=args.max_NMF_iter, algo = args.algo, tol = args.tol, nmf_seeds = nmf_seeds)
+            beta_loss = args.loss,num_highvar_genes=args.numhvgenes, genes_file=None,
+            alpha_usage=0.0, alpha_spectra=0.0, init=args.init, max_NMF_iter=args.max_NMF_iter, algo = args.algo, tol = args.tol, nmf_seeds = nmf_seeds)
 
     if args.run_factorize:
 
@@ -149,7 +148,6 @@ if __name__ == '__main__':
         run_cnmf_consensus(cnmf_obj, 
                             components=args.K, 
                             density_thresholds=args.sel_thresh)
-
 
     if args.run_complie_annotation:
 
@@ -172,7 +170,6 @@ if __name__ == '__main__':
                                                                                         sep='\t', index_col=0)   
                 overlap = get_top_indices_fast(df, gene_num=args.num_gene)
                 annotate_genes_to_excel(overlap, species = args.species, output_file= f'{args.output_directory}/{args.run_name}/Annotation/{k}.xlsx')
-
 
 
     # combine the parallel ran K value into "run_name_all" file 
