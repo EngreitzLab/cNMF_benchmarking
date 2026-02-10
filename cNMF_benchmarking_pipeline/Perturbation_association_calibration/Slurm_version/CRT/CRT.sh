@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=U-020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50   # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/logs/%j.err       # Error file
+#SBATCH --job-name=U-020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50   # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/Eval/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/Eval/logs/%j.err       # Error file
 #SBATCH --partition=owners,engreitz,bigmem            # partition name
-#SBATCH --time=02:00:00                 # Time limit 
+#SBATCH --time=08:00:00                 # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
 #SBATCH --cpus-per-task=20              # CPUs per task
@@ -18,8 +18,8 @@
 
 
 # Define the cNMF case
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result"
-RUN_NAME="020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50"
+RUN_NAME="020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
@@ -60,7 +60,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --components 50 \
         --sel_thresh 0.2 2.0 \
         --categorical_key "timepoint" \
-        --FDR_method 'BH' 
+        --FDR_method 'StoreyQ' 
 
 
 # Calculate and print elapsed time at the end

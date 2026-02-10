@@ -81,8 +81,8 @@ def run_CRT(adata, output_folder, args):
 
     # perform CRT for each condition of cells 
     for condition in adata.obs[args.categorical_key].unique():
-        adata_con = adata[adata[args.categorical_key] == condition].copy()
-
+        adata_con = adata[adata.obs[args.categorical_key] == condition].copy()
+        
         inputs = prepare_crt_inputs(
             adata=adata_con,
             usage_key="cnmf_usage",
@@ -162,37 +162,39 @@ def run_CRT(adata, output_folder, args):
             ntc_group_pvals_skew_ens=ntc_group_pvals_skew_ens,
             show_ntc_ensemble_band=True,
             show_all_pvals=True,
-            title="QQ plot: grouped NTC controls (raw vs skew) vs CRT null",
+            title=f"QQ plot: grouped NTC controls (raw vs skew) vs CRT null for {condition}",
         )
 
         import matplotlib.pyplot as plt
-        plt.tight_layout()
-        plt.show()
+
 
         if output_folder:
 
             plt.savefig(f"{output_folder}/CRT_{condition}.png", dpi=100)
             save_result(out, output_folder, condition)
 
+        plt.tight_layout()
+        plt.show()
+
 
 # save results
 def save_result(out, output_folder, condition):
 
     pval_df = out['pvals_skew_df']
-    beta_df = out['beta_df']
+    beta_df = out['betas_df']
 
     pval_long = pval_df.reset_index().melt(
         id_vars='index',
-        var_name='target_name',
+        var_name='program_name',
         value_name='p-value'
-    ).rename(columns={'index': 'program_name'})
+    ).rename(columns={'index': 'target_name'})
     
     # Melt beta dataframe
     beta_long = beta_df.reset_index().melt(
         id_vars='index',
-        var_name='target_name',
+        var_name='program_name',
         value_name='log2FC'
-    ).rename(columns={'index': 'program_name'})
+    ).rename(columns={'index': 'target_name'})
     
     # Merge on program and target_gene
     result_df = pval_long.merge(
@@ -202,7 +204,7 @@ def save_result(out, output_folder, condition):
     )
     
     # Reorder columns
-    result_df = result_df[['target_name', 'program_name',  'log2FC', 'p-value']]
+    result_df = result_df[[ 'target_name', 'program_name', 'log2FC', 'p-value']]
 
 
     # Correct for multiple testing
