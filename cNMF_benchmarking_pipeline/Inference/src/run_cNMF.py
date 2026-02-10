@@ -104,12 +104,12 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
                                                                                     sel_thresh = str(i).replace('.','_')))
             # Make mdata
             mdata = muon.MuData({'rna': adata_, 'cNMF': prog_data})
-            mdata['cNMF'].uns[guide_names_key] = adata_.uns[guide_names_key]
-            mdata['cNMF'].uns[guide_targets_key] = adata_.uns[guide_targets_key]
-            mdata['cNMF'].obs[categorical_key] = adata_.obs[categorical_key]
-            mdata['cNMF'].obsm[guide_assignment_key] = adata_.obsm[guide_assignment_key] 
-            mdata['cNMF'].obsm['X_pca'] = adata_.obsm['X_pca']
-            mdata['cNMF'].obsm['X_umap'] = adata_.obsm['X_umap']
+            #mdata['cNMF'].uns[guide_names_key] = adata_.uns[guide_names_key]
+            #mdata['cNMF'].uns[guide_targets_key] = adata_.uns[guide_targets_key]
+            #mdata['cNMF'].obs[categorical_key] = adata_.obs[categorical_key]
+            #mdata['cNMF'].obsm[guide_assignment_key] = adata_.obsm[guide_assignment_key] 
+            #mdata['cNMF'].obsm['X_pca'] = adata_.obsm['X_pca']
+            #mdata['cNMF'].obsm['X_umap'] = adata_.obsm['X_umap']
             mdata['rna'].var['var_names'] = adata_.var_names
 
 
