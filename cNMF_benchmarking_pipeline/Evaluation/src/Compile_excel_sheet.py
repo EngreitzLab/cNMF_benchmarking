@@ -535,7 +535,8 @@ top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna
 
 
 # get simply items ready in the summary sheet
-def simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance, Sample = ["D0", "sample_D1","sample_D2","sample_D3" ]):
+def simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance, Sample = ["D0", "sample_D1","sample_D2","sample_D3" ]
+, non_tagerting_key = None):
 
     # set program #
     k = len(df_GO['program_name'].unique())
@@ -543,6 +544,10 @@ def simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Expla
     # create GO summary col
     df_GO_enriched = df_GO.loc[df_GO['Adjusted P-value']<=0.05]
     df['Total Enriched GO Terms'] = [df_GO_enriched[df_GO_enriched['program_name']==i].shape[0] for i in range(k)] 
+
+    # remove non-targeting off the list of perturbed genes 
+    if non_tagerting_key is not None:
+        df_Perturbation = df_Perturbation[~df['target_name'].isin(non_tagerting_key)]
 
     # create perturbation program summary col
     df_Perturbation_enriched = df_Perturbation.loc[df_Perturbation['adj_pval']<=0.05]
@@ -635,7 +640,7 @@ def get_top_terms_Summary_cols(df_GO,df_Geneset):
 
 # compile summry sheet
 def Compile_Summary_sheet(mdata, df_GO, df_Geneset, df_Perturbation, df_Program_loading, df_Explained_Variance, Sample = ["D0", "sample_D1","sample_D2","sample_D3"],
-categorical_key = "sample"):
+categorical_key = "sample",non_tagerting_key=None):
 
     # set program #
     k = len(df_GO['program_name'].unique())
@@ -646,7 +651,7 @@ categorical_key = "sample"):
     'Notes': [''] * k,
     'Automatic Timepoint': [''] * k }, index=pd.Index(range(k), name='program_name'))
 
-    simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance,  Sample = Sample)
+    simple_Summary_cols(df, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance,  Sample = Sample, non_tagerting_key=non_tagerting_key)
     df_cell_info_cols = get_program_info_Summary_cols(mdata,categorical_key)
     df_top_terms = get_top_terms_Summary_cols(df_GO, df_Geneset)
 
