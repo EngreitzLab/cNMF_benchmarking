@@ -5,7 +5,16 @@
 sk-cNMF uses coordinate descent, which requires element-wise updates that cannot be parallelized on GPU.
 Instead of updating one element at a time, torch-cNMF with the HALS solver updates a column of elements at a time.
 Through the benchmarking process, updating a column of elements was found to lead to lower stability and lower biological metrics using the same hyperparameters.
-However, with lower tolerance in torch-cNMF HALS, torch-cNMF is able to achieve very similar results.
+However, with lower tolerance in torch-cNMF HALS, torch-cNMF is able to achieve very similar results. Currently, we are not sure how this difference will change the downstream analysis.
+
+Therefore, currently, we think torch-cNMF can be used for K selection, with the following hyperparameters:
+- Tolerance: 1e-7
+- NMF replicates: 20
+
+and sk-cNMF can be used for running the final K, with the following hyperparameters:
+- Tolerance: 1e-4
+- NMF replicates: 100
+
 
 ## Recommended Steps for K Selection 
 
