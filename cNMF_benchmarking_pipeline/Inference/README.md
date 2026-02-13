@@ -15,6 +15,8 @@ and sk-cNMF can be used for running the final K, with the following hyperparamet
 - Tolerance: 1e-4
 - NMF replicates: 100
 
+Benchmarking result: https://docs.google.com/presentation/d/1Z25ew7xrnhXD_eQx7e7eg6vtHx_T4uVD/edit?usp=sharing&ouid=103348313942131245812&rtpof=true&sd=true
+
 
 ## Recommended Steps for K Selection 
 
