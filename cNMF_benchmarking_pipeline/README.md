@@ -1,6 +1,7 @@
 # cNMF Pipeline
 
 ![Pipeline Flowchart](./flowchart.png)
+Detail requirement see: https://docs.google.com/document/d/1eusT8lUCeKl1lTkQ37qd8IoRy3P1798lSVOkpPbyGMU/edit?usp=sharing
 
 ## Overview
 End-to-end pipeline for running and evaluating (with visualization) consensus Non-negative Matrix Factorization (cNMF) on single-cell data with perturbation.
