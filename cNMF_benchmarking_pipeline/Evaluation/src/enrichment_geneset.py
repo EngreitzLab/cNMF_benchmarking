@@ -191,7 +191,7 @@ def perform_fisher_enrich(
     loadings, 
     geneset, 
     n_top=500,
-    use_loadings_gene = True,
+    use_loadings_gene = False,
     **kwargs
 ):
     """Run Fisher enrichment on each gene program in the loadings matrix.
@@ -335,7 +335,7 @@ def compute_geneset_enrichment(
     n_top: int = 2000,
     n_jobs: int = 1,
     inplace: bool = True,
-    use_loadings_gene = True, # True = use all oncology gene, False = use interact expresseed gene 
+    use_loadings_gene = False, # False = use all oncology gene, True = use interact expresseed gene 
     **kwargs
 ) -> Optional[pd.DataFrame]:
 
