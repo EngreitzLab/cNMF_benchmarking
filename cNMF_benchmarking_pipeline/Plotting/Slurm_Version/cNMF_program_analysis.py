@@ -15,21 +15,12 @@ from Plotting.src import merge_pdfs_in_folder, merge_svgs_to_pdf
 
 from Plotting.src import plot_umap_per_program, plot_top_gene_per_program, top_GO_per_program, compute_program_correlation_matrix,\
                               analyze_program_correlations, plot_violin, plot_program_log2FC, plot_program_heatmap, plot_program_volcano, \
-                              perturbed_gene_dotplot, compute_program_waterfall_cor, create_program_correlation_waterfall, create_comprehensive_program_plot
-'''from Evaluation.src import (
-    check_evaluation_pipeline_format,
-    check_gene_names,
-    _validate_against_reference_gtf
-)
-'''
+                              perturbed_program_dotplot, compute_program_waterfall_cor, create_program_correlation_waterfall, create_comprehensive_program_plot
+
 # reformate if needed 
 def _assign_guide(mdata, mdata_guide):
-        mdata['rna'].var_names = mdata['rna'].var['gene_names']
-        mdata['cNMF'].uns['guide_names'] = mdata_guide['rna'].uns['guide_names']
-        mdata['cNMF'].uns['guide_targets'] = mdata_guide['rna'].uns['guide_targets']
-        mdata['cNMF'].obsm['guide_assignment'] = mdata_guide['rna'].obsm['guide_assignment'].toarray()
-        mdata['cNMF'].obsm['X_pca'] = mdata_guide['rna'].obsm['X_pca'] 
-        mdata['cNMF'].obsm['X_umap'] = mdata_guide['rna'].obsm['X_umap']               
+        mdata['cNMF'].obsm['guide_assignment'] = mdata_guide['cNMF'].obsm['guide_assignment'].toarray()
+              
 
 if __name__ == '__main__':
     
@@ -57,6 +48,7 @@ if __name__ == '__main__':
     parser.add_argument('--show', action="store_true", help='display plots interactively')
     parser.add_argument('--PDF', action="store_true", help='save plots as PDF (default is SVG)')
     parser.add_argument('--sample', nargs='*', type=str, default=None, help='list of sample names (default: D0 sample_D1 sample_D2 sample_D3)')
+    parser.add_argument('--programs', nargs='+', type=int, default=None, help='specific program numbers to plot (e.g. 4 5 6 ... 100). If omitted, all programs are plotted.')
 
     # keys
     parser.add_argument('--data_key', type=str, default="rna", help='key to access gene expression data in MuData')
@@ -71,6 +63,8 @@ if __name__ == '__main__':
     if args.sample is None:
         args.sample = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
 
+
+
     # save comfigs used         
     args_dict = vars(args)
     job_id = os.environ.get('SLURM_JOB_ID')
@@ -79,20 +73,11 @@ if __name__ == '__main__':
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)
 
 
+
     #read mdata
     mdata = mu.read_h5mu(args.mdata_path)
-   #_assign_guide(mdata, mdata)
+    _assign_guide(mdata, mdata)
 
-    '''    
-    #check data format
-    if not check_evaluation_pipeline_format(mdata,prog_key=args.prog_key):
-        raise ValueError("mdata format is incorrect")
-
-
-    valid = check_gene_names(mdata,prog_key=args.prog_key, data_key=args.data_key,categorical_key=args.categorical_key,reference_gtf_path=args.reference_gtf_path)
-    if not valid["is_valid"]:
-        raise ValueError("mdata gene naming is incorrect")
-    '''
 
     # check umap exist 
     if 'X_umap' not in mdata['cNMF'].obsm:
@@ -105,8 +90,20 @@ if __name__ == '__main__':
         mdata['cNMF'].obsm['X_umap'] = mdata['rna'].obsm['X_umap'] 
 
 
+
+
     program_len = len(mdata['cNMF'].var) # find out list of programs to process 
     print(f"there are {program_len} Program found")
+
+
+
+    # found detected perturbed gene
+    perturbed_gene = np.unique(mdata['cNMF'].uns["guide_targets"])
+    gene_list = mdata['rna'].var_names.tolist()
+    perturbed_gene_found = list(set(gene_list) & set(perturbed_gene.tolist())) 
+    perturbed_gene_found = sorted(perturbed_gene_found)  # sort list by alphabetical order
+
+
 
 
     # compute correlations
@@ -116,11 +113,13 @@ if __name__ == '__main__':
         df = compute_program_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt")
         waterfall_correlation[samp] = (df)
 
-
     program_correlation = compute_program_correlation_matrix(mdata)
         
     
-    for program in range(program_len):
+
+
+    programs_to_plot = args.programs if args.programs is not None else list(range(program_len))
+    for program in programs_to_plot:
 
         create_comprehensive_program_plot(
             mdata=mdata,
@@ -137,7 +136,7 @@ if __name__ == '__main__':
             log2fc_col=args.log2fc_col,
             top_enrichned_term=args.top_enrichned_term,
             down_thred_log=args.down_thred_log,
-            up_thred_log=args.down_thred_log,
+            up_thred_log=args.up_thred_log,
             p_value=args.p_value, 
             save_path=args.pdf_save_path,
             save_name= str(program),
@@ -145,13 +144,14 @@ if __name__ == '__main__':
             sample=args.sample,
             square_plots=args.square_plots,
             show=args.show,
-            PDF=args.PDF
+            PDF=args.PDF,
+            gene_list=perturbed_gene_found
         )
 
 
     # merge pdf 
     if args.PDF:
-        merge_pdfs_in_folder(args.pdf_save_path)
+        merge_pdfs_in_folder(args.pdf_save_path, output_filename = "program.pdf")
     else:
         merge_svgs_to_pdf(args.pdf_save_path)
 
