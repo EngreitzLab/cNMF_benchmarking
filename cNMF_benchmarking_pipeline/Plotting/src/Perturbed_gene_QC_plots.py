@@ -1,3 +1,4 @@
+
 import muon as mu 
 import scanpy as sc
 import numpy as np
@@ -56,17 +57,38 @@ from .utilities import convert_adata_with_mygene, convert_with_mygene, rename_li
 
 # plot gene expression UMAP given adata
 def plot_umap_per_gene(mdata, Target_Gene, file_to_dictionary = None, ax=None,
- color='purple', save_path=None, save_name=None, figsize=(8,6), show=False):
+ color='purple', save_path=None, save_name=None, figsize=(8,6), show=False, size = None,
+ subsample_frac=None, random_state=42):
 
     if file_to_dictionary is None:
         renamed = mdata['rna'].copy()
     else:
         renamed = rename_adata_gene_dictionary(mdata['rna'], file_to_dictionary)
 
+    # Optionally subsample cells for faster plotting
+    if subsample_frac is not None and 0 < subsample_frac < 1.0:
+        np.random.seed(random_state)
+        n_cells = renamed.n_obs
+        n_sample = int(n_cells * subsample_frac)
+        indices = np.random.choice(n_cells, size=n_sample, replace=False)
+        renamed = renamed[sorted(indices)].copy()
 
     # Check if query gene exists
     if Target_Gene not in renamed.var_names.values:
-        raise ValueError(f"Gene {Target_Gene} not found in mdata")
+        print(f"Gene {Target_Gene} not found in mdata")
+        # Handle empty gene list
+        if ax is None:
+            blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
+            img = Image.fromarray(blank_img)
+            if save_path and save_name:
+                full_path = f"{save_path}/{save_name}.png"
+                img.save(full_path)
+            return None
+        else:
+            ax.text(0.5, 0.5, 'No UMAP to display',
+                   ha='center', va='center', transform=ax.transAxes)
+            return ax
+    
     
     # Check if gene exists
     gene_name_list = renamed.var_names.tolist()
@@ -91,7 +113,7 @@ def plot_umap_per_gene(mdata, Target_Gene, file_to_dictionary = None, ax=None,
     
     # Plot on the provided/created axis
     plt.sca(ax)  # Set current axis to ensure scanpy uses correct figure -CC change
-    sc.pl.umap(renamed, color=Target_Gene, title=title, cmap=cmap, ax=ax, show=False)
+    sc.pl.umap(renamed, color=Target_Gene, title=title, cmap=cmap, ax=ax, show=False, size = size)
     
     # Rasterize ONLY the scatter points (collections) in this axis
     for collection in ax.collections:
@@ -118,10 +140,10 @@ def plot_umap_per_gene(mdata, Target_Gene, file_to_dictionary = None, ax=None,
     return ax
 
 
-
 # plot guide UMAP given mdata with guide assignment
-def plot_umap_per_gene_guide(mdata, Target_Gene, ax=None, color='red', save_path=None, 
-save_name=None, figsize=(8,6), show=False):
+def plot_umap_per_gene_guide(mdata, Target_Gene, ax=None, color='red', save_path=None,
+save_name=None, figsize=(8,6), show=False, size = None,
+subsample_frac=None, random_state=42):
 
     # Extract gRNA per cell and merge the gRNA targeting the same gene 
     X = mdata['cNMF'].obsm["guide_assignment"].T
@@ -134,7 +156,15 @@ save_name=None, figsize=(8,6), show=False):
     adata.var_names = df_merge.index
     adata.obsm['X_pca'] = mdata['rna'].obsm['X_pca']
     adata.obsm['X_umap'] = mdata['rna'].obsm['X_umap']
-    
+
+    # Optionally subsample cells for faster plotting
+    if subsample_frac is not None and 0 < subsample_frac < 1.0:
+        np.random.seed(random_state)
+        n_cells = adata.n_obs
+        n_sample = int(n_cells * subsample_frac)
+        indices = np.random.choice(n_cells, size=n_sample, replace=False)
+        adata = adata[sorted(indices)].copy()
+
     # Check if gene exists
     gene_name_list = adata.var_names.tolist()
     if Target_Gene not in gene_name_list:
@@ -160,7 +190,7 @@ save_name=None, figsize=(8,6), show=False):
     # Plot on the provided/created axis
     plt.sca(ax)  # Set current axis to ensure scanpy uses correct figure -CC change
 
-    sc.pl.umap(adata, color=Target_Gene, title=title, cmap=cmap, ax=ax, show=False)
+    sc.pl.umap(adata, color=Target_Gene, title=title, cmap=cmap, ax=ax, show=False, size=size)
     
     # Rasterize ONLY the scatter points (collections) in this axis
     for collection in ax.collections:
@@ -206,7 +236,20 @@ def plot_top_program_per_gene(mdata,  Target_Gene, file_to_dictionary = None,top
     
     # Check if gene exists
     if Target_Gene not in df_renamed.columns:
-        raise ValueError(f"Gene {Target_Gene} not found in mdata")
+        print(f"Gene {Target_Gene} not found in mdata")
+        # Handle empty gene list
+        if ax is None:
+            blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
+            img = Image.fromarray(blank_img)
+            if save_path and save_name:
+                full_path = f"{save_path}/{save_name}.png"
+                img.save(full_path)
+            return None
+        else:
+            ax.text(0.5, 0.5, 'No program to display',
+                   ha='center', va='center', transform=ax.transAxes)
+            return ax
+    
     
     
     # sort top x program
@@ -276,7 +319,19 @@ def perturbed_gene_dotplot(mdata,  Target_Gene, file_to_dictionary=None, groupby
 
     # Check if query gene exists
     if Target_Gene not in renamed.var_names.values:
-        raise ValueError(f"Gene {Target_Gene} not found in mdata")
+        print(f"Gene {Target_Gene} not found in mdata")
+        # Handle empty gene list
+        if ax is None:
+            blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
+            img = Image.fromarray(blank_img)
+            if save_path and save_name:
+                full_path = f"{save_path}/{save_name}.png"
+                img.save(full_path)
+            return None
+        else:
+            ax.text(0.5, 0.5, 'No gene to display',
+                   ha='center', va='center', transform=ax.transAxes)
+            return ax
     
     
     if save_name is None:
@@ -598,8 +653,20 @@ def analyze_correlations(gene_correlation, Target, top_num=5, save_path=None,
 
     # check if gene exists
     if Target not in gene_correlation.columns:
-        raise ValueError(f"Gene {Target} not found in mdata")
-
+        print(f"Gene {Target} not found in mdata")
+        # Handle empty gene list
+        if ax is None:
+            blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
+            img = Image.fromarray(blank_img)
+            if save_path and save_name:
+                full_path = f"{save_path}/{save_name}.png"
+                img.save(full_path)
+            return None
+        else:
+            ax.text(0.5, 0.5, 'No correlation to display',
+                   ha='center', va='center', transform=ax.transAxes)
+            return ax
+    
 
     # Get correlations with the target program
     target_correlations = gene_correlation[Target]
@@ -794,7 +861,9 @@ def create_comprehensive_plot(
     sample=None,
     square_plots=True,
     show=True,
-    PDF=True
+    PDF=True,
+    dot_size = None,
+    subsample_frac=None
 ):
     """
     Create a comprehensive multi-panel figure for analyzing gene perturbations.
@@ -869,9 +938,11 @@ def create_comprehensive_plot(
     ax1 = plot_umap_per_gene(
         mdata=mdata,
         file_to_dictionary=file_to_dictionary,
-        Target_Gene=Target_Gene, 
+        Target_Gene=Target_Gene,
         figsize=(4, 3),
-        ax=ax1
+        size = dot_size,
+        ax=ax1,
+        subsample_frac=subsample_frac
     )
     ax1.set_title(f"{Target_Gene} Expression", fontsize=18, fontweight='bold', loc='center')
     ax1.set_xlabel('UMAP 1', fontsize=14, fontweight='bold')
@@ -880,9 +951,11 @@ def create_comprehensive_plot(
     # Plot 21: UMAP for gRNA
     ax21 = plot_umap_per_gene_guide(
         mdata=mdata,
-        Target_Gene=Target_Gene, 
+        Target_Gene=Target_Gene,
         figsize=(4, 3),
-        ax=ax21
+        size = dot_size,
+        ax=ax21,
+        subsample_frac=subsample_frac
     )
     ax21.set_title(f"{Target_Gene} Perturbation", fontsize=18, fontweight='bold', loc='center')
     ax21.set_xlabel('UMAP 1', fontsize=14, fontweight='bold')

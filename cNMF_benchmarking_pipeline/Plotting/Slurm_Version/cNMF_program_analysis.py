@@ -49,6 +49,7 @@ if __name__ == '__main__':
     parser.add_argument('--PDF', action="store_true", help='save plots as PDF (default is SVG)')
     parser.add_argument('--sample', nargs='*', type=str, default=None, help='list of sample names (default: D0 sample_D1 sample_D2 sample_D3)')
     parser.add_argument('--programs', nargs='+', type=int, default=None, help='specific program numbers to plot (e.g. 4 5 6 ... 100). If omitted, all programs are plotted.')
+    parser.add_argument('--subsample_frac', type=float, default=None, help='fraction of cells to subsample for UMAP plots (e.g. 0.1 for 10%%). Default: None (plot all cells)')
 
     # keys
     parser.add_argument('--data_key', type=str, default="rna", help='key to access gene expression data in MuData')
@@ -145,7 +146,8 @@ if __name__ == '__main__':
             square_plots=args.square_plots,
             show=args.show,
             PDF=args.PDF,
-            gene_list=perturbed_gene_found
+            gene_list=perturbed_gene_found,
+            subsample_frac=args.subsample_frac
         )
 
 

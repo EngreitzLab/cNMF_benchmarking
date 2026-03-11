@@ -48,10 +48,19 @@ from .utilities import convert_adata_with_mygene, convert_with_mygene, rename_li
 
 # make UMAP of program score
 def plot_umap_per_program(mdata, Target_Program, ax=None,
- color='purple', save_path=None, save_name=None, figsize=(8,6), show=False):
+ color='purple', save_path=None, save_name=None, figsize=(8,6), show=False,
+ subsample_frac=None, random_state=42):
 
     # read cell and program data
     adata_plot = mdata['cNMF'].copy()
+
+    # Optionally subsample cells for faster plotting
+    if subsample_frac is not None and 0 < subsample_frac < 1.0:
+        np.random.seed(random_state)
+        n_cells = adata_plot.n_obs
+        n_sample = int(n_cells * subsample_frac)
+        indices = np.random.choice(n_cells, size=n_sample, replace=False)
+        adata_plot = adata_plot[sorted(indices)].copy()
     
     colors = ['lightgrey', color]
     n_bins = 100
@@ -204,21 +213,32 @@ def top_GO_per_program(GO_path, Target_Program, num_term = 5, p_value_name = "Ad
     wrapped_labels = []
     for label in df_sort_log.index:
         # Try to wrap at 40 characters, preferring breaks at spaces
-        wrapped = textwrap.fill(label, width=20, break_long_words=False, break_on_hyphens=False)
+        wrapped = textwrap.fill(label, width=30, break_long_words=False, break_on_hyphens=False)
         wrapped_labels.append(wrapped)
 
+    
+    # Compute bar spacing based on number of wrapped lines to avoid label overlap
+    line_counts = [wrapped.count('\n') + 1 for wrapped in wrapped_labels]
+    max_lines = max(line_counts)                                                           
+    spacing = max(1.0, max_lines * 0.7)
+    positions = [i * spacing for i in range(len(wrapped_labels))]
+
     # Create horizontal bar plot
-    bars = ax.barh(range(len(df_sort_log)), df_sort_log.values, color='#808080', alpha=0.8)
+    #bars = ax.barh(range(len(df_sort_log)), df_sort_log.values, color='#808080', alpha=0.8)
+    bars = ax.barh(positions, df_sort_log.values, color='#808080', alpha=0.8, height=0.8 * spacing)
 
     # Customize the plot
     ax.set_title(f"GO enrichment for Program {Target_Program}",fontsize=14, fontweight='bold', loc='center')
-    ax.set_yticks(range(len(df_sort_log)))
-    ax.set_yticklabels(wrapped_labels, fontsize=10, fontweight='bold')
+    #ax.set_yticks(range(len(df_sort_log)))
+    ax.set_yticks(positions)
+    ax.set_yticklabels(wrapped_labels, fontsize=6, fontweight='bold')
+    
     ax.set_xlabel('-log10 Adjusted P-value',fontsize=11, fontweight='bold', loc='center')
 
     # Format x-axis to match your reference
-    ax.set_xlim(0, max(df_sort_log.values))
+    ax.set_xlim(0, max(df_sort_log.values)* 1.05) # keep the plotting part smaller
     ax.ticklabel_format(style='scientific', axis='x', scilimits=(0,0))
+    plt.subplots_adjust(left=0.3, right=0.7, top=0.93, bottom=0.08)
 
     # Add grid
     ax.grid(axis='x', alpha=0.3, linestyle='-', linewidth=0.5)
@@ -418,7 +438,7 @@ def plot_violin(mdata, Target_Program, save_path=None, save_name=None, groupby =
 
 # plot barplot for up/down regulated genes log2FC given results from perturbation analysis, return genes in df
 def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
-                log2fc_col='log2FC', num_item=5, p_value=0.05, save_path=None, save_name=None, 
+                log2fc_col='log2FC', num_item=5, p_value=0.05, save_path=None, save_name=None, gene_list = None,
                 figsize=(5, 4), show=False, ax=None, Day =""):
 
     # read df
@@ -428,6 +448,11 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
     if Target not in df[tagert_col_name].values:
         print(f"{Target} not found in mdata")
         return ax, None
+
+    if gene_list is not None:
+        expressed_gene =  set(df[plot_col_name].values).intersection(set(gene_list))
+        df = df[df[plot_col_name].isin(expressed_gene)]
+        
 
     # Sort by log2FC
     df_sorted = df.loc[df[tagert_col_name] == Target]
@@ -492,6 +517,7 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
     
     return ax, plot_data
  
+
 
 
 
@@ -572,7 +598,7 @@ def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="tar
 # plot one volcone plot given perturbation analysis, return genes in df
 def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
                  down_thred_log=-0.05, up_thred_log=0.05, p_value=0.05, save_path=None, 
-                 save_name=None, figsize=(5, 4), show=False, ax=None, Day =""):
+                 save_name=None, figsize=(5, 4), show=False, ax=None, Day ="", gene_list = None):
                  
     df = pd.read_csv(perturb_path, sep="\t")
        
@@ -583,6 +609,11 @@ def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", pl
         return ax, None, None
 
     df_program = df.loc[df[tagert_col_name] == Target]
+
+    if gene_list is not None:
+        expressed_gene =  set(df_program[plot_col_name].values).intersection(set(gene_list))
+        df_program = df_program[df_program[plot_col_name].isin(expressed_gene)]
+        
     
     # Create figure/axes if not provided
     if ax is None:
@@ -644,13 +675,12 @@ def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", pl
         else:
             plt.close(fig)
         
-    return ax, pd.merge(up, down, how='outer'), texts   
-
+    return ax, pd.merge(up, down, how='outer'), texts  
 
 
 
 # given mdata, list of programs to plot, plot dotplot for programs, split by days
-def perturbed_gene_dotplot(mdata, Target_Program, groupby="sample", gene_list=None,
+def perturbed_program_dotplot(mdata, Target_Program, groupby="sample", gene_list=None,
                      save_path=None, save_name=None, figsize=(5, 4), show=False, ax=None, Day=""): 
     
 
@@ -734,7 +764,7 @@ def perturbed_gene_dotplot(mdata, Target_Program, groupby="sample", gene_list=No
 
 # helper method for computing waterfall corr
 def compute_program_waterfall_cor(perturb_path):
-
+    
     df = pd.read_csv(perturb_path, sep='\t', index_col=0)
 
     # Pre-process: create matrix with genes as rows, programs as columns
@@ -742,30 +772,21 @@ def compute_program_waterfall_cor(perturb_path):
 
     # Compute correlation matrix using numpy - much faster
     corr_matrix = pivot_df.T.corr()
+    np.fill_diagonal(corr_matrix.values, np.nan)
 
-    # Convert back to dictionary format if needed
-    programs = corr_matrix.index.tolist()
-    correlations = {}
+    return corr_matrix
 
-    for target_program in programs:
-        correlations[target_program] = {
-            gene: corr_matrix.loc[target_program, gene]
-            for gene in programs
-            if gene != target_program
-        }
-
-    return correlations
 
 
 
 # plot the waterfall plot for genes that have simliar program loading scores when perturbed 
-def create_program_correlation_waterfall(waterfall_correlation, Target_Program, top_num=5, save_path=None, 
+def create_program_correlation_waterfall(corr_matrix, Target_Program, top_num=5, save_path=None, 
                          save_name=None, figsize=(3, 5), show=False, ax=None, Day =""):
 
-    
+
     # Convert to DataFrame and sort
-    gene_correlations = waterfall_correlation[Target_Program] 
-    corr_df = pd.Series(gene_correlations).sort_values(ascending = False) 
+    gene_correlations = corr_matrix.loc[Target_Program].dropna()
+    corr_df = (gene_correlations).sort_values(ascending = False) 
     
     # Get top N positive and bottom N negative correlations for labeling
     top_positive = corr_df.head(top_num)
@@ -857,7 +878,9 @@ def create_comprehensive_program_plot(
     sample=None,
     square_plots=True,
     show=True,
-    PDF=True
+    PDF=True,
+    gene_list = None,
+    subsample_frac=None
 ):
 
     
@@ -890,8 +913,8 @@ def create_comprehensive_program_plot(
     ax1 = fig.add_subplot(gs[0, 0:5])    # UMAP Expression
     ax21 = fig.add_subplot(gs[0, 6:11])   # Top program
     ax3 = fig.add_subplot(gs[0, 12:16])  # Perturbed gene dotplot
-    ax4 = fig.add_subplot(gs[0, 17:22])  # Correlation analysis
-    ax2 = fig.add_subplot(gs[0, 23:27])  # UMAP Perturbation
+    ax4 = fig.add_subplot(gs[0, 18:21])  # Correlation analysis
+    ax2 = fig.add_subplot(gs[0, 22:27])  # UMAP Perturbation
     ax22 = fig.add_subplot(gs[num_rows-1, 2:26]) # heatmap plot
     
     # Initialize list with header axes
@@ -912,10 +935,11 @@ def create_comprehensive_program_plot(
     # Plot 1: UMAP
     ax1 = plot_umap_per_program(
         mdata=mdata,
-        Target_Program=Target_Program, 
+        Target_Program=Target_Program,
         color='purple',
         figsize=(4, 3),
-        ax=ax1
+        ax=ax1,
+        subsample_frac=subsample_frac
     )
     ax1.set_title(f"Program {Target_Program} Expression", fontsize=18, fontweight='bold', loc='center')
     ax1.set_xlabel('UMAP 1', fontsize=14, fontweight='bold')
@@ -966,10 +990,10 @@ def create_comprehensive_program_plot(
         Target_Program = Target_Program, 
         num_term = top_enrichned_term, 
         p_value_name = "Adjusted P-value", 
-        figsize=(3,5),
+        figsize=(6,6),
         ax=ax4)
     ax4.set_title(f"GO enrichment for Program {Target_Program}",fontsize=18, fontweight='bold', loc='center')
-    ax4.set_yticklabels(wrapped_labels, fontsize=10, fontweight='bold')
+    ax4.set_yticklabels(wrapped_labels, fontsize=8, fontweight='bold')
     ax4.set_xlabel('-log10 Adjusted P-value',fontsize=11, fontweight='bold', loc='center')
 
 
@@ -988,6 +1012,7 @@ def create_comprehensive_program_plot(
             plot_col_name=plot_col_name, 
             p_value=p_value,
             figsize=(4, 3),
+            gene_list=gene_list,
             ax=current_ax,
             Day=samp
         )
@@ -1008,6 +1033,7 @@ def create_comprehensive_program_plot(
             plot_col_name=plot_col_name,
             p_value=p_value,
             figsize=(5, 3), 
+            gene_list=gene_list,
             ax=current_ax,
             Day=samp
         )
@@ -1021,7 +1047,7 @@ def create_comprehensive_program_plot(
         
        # Plot 3: Programs dotplot
         current_ax = axes[ax_index]
-        current_ax = perturbed_gene_dotplot(
+        current_ax = perturbed_program_dotplot(
             mdata=mdata, 
             gene_list=df["target_name"].tolist(),
             Target_Program=Target_Program,
@@ -1038,7 +1064,7 @@ def create_comprehensive_program_plot(
         # Plot 4: Waterfall plot 
         current_ax = axes[ax_index]
         current_ax, text = create_program_correlation_waterfall(
-            waterfall_correlation= waterfall_correlation[samp],
+            corr_matrix= waterfall_correlation[samp],
             Target_Program=Target_Program,
             top_num=top_enrichned_term,
             ax=current_ax,

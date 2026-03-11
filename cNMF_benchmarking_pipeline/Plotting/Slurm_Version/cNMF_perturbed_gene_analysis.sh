@@ -2,14 +2,14 @@
 
 # SLURM job configuration
 #SBATCH --job-name=Perturb_gene           # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Plot/Perturb_gene/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Plot/Perturb_gene/logs/%j.err       # Error file
-#SBATCH --partition=engreitz            # partition name
-#SBATCH --time=15:00:00                  # Time limit 
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Plot/Perturb_gene/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Plot/Perturb_gene/logs/%j.err       # Error file
+#SBATCH --partition=engreitz,owners,bigmem            # partition name
+#SBATCH --time=05:00:00                  # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
 #SBATCH --cpus-per-task=20               # CPUs per task
-#SBATCH --mem=128G                       # Memory per node
+#SBATCH --mem=256G                       # Memory per node
 
 # Email notifications
 #SBATCH --mail-type=BEGIN,END,FAIL      # Send email at start, end, and on failure
@@ -17,7 +17,7 @@
 
 
 # Define the cNMF case
-LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Plot/Perturb_gene"
+LOG_DIR="/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Plot/Perturb_gene"
 
 # Store start time
 START_TIME=$(date +%s)
@@ -46,22 +46,24 @@ echo "Python path: $(which python)"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Plotting/Slurm_Version/cNMF_perturbed_gene_analysis.py\
-        --mdata_path "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/adata/cNMF_50_0_2.h5mu" \
-        --perturb_path_base "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/50_0_2/50_CRT"\
-        --top_program 5 \
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Plotting/Slurm_Version/cNMF_perturbed_gene_analysis.py \
+        --mdata_path "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/adata/cNMF_50_0_2.h5mu" \
+        --perturb_path_base "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/50_0_2/50_CRT"\
+        --top_program 10 \
         --tagert_col_name "target_name" \
         --plot_col_name "program_name" \
         --log2fc_col "log2FC" \
         --pdf_save_path "$LOG_DIR" \
         --square_plots \
         --figsize 35 35 \
-        --sample d0 d1 d2 d3 \
+        --sample D0 D1 D2 D3 \
         --PDF \
         --data_key 'rna'\
         --prog_key 'cNMF' \
-        --categorical_key 'timepoint' \
-        --gene_name_key 'gene_names'
+        --categorical_key 'batch' \
+        --gene_name_key 'gene_names' \
+        --subsample_frac 0.1 \
+        #--expressed_only \
 
 
 

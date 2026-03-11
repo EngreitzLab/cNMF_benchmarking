@@ -15,24 +15,12 @@ from Plotting.src import plot_umap_per_gene, plot_top_program_per_gene, perturbe
                          convert_with_mygene, convert_adata_with_mygene, read_npz, \
                          merge_pdfs_in_folder, merge_svgs_to_pdf, create_comprehensive_plot, rename_adata_gene_dictionary, \
                          rename_list_gene_dictionary, plot_umap_per_gene_guide, process_single_gene, parallel_gene_processing,\
-                         compute_gene_correlation_matrix, compute_gene_waterfall_cor
+                         compute_gene_correlation_matrix, compute_gene_waterfall_cor,perturbed_program_dotplot
 
-'''
-from Evaluation.src import (
-    check_evaluation_pipeline_format,
-    check_gene_names,
-    _validate_against_reference_gtf
-)
-'''
-'''# reformate if needed 
+
 def _assign_guide(mdata, mdata_guide):
-        mdata['rna'].var_names = mdata['rna'].var['gene_names']
-        mdata['cNMF'].uns['guide_names'] = mdata_guide['rna'].uns['guide_names']
-        mdata['cNMF'].uns['guide_targets'] = mdata_guide['rna'].uns['guide_targets']
-        mdata['cNMF'].obsm['guide_assignment'] = mdata_guide['rna'].obsm['guide_assignment'].toarray()
-        mdata['cNMF'].obsm['X_pca'] = mdata_guide['rna'].obsm['X_pca'] 
-        mdata['cNMF'].obsm['X_umap'] = mdata_guide['rna'].obsm['X_umap'] 
-'''
+        mdata['cNMF'].obsm['guide_assignment'] = mdata_guide['cNMF'].obsm['guide_assignment'].toarray()
+
 
 if __name__ == '__main__':
     
@@ -60,6 +48,9 @@ if __name__ == '__main__':
     parser.add_argument('--PDF', action="store_true", help='save plots as PDF (default is SVG)')
     parser.add_argument('--n_processes', type=int, default=-1, help='number of parallel processes (-1 for all available cores)')
     parser.add_argument('--sample', nargs='*', type=str, default=None, help='list of sample names (default: D0 sample_D1 sample_D2 sample_D3)')
+    parser.add_argument('--dot_size', type=int, default=10, help='dot size use to plot UMAP')
+    parser.add_argument('--expressed_only', action="store_true", help='only plot perturbed genes found in the gene expression matrix (default: plot all perturbed genes)')
+    parser.add_argument('--subsample_frac', type=float, default=None, help='fraction of cells to subsample for UMAP plots (e.g. 0.1 for 10%%). Default: None (plot all cells)')
 
     # keys
     parser.add_argument('--data_key', type=str, default="rna", help='key to access gene expression data in MuData')
@@ -74,6 +65,7 @@ if __name__ == '__main__':
         args.sample = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']
 
 
+
     # save comfigs used         
     args_dict = vars(args)
     job_id = os.environ.get('SLURM_JOB_ID')
@@ -82,23 +74,14 @@ if __name__ == '__main__':
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)
 
 
+
     #read mdata
     mdata = mu.read_h5mu(args.mdata_path)
-    #_assign_guide(mdata, mdata)
+    _assign_guide(mdata, mdata)
 
-    '''
-    #check data format
-    if not check_evaluation_pipeline_format(mdata,prog_key=args.prog_key):
-        raise ValueError("mdata format is incorrect")
-
-
-    valid = check_gene_names(mdata,prog_key=args.prog_key, data_key=args.data_key,categorical_key=args.categorical_key,reference_gtf_path=args.reference_gtf_path)
-    if not valid["is_valid"]:
-        raise ValueError("mdata gene naming is incorrect")
-    '''
+ 
     # check umap exist 
     if 'X_umap' not in mdata['cNMF'].obsm:
-        
         import scanpy as sc
         sc.tl.pca(mdata['rna'], n_comps=50)
         sc.pp.neighbors(mdata['rna'])
@@ -106,15 +89,23 @@ if __name__ == '__main__':
         mdata['cNMF'].obsm['X_pca'] = mdata['rna'].obsm['X_pca'] 
         mdata['cNMF'].obsm['X_umap'] = mdata['rna'].obsm['X_umap'] 
 
+
+
+
     # found detected perturbed gene
     perturbed_gene = np.unique(mdata['cNMF'].uns["guide_targets"])
-    gene_list = mdata['rna'].var_names.tolist()  
-    #    gene_list = rename_list_gene_dictionary(mdata['rna'].var_names.tolist(), args.file_to_dictionary) # convert gene id to gene name
-    perturbed_gene_found = list(set(gene_list) & set(perturbed_gene.tolist()))
+    gene_list = mdata['rna'].var_names.tolist()
+    # gene_list = rename_list_gene_dictionary(mdata['rna'].var_names.tolist(), args.file_to_dictionary) # convert gene id to gene name
+    perturbed_gene_found = sorted(set(gene_list) & set(perturbed_gene.tolist()))
+    perturbed_gene_not_found = sorted(set(perturbed_gene.tolist()) - set(gene_list))
+    print(f"there are {len(perturbed_gene_found)} perturbed genes found in expression matrix")
+    print(f"there are {len(perturbed_gene_not_found)} perturbed genes NOT found in expression matrix: {perturbed_gene_not_found}")
 
-    # sort list by alphabetical order 
-    perturbed_gene_found = sorted(perturbed_gene_found)
-    print(f"there are {len(perturbed_gene_found)} perturbed gene found")
+    if args.expressed_only:
+        genes_to_plot = perturbed_gene_found
+    else:
+        genes_to_plot = sorted(perturbed_gene.tolist())
+
 
     # compute corr once
     correlation_matrix = compute_gene_correlation_matrix(mdata, file_to_dictionary = args.file_to_dictionary)
@@ -123,9 +114,12 @@ if __name__ == '__main__':
     for samp in args.sample:
         df = compute_gene_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt")
         waterfall_correlation[samp] = (df)
+
+
+
    
-    # Graph all pdf 
-    for gene in perturbed_gene_found:
+    # Graph all pdf
+    for gene in genes_to_plot:
 
         create_comprehensive_plot(
             mdata = mdata,
@@ -150,6 +144,8 @@ if __name__ == '__main__':
             square_plots=args.square_plots,
             show=args.show,
             PDF = True,
+            dot_size = args.dot_size,
+            subsample_frac = args.subsample_frac
         )
         
     '''
@@ -188,7 +184,7 @@ if __name__ == '__main__':
 
     # merge pdf 
     if args.PDF:
-        merge_pdfs_in_folder(args.pdf_save_path)
+        merge_pdfs_in_folder(args.pdf_save_path, output_filename = "gene.pdf")
     else:
         merge_svgs_to_pdf(args.pdf_save_path)
 
