@@ -12,7 +12,9 @@ import mygene
 import os
 from PyPDF2 import PdfMerger
 import glob
-
+import re                                                                                                                                                                                    
+from svglib.svglib import svg2rlg                                                                                                                                                            
+from reportlab.graphics import renderPDF
 
 # replace EnsemblID by gene name given the dataframe with EnsemblID as the index
 def convert_with_mygene(dataframe, species='human', index = True):
@@ -131,7 +133,7 @@ def merge_pdfs_in_folder(folder_path, output_filename="merged_perturbed_gene_QC.
     
     # Get all PDF files in the folder
     pdf_files = glob.glob(os.path.join(folder_path, "*.pdf"))
-    pdf_files.sort() 
+    pdf_files.sort(key=_natural_sort_key) 
     print(f"Found {len(pdf_files)} PDF files")
     
     # Merge each PDF
@@ -159,7 +161,7 @@ def merge_pdfs_in_folder(folder_path, output_filename="merged_perturbed_gene_QC.
 def merge_svgs_to_pdf(folder_path, output_filename="merged_perturbed_gene_QC.pdf"):
 
     svg_files = glob.glob(os.path.join(folder_path, "*.svg"))
-    svg_files.sort()
+    svg_files.sort(key=_natural_sort_key)
     print(f"Found {len(svg_files)} SVG files")
     
     merger = PdfMerger()
@@ -187,3 +189,11 @@ def merge_svgs_to_pdf(folder_path, output_filename="merged_perturbed_gene_QC.pdf
         os.remove(temp_pdf)
     
     print(f"PDF created with {len(svg_files)} pages: {output_path}")
+
+
+
+def _natural_sort_key(filepath):
+    """Sort key that orders numbers numerically (2 before 100) instead of lexicographically."""
+    basename = os.path.basename(filepath)
+    return [int(part) if part.isdigit() else part.lower()
+            for part in re.split(r'(\d+)', basename)]
