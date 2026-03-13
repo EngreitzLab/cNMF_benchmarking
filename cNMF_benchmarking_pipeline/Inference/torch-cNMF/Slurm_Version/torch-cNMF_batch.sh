@@ -122,6 +122,9 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         #--guide_names_key "guide_names" \
         #--guide_targets_key "guide_targets" \
         #--guide_assignment_key "guide_assignment" \
+        #--remove_noncoding \
+        #--ensembl_prefix "ENSG" \
+        #--gene_symbol_key "symbol" \
         #--shuffle_cells \
         #--guide_annotation_path \
         #--reference_gtf_path \

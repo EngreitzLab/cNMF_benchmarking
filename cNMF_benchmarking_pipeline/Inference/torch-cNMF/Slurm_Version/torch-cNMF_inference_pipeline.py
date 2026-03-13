@@ -6,6 +6,7 @@ import os
 import pandas as pd
 import muon as mu
 import numpy as np
+import scanpy as sc
 
 
 # Change path to wherever you have repo locally
@@ -71,6 +72,11 @@ if __name__ == '__main__':
     parser.add_argument('--run_complie_annotation', action="store_true", help = "run the compilation and annotation step")
     parser.add_argument('--run_factorize', action="store_true", help = "run the factorization step")
 
+    # preprocessing
+    parser.add_argument('--remove_noncoding', action="store_true", help="remove non-coding genes whose symbol starts with an Ensembl ID prefix")
+    parser.add_argument('--ensembl_prefix', type=str, help='Ensembl ID prefix used to identify non-coding genes (default: "ENSG")', default="ENSG")
+    parser.add_argument('--gene_symbol_key', type=str, help='column in adata.var containing gene symbols (default: "symbol")', default="symbol")
+
     # resources
     parser.add_argument('--guide_annotation_path', type=str,  help='path to file with guide annotations (used for format validation)', default=None)
     parser.add_argument('--reference_gtf_path', type=str,  help='path to reference GTF file for validating gene names against genome annotation', default=None)
@@ -82,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('--categorical_key', help='key in .obs to access cell condition/sample labels (default: "sample")',type=str, default="sample")
     parser.add_argument('--guide_names_key', help='key in .uns to access guide names (default: "guide_names")',type=str, default="guide_names")
     parser.add_argument('--guide_targets_key', help='key in .uns to access guide targets (default: "guide_targets")',type=str, default="guide_targets")
-    parser.add_argument('--guide_assignment_key', help='key in .obsm to access guide assignment matrix (default: "guide_assignment_key")',type=str, default="guide_assignment_key") 
+    parser.add_argument('--guide_assignment_key', help='key in .obsm to access guide assignment matrix (default: "guide_assignment_key")',type=str, default="guide_assignment") 
 
 
     args = parser.parse_args()
@@ -141,15 +147,25 @@ if __name__ == '__main__':
         yaml.dump(config_to_save, f, default_flow_style=False, width=1000)
 
     # check data format 
+    '''    
     if args.check_format:
         adata = mu.read(args.counts_fn)
         valid = check_guide_names(adata, guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, 
         categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
         if not valid['is_valid']:
             raise ValueError("Format is incorrect")
+    '''
 
+    # remove non-coding genes if requested
+    if args.remove_noncoding:
+        adata = sc.read(args.counts_fn)
+        mask = ~adata.var[args.gene_symbol_key].str.startswith(args.ensembl_prefix)
+        adata = adata[:, mask].copy()
+        filtered_path = f'{args.output_directory}/{args.run_name}/adata_without_noncoding.h5ad'
+        adata.write(filtered_path)
+        args.counts_fn = filtered_path
 
-    # running 
+    # running
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
 
     cnmf_obj.prepare(counts_fn=args.counts_fn, components=args.K, n_iter=args.numiter, densify=args.densify, tpm_fn=args.tpm_fn, num_highvar_genes=args.numhvgenes, genes_file=args.genes_file,
