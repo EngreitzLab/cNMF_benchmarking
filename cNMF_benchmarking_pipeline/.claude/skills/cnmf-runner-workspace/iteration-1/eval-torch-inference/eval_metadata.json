@@ -1,0 +1,17 @@
+{
+  "eval_id": 2,
+  "eval_name": "eval-torch-inference",
+  "prompt": "Run torch-cNMF inference with GPU on /oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/raw.h5ad. Use halsvar algorithm in batch mode with 100 iterations. K=50, sel_thresh 0.2 and 2.0. Use 17538 HVG. Output to /oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result with run name 030926_test_torch. Run factorize, refit, and compile annotation. Human species. Just generate the SLURM script, don't submit.",
+  "assertions": [
+    {"name": "script_file_created", "description": "A .sh file was saved"},
+    {"name": "correct_conda_env", "description": "Activates torch-cNMF conda env"},
+    {"name": "correct_python_script", "description": "Runs torch-cNMF_inference_pipeline.py"},
+    {"name": "gpu_requested", "description": "SBATCH --gres=gpu included"},
+    {"name": "v100s_constraint", "description": "V100S GPU constraint set"},
+    {"name": "use_gpu_flag", "description": "--use_gpu flag passed to Python"},
+    {"name": "halsvar_algo", "description": "--algo halsvar included"},
+    {"name": "batch_mode", "description": "--mode batch included"},
+    {"name": "numiter_100", "description": "--numiter 100 included"},
+    {"name": "run_factorize_flag", "description": "--run_factorize included"}
+  ]
+}

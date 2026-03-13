@@ -1,0 +1,15 @@
+{
+  "eval_id": 1,
+  "eval_name": "eval-evaluation",
+  "prompt": "I need to run evaluation on my cNMF results. The output directory is /oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result and run name is 030526_100k_cells. I want categorical association, perturbation association, and gene set enrichment. K values 50, sel_thresh 0.2 and 2.0. Guide annotation at /oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/guide/guide_metadata_v43.tsv. Just generate the SLURM script, don't submit.",
+  "assertions": [
+    {"name": "script_file_created", "description": "A .sh file was saved"},
+    {"name": "correct_conda_env", "description": "Activates NMF_Benchmarking conda env"},
+    {"name": "correct_python_script", "description": "Runs cNMF_evaluation_pipeline.py"},
+    {"name": "categorical_flag", "description": "--Perform_categorical included"},
+    {"name": "perturbation_flag", "description": "--Perform_perturbation included"},
+    {"name": "geneset_flag", "description": "--Perform_geneset included"},
+    {"name": "gwas_path_included", "description": "--gwas_data_path included"},
+    {"name": "guide_annotation_path", "description": "guide_metadata_v43.tsv path included"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "eval_id": 0,
+  "eval_name": "eval-sk-inference",
+  "prompt": "I want to run cNMF on my data at /oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/raw.h5ad. Use sk-cNMF with K values 30, 50, 80, 100. Output to /oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result with run name 030926_test_skcnmf. Human species. 10 iterations. Just generate the SLURM script, don't actually submit it.",
+  "assertions": [
+    {"name": "script_file_created", "description": "A .sh file was saved"},
+    {"name": "correct_conda_env", "description": "Activates sk-cNMF conda env"},
+    {"name": "correct_python_script", "description": "Runs sk-cNMF_batch_inference_pipeline.py"},
+    {"name": "K_values_present", "description": "K=30,50,80,100 passed"},
+    {"name": "species_human", "description": "--species human included"},
+    {"name": "sbatch_headers", "description": "Has partition/time/mem/cpus headers"},
+    {"name": "no_gpu_requested", "description": "No GPU (CPU-only job)"},
+    {"name": "conda_hook_pattern", "description": "Uses eval conda shell.bash hook"}
+  ]
+}
