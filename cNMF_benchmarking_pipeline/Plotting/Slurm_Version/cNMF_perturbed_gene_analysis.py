@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
     #read mdata
     mdata = mu.read_h5mu(args.mdata_path)
-    #_assign_guide(mdata, mdata)
+    _assign_guide(mdata, mdata)
 
  
     # check umap exist 
