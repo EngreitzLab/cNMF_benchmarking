@@ -277,7 +277,10 @@ def top_GO_per_program(GO_path, Target_Program, num_term = 5, p_value_name = "Ad
 # helper method to compute corr for analyze_correlations
 def compute_program_correlation_matrix(mdata):
 
-    df =  pd.DataFrame(data=mdata['cNMF'].X, index =mdata['cNMF'].obs_names )
+    X = mdata['cNMF'].X
+    if hasattr(X, 'toarray'):
+        X = X.toarray()
+    df =  pd.DataFrame(data=X, index =mdata['cNMF'].obs_names )
 
     program_correlation = df.corr()
     program_correlation = program_correlation.fillna(0)
@@ -379,7 +382,10 @@ save_path=None, save_name = None, figsize = (5, 4),show=False, ax=None):
 def plot_violin(mdata, Target_Program, save_path=None, save_name=None, groupby = 'sample', figsize=(3, 5), show=False, ax=None):
 
     # Build dataframe from cNMF loadings
-    df = pd.DataFrame(data=mdata['cNMF'].X, index=mdata['cNMF'].obs_names)
+    X = mdata['cNMF'].X
+    if hasattr(X, 'toarray'):
+        X = X.toarray()
+    df = pd.DataFrame(data=X, index=mdata['cNMF'].obs_names)
     
     # Create dataframe with expression and cell type
     df = pd.DataFrame({
