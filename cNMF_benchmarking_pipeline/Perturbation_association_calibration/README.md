@@ -21,8 +21,8 @@ This folder contains three statistical tests for evaluating perturbation effects
 
 ---
 
-### 2. ProgramDE
-**Location:** `JupterNote_Version/ProgramDE.ipynb` and `Slurm_version/ProgramDE/`
+### 2. CRT (Conditional Randomization Test)
+**Location:** `JupterNote_Version/ProgramDE.ipynb` and `Slurm_version/CRT/`
 
 **Description:** Uses SCEPTRE-inspired methodology with conditional randomization tests (CRT) to test perturbation effects on gene programs while accounting for technical covariates.
 
@@ -39,10 +39,12 @@ This folder contains three statistical tests for evaluating perturbation effects
 - More computationally intensive but statistically rigorous
 
 **Parameters:**
-- `--n_permutations`: Number of permutations (default: 1023)
-- `--group_size`: Number of guides to group for ensemble testing (default: 6)
-- `--covariates`: List of covariates to include in the model
-- `--NTC_guides`: Names of non-targeting control guides
+- `--number_permutations`: Number of calibration iterations (default: 1024)
+- `--number_guide`: Number of non-targeting guides per calibration iteration (default: 6)
+- `--covariates`: Covariate keys in .obs to include as-is
+- `--log_covariates`: Covariate keys in .obs to log1p-transform before inclusion
+- `--guide_annotation_key`: Name(s) of non-targeting guide target labels (default: "non-targeting")
+- `--FDR_method`: FDR correction method: "BH" or "StoreyQ" (default: "BH")
 
 ---
 
@@ -107,9 +109,10 @@ Perturbation_association_calibration/
     ├── U-test_perturbation_calibration/
     │   ├── U-test_perturbation_calibration.py
     │   └── U-test_perturbation_calibration.sh
-    ├── ProgramDE/
-    │   ├── ProgramDE.py
-    │   └── ProgramDE.sh
+    ├── CRT/
+    │   ├── CRT.py
+    │   ├── CRT.sh
+    │   └── README.md
     └── Matched_cell_programDE/
         ├── run_matching_de_batch.R
         ├── run.sh

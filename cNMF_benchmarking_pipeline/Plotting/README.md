@@ -49,25 +49,29 @@ Creates comprehensive analysis plots for each perturbed gene.
 | mdata_path | str | - | Path to multimodal data file (.h5mu) |
 | perturb_path_base | str | - | Base path for perturbation data files |
 | pdf_save_path | str | - | Output path for PDF files |
-| file_to_dictionary | str | None | Gene ID to name conversion file |
-| reference_gtf_path | str | None | Reference GTF for validation |
+| file_to_dictionary | str | None | Path to gene name mapping dictionary file for ID-to-name conversion |
+| reference_gtf_path | str | None | Path to reference GTF file for checking gene names |
 
 **Visualization Options:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| tagert_col_name | str | "target_name" | Column name for targets |
-| plot_col_name | str | "program_name" | Column name for plotting |
+| tagert_col_name | str | "target_name" | Column name for target genes in perturbation results |
+| plot_col_name | str | "program_name" | Column name for programs in perturbation results |
 | log2fc_col | str | "log2FC" | Log2 fold change column |
-| top_num | int | 5 | Number of top items to show |
-| top_program | int | 10 | Number of top programs |
-| p_value | float | 0.05 | P-value threshold |
-| down_thred_log | float | -0.05 | Downregulation threshold |
-| up_thred_log | float | 0.05 | Upregulation threshold |
-| figsize | list | [35, 35] | Figure size |
-| square_plots | flag | False | Create square plots |
-| show | flag | False | Display plots |
-| PDF | flag | False | Save as PDF |
-| n_processes | int | -1 | Number of parallel processes |
+| top_num | int | 5 | Number of top genes to display per program |
+| top_program | int | 10 | Number of top programs to display per gene |
+| p_value | float | 0.05 | P-value threshold for significance |
+| down_thred_log | float | -0.05 | Lower log2FC threshold for volcano plot |
+| up_thred_log | float | 0.05 | Upper log2FC threshold for volcano plot |
+| figsize | list | [35, 35] | Figure size as width height |
+| square_plots | flag | False | Use square aspect ratio for plots |
+| show | flag | False | Display plots interactively |
+| PDF | flag | False | Save as PDF (default is SVG) |
+| n_processes | int | -1 | Number of parallel processes (-1 for all available cores) |
+| sample | list of str | None | List of sample names to analyze |
+| dot_size | int | 10 | Dot size for UMAP plots |
+| expressed_only | flag | False | Only plot perturbed genes found in the gene expression matrix |
+| subsample_frac | float | None | Fraction of cells to subsample for UMAP plots (e.g. 0.1 for 10%) |
 
 #### Outputs
 - Individual gene analysis PDFs with UMAP, correlation plots, volcano plots
@@ -86,17 +90,29 @@ Generates detailed characterization plots for each cNMF program.
 |-----------|------|---------|-------------|
 | mdata_path | str | - | Path to multimodal data file (.h5mu) |
 | perturb_path_base | str | - | Base path for perturbation data files |
-| GO_path | str | - | Path to Gene Ontology data |
+| GO_path | str | - | Path to Gene Ontology enrichment results directory |
 | pdf_save_path | str | - | Output path for PDF files |
+| file_to_dictionary | str | None | Path to gene name mapping dictionary file for ID-to-name conversion |
+| reference_gtf_path | str | None | Path to reference GTF file for checking gene names |
 
 **Analysis Options:**
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| tagert_col_name | str | "program_name" | Target column name |
-| plot_col_name | str | "target_name" | Plot column name |
-| top_program | int | 10 | Number of top programs |
-| top_enrichned_term | int | 10 | Number of top enriched terms |
-| figsize | list | [35, 35] | Figure size |
+| tagert_col_name | str | "program_name" | Column name for target programs in perturbation results |
+| plot_col_name | str | "target_name" | Column name for genes in perturbation results |
+| log2fc_col | str | "log2FC" | Log2 fold change column |
+| top_program | int | 10 | Number of top programs to display |
+| top_enrichned_term | int | 10 | Number of top GO enrichment terms per program |
+| p_value | float | 0.05 | P-value threshold for significance |
+| down_thred_log | float | -0.05 | Lower log2FC threshold for volcano plot |
+| up_thred_log | float | 0.05 | Upper log2FC threshold for volcano plot |
+| figsize | list | [35, 35] | Figure size as width height |
+| square_plots | flag | False | Use square aspect ratio for plots |
+| show | flag | False | Display plots interactively |
+| PDF | flag | False | Save as PDF (default is SVG) |
+| sample | list of str | None | List of sample names to analyze |
+| programs | list of int | None | Specific program numbers to plot (if omitted, all programs are plotted) |
+| subsample_frac | float | None | Fraction of cells to subsample for UMAP plots |
 
 #### Outputs
 - Program-specific UMAP visualizations
@@ -108,14 +124,14 @@ Generates detailed characterization plots for each cNMF program.
 
 ## Common Data Keys
 
-All scripts use these configurable keys for data access:
+All plotting scripts use these configurable keys for data access:
 
-| Key | Default | Description |
-|-----|---------|-------------|
-| data_key | "rna" | Access gene expression in mdata |
-| prog_key | "cNMF" | Access cNMF programs in mdata |
-| gene_name_key | "gene_names" | Gene names key |
-| categorical_key | "sample" | Cell condition key |
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| data_key | str | "rna" | Key to access gene expression in MuData |
+| prog_key | str | "cNMF" | Key to access cNMF programs in MuData |
+| gene_name_key | str | "gene_names" | Key to access gene names in var |
+| categorical_key | str | "sample" | Key to access sample/condition labels in obs |
 
  
 

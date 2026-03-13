@@ -27,8 +27,6 @@ The evaluation pipeline tests cNMF programs against various criteria to assess t
 |-----------|------|-------------|
 | out_dir | str | Path to cNMF object directory |
 | run_name | str | Name of cNMF object |
-| X_normalized_path | str | Path to normalized input matrix |
-| mdata_guide_path | str | Path to mdata with guide assignments |
 | gwas_data_path | str | Path to GWAS information file |
 
 ### Optional Parameters
@@ -37,10 +35,15 @@ The evaluation pipeline tests cNMF programs against various criteria to assess t
 |-----------|------|---------|-------------|
 | K | list of int | [30, 50, 60, 80, 100, 200, 250, 300] | K values to evaluate |
 | sel_thresh | list of float | [0.4, 0.8, 2.0] | Selection thresholds |
-| guide_annotation_path | str | None | Path to guide annotation file |
+| X_normalized_path | str | None | Path to normalized cell x gene matrix (.h5ad), required for explained variance |
+| data_guide_path | str | None | Path to MuData (.h5mu) containing additional guide/gene information |
+| guide_annotation_path | str | None | Path to tab-separated guide annotation file with "targeting" column |
 | reference_gtf_path | str | None | Path to reference GTF file |
-| organism | str | "human" | Data species |
-| FDR_method | str | "StoreyQ" | FDR correction method |
+| organism | str | "human" | Organism/species for enrichment analysis |
+| FDR_method | str | "StoreyQ" | FDR correction method for perturbation association |
+| n_top | int | 300 | Number of top loaded genes to use for enrichment tests |
+| check_format | flag | False | Validate MuData format before running evaluation |
+| guide_annotation_key | list of str | ["non-targeting"] | Name(s) of non-targeting guide target labels |
 
 ### Data Access Keys
 
@@ -51,7 +54,7 @@ The evaluation pipeline tests cNMF programs against various criteria to assess t
 | categorical_key | str | "sample" | Cell condition key |
 | guide_names_key | str | "guide_names" | Guide names key |
 | guide_targets_key | str | "guide_targets" | Guide targets key |
-| guide_assignment_key | str | "guide_assignment_key" | Guide assignment key |
+| guide_assignment_key | str | "guide_assignment" | Guide assignment key |
 
 ### Analysis Flags
 

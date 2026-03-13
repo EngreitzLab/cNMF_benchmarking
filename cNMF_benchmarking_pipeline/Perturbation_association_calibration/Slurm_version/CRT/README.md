@@ -129,3 +129,39 @@ Using the beta_hat matrix (program p × gene g), perform leave-one-out validatio
 
 Compare beta_hat[i] vs beta_hat[b-i] for each gene
 This generates g × (g-1) p-values for null calibration
+
+---
+
+## Parameters
+
+### Required Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| out_dir | str | Directory containing cNMF output files |
+| run_name | str | Name of the cNMF run (must match name used during inference) |
+| mdata_guide_path | str | Path to MuData object (.h5mu) containing guide assignment information |
+
+### Optional Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| components | list of int | [30, 50, 60, 80, 100, 200, 250, 300] | K values (number of components) to test |
+| sel_thresh | list of float | [0.4, 0.8, 2.0] | Density threshold values for consensus selection |
+| categorical_key | str | "sample" | Key in .obs for cell condition/sample labels |
+
+### Covariate Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| covariates | list of str | None | Covariate keys in .obs to include as-is (e.g., biological_sample) |
+| log_covariates | list of str | None | Covariate keys in .obs to log1p-transform before inclusion (e.g., guide_umi_counts total_counts) |
+
+### Calibration Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| number_guide | int | 6 | Number of non-targeting guides to randomly designate as "targeting" in each calibration iteration |
+| number_permutations | int | 1024 | Number of calibration iterations to run |
+| guide_annotation_key | list of str | "non-targeting" | Name of target label for non-targeting/safe-targeting guides |
+| FDR_method | str | "BH" | FDR correction method: "BH" (Benjamini-Hochberg) or "StoreyQ" (Storey Q-value) |
