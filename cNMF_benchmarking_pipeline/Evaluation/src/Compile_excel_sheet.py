@@ -549,9 +549,9 @@ def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2"
 
             rows.append({
                 'target_name': genes[i],
-                f'top 5 pos correls targets (program log2fc) {day}': '; '.join(valid_genes[top_idx]),
+                f'top 5 pos correls targets (program log2fc) {day}': '; '.join(str(g) for g in valid_genes[top_idx]),
                 f'top 5 pos correls (program log2fc) {day}': '; '.join(f"{v:.3f}" for v in row[valid][top_idx]),
-                f'top 5 neg correls targets (program log2fc) {day}': '; '.join(valid_genes[bot_idx]),
+                f'top 5 neg correls targets (program log2fc) {day}': '; '.join(str(g) for g in valid_genes[bot_idx]),
                 f'top 5 neg correls (program log2fc) {day}': '; '.join(f"{v:.3f}" for v in row[valid][bot_idx]),
             })
 
