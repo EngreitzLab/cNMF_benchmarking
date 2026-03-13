@@ -36,6 +36,9 @@ def _assign_guide(mdata,_data_guide):
     #mdata[args.data_key].uns[args.guide_names_key] = _data_guide.uns[args.guide_names_key] 
     #mdata[args.data_key].uns[args.guide_targets_key] = _data_guide.uns[args.guide_targets_key] 
     mdata['cNMF'].uns['var_names'] = _data_guide['rna'].var['gene_name']
+    mdata['rna'].var_names = _data_guide['rna'].var['gene_name'].astype(str)
+    
+    
     
 
 
@@ -71,6 +74,9 @@ if __name__ == '__main__':
     parser.add_argument('--guide_names_key', help='Key in .uns to access guide names (default: guide_names)', type=str, default="guide_names")
     parser.add_argument('--guide_targets_key', help='Key in .uns to access guide target genes (default: guide_targets)', type=str, default="guide_targets")
     parser.add_argument('--guide_assignment_key', help='Key in .obsm to access guide assignment matrix (default: guide_assignment)', type=str, default="guide_assignment")
+    parser.add_argument('--guide_annotation_key', nargs='*', type=str, help='name of non-targeting guide targets', default=["non-targeting"])
+
+
     parser.add_argument('--organism', help='Organism/species for enrichment analysis (default: human)', type=str, default="human")
     parser.add_argument('--FDR_method', help='Method for FDR correction in perturbation association (default: StoreyQ)', type=str, default="StoreyQ")  
     parser.add_argument('--n_top', type = int, help='Number of top loaded genes use to perform enrichment test(default: 300)',  default=300)  
@@ -112,12 +118,12 @@ if __name__ == '__main__':
         df_target_non = df_target[df_target["targeting"]==False]
         reference_targets = df_target_non.index.values.tolist()
     else: 
-        reference_targets = ["non-targeting"]
+        reference_targets = args.guide_annotation_key
 
 
     # read data guide
     if args.data_guide_path is not None:
-        _data_guide = sc.read(args.data_guide_path)
+        _data_guide = mu.read(args.data_guide_path)
 
 
     for sel_thresh in args.sel_thresh:
@@ -136,10 +142,7 @@ if __name__ == '__main__':
              # assign information 
             if args.data_guide_path is not None:                                                                     
                 _assign_guide(mdata,_data_guide)
-                mdata.write('{out_dir}/{run_name}/adata/cNMF_{k}_{sel_thresh}.h5mu'.format(out_dir = args.out_dir,
-                                                                                    run_name =args.run_name,
-                                                                                    k=k,
-                                                                                    sel_thresh = str(sel_thresh).replace('.','_')))
+
 
 
             #check format is right
@@ -161,6 +164,7 @@ if __name__ == '__main__':
 
             # Run perturbation assocation
             if args.Perform_perturbation: 
+                mdata['cNMF'].obsm['guide_assignment'] = mdata['cNMF'].obsm['guide_assignment'].todense()
                 for samp in mdata[args.data_key].obs[args.categorical_key].unique():
                     mdata_ = mdata[mdata['rna'].obs[args.categorical_key]==samp]
                     test_stats_df = compute_perturbation_association(mdata_, prog_key=args.prog_key, 
