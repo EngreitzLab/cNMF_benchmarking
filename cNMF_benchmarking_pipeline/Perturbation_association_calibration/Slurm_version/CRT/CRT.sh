@@ -1,15 +1,15 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=U-020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50   # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/Eval/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50/Eval/logs/%j.err       # Error file
+#SBATCH --job-name=030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50   # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/logs/%j.err       # Error file
 #SBATCH --partition=owners,engreitz,bigmem            # partition name
-#SBATCH --time=08:00:00                 # Time limit 
+#SBATCH --time=02:00:00                 # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
 #SBATCH --ntasks=1                      # Number of tasks
-#SBATCH --cpus-per-task=20              # CPUs per task
-#SBATCH --mem=512G                       # Memory per node
+#SBATCH --cpus-per-task=40              # CPUs per task
+#SBATCH --mem=256G                       # Memory per node
 
 
 # Email notifications
@@ -18,8 +18,8 @@
 
 
 # Define the cNMF case
-OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50"
-RUN_NAME="020326_100k_cells_100iter_allHVG_sk_cd_batch_e7_50"
+OUT_DIR="/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result"
+RUN_NAME="030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50"
 LOG_DIR="$OUT_DIR/$RUN_NAME"
 
 # Store start time
@@ -53,14 +53,16 @@ echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Perturbation_association_calibration/Slurm_version/CRT/CRT.py \
         --out_dir "$OUT_DIR" \
         --run_name "$RUN_NAME" \
-        --mdata_guide_path "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/withguide.h5ad" \
+        --mdata_guide_path "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/raw_updated_withguide_030526.h5ad" \
         --guide_annotation_key "non-targeting" \
         --number_permutations 5000 \
         --number_guide 6 \
         --components 50 \
         --sel_thresh 0.2 2.0 \
-        --categorical_key "timepoint" \
-        --FDR_method 'StoreyQ' 
+        --categorical_key "batch" \
+        --covariates biological_sample \
+        --log_covariates guide_umi_counts n_genes_by_counts total_counts pct_counts_mt \
+        --FDR_method 'StoreyQ'
 
 
 # Calculate and print elapsed time at the end

@@ -22,7 +22,7 @@ from src.visualization import qq_plot_ntc_pvals
 
 
 # reformat adata info for CRT
-def reformat_data_for_CRT(mdata, mdata_guide):
+def reformat_data_for_CRT(mdata, mdata_guide, covariates=None, log_covariates=None):
 
     adata = mdata["cNMF"].copy()
     adata.obsm["cnmf_usage"] = np.asarray(adata.X)  # ensure dense float
@@ -54,30 +54,21 @@ def reformat_data_for_CRT(mdata, mdata_guide):
     adata.uns["guide2gene"] = guide2gene
 
     # Covariates
+    covar_dict = {}
+    if covariates:
+        for key in covariates:
+            covar_dict[key] = adata.obs[key]
+    if log_covariates:
+        for key in log_covariates:
+            covar_dict[f'log_{key}'] = np.log1p(adata.obs[key])
 
-    '''
-    adata.obs['biological_sample']
-    adata.obs['guide_umi_counts']
-    adata.obs['n_genes_by_counts']
-    adata.obs['total_counts']
-    adata.obs['pct_counts_mt']
-    '''
-
-    df = pd.DataFrame({
-        'biological_sample': adata.obs['biological_sample'],
-        'log_guide_umi_counts': np.log1p(adata.obs['guide_umi_counts']),
-        'log_n_genes_by_counts': np.log1p(adata.obs['n_genes_by_counts']),
-        'log_total_counts': np.log1p(adata.obs['total_counts']),
-        'log_pct_counts_mt': np.log1p(adata.obs['pct_counts_mt'])
-    })
-
-    adata.obsm["covar"] = df
+    adata.obsm["covar"] = pd.DataFrame(covar_dict)
 
     return adata
 
 
 # run one CRT
-def run_CRT(adata, output_folder, args):
+def run_CRT(adata, k, output_folder, args):
 
     # perform CRT for each condition of cells 
     for condition in adata.obs[args.categorical_key].unique():
@@ -171,14 +162,14 @@ def run_CRT(adata, output_folder, args):
         if output_folder:
 
             plt.savefig(f"{output_folder}/CRT_{condition}.png", dpi=100)
-            save_result(out, output_folder, condition)
+            save_result(out, k, output_folder, condition)
 
         plt.tight_layout()
         plt.show()
 
 
 # save results
-def save_result(out, output_folder, condition):
+def save_result(out, k, output_folder, condition):
 
     pval_df = out['pvals_skew_df']
     beta_df = out['betas_df']
@@ -222,7 +213,7 @@ def save_result(out, output_folder, condition):
         result_df['adj_pval'] = qvalue(result_df['p-value'].values, threshold=0.05, verbose=False)[1]
 
 
-    result_df.to_csv(f'{output_folder}/CRT_{condition}.txt',sep='\t',index=False)
+    result_df.to_csv(f'{output_folder}/{k}_CRT_{condition}.txt',sep='\t',index=False)
     
     return result_df
 
@@ -242,6 +233,9 @@ if __name__ == "__main__":
     # keys
     parser.add_argument('--categorical_key', help='Key in .obs to access cell condition/sample labels (default: sample)', type=str, default="sample")
 
+    # Covariates
+    parser.add_argument('--covariates', nargs='*', type=str, help='Covariate keys in .obs to include as-is (e.g., biological_sample)', default=None)
+    parser.add_argument('--log_covariates', nargs='*', type=str, help='Covariate keys in .obs to log1p-transform before inclusion (e.g., guide_umi_counts total_counts)', default=None)
 
     # Calibration parameters
     parser.add_argument('--number_guide', help='Number of non-targeting guides to randomly designate as "targeting" in each calibration iteration (default: 6)', type=int, default=6)
@@ -283,7 +277,9 @@ if __name__ == "__main__":
             mdata = mu.read(f'{args.out_dir}/{args.run_name}/adata/cNMF_{k}_{str(sel_thresh).replace(".","_")}.h5mu')
 
             # Assign guide
-            adata = reformat_data_for_CRT(mdata, mdata_guide)
+            adata = reformat_data_for_CRT(mdata, mdata_guide,
+                                          covariates=args.covariates,
+                                          log_covariates=args.log_covariates)
 
             # add flooring for program matrix with exceesive zeros
             U = adata.obsm["cnmf_usage"].copy()
@@ -292,7 +288,7 @@ if __name__ == "__main__":
             adata.obsm["cnmf_usage"] = U
 
             # run CRT
-            result_df = run_CRT(adata, output_folder, args)
+            result_df = run_CRT(adata, k,  output_folder, args)
 
 
         
