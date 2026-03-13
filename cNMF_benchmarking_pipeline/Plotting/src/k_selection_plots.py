@@ -160,11 +160,11 @@ def plot_enrichment(count_df, folder_name = None, file_name = None):
 # load perturbation data 
 def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80, 100, 200, 250, 300], sel_thresh = 2.0,
  samples = ['D0', 'sample_D1', 'sample_D2', 'sample_D3']):
-    
+
     # Compute no. of unique regulators
     test_stats_df = []
 
-    for k in components:  
+    for k in components:
         # Run perturbation assocation
         for samp in samples:
             test_stats_df_ = pd.read_csv('{}/{}_{}/{}_perturbation_association_results_{}.txt'.format(folder,k,str(sel_thresh).replace('.','_'),k,samp), sep='\t')
@@ -172,7 +172,7 @@ def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80
             test_stats_df_['K'] = k
             #test_stats_df_['fdr'] = fdrcorrection(test_stats_df_['pval'])[1]
             test_stats_df.append(test_stats_df_)
-            
+
     test_stats_df = pd.concat(test_stats_df, ignore_index=True)
 
     # pring some stats
