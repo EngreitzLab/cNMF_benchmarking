@@ -145,15 +145,29 @@ def plot_umap_per_gene_guide(mdata, Target_Gene, ax=None, color='red', save_path
 save_name=None, figsize=(8,6), show=False, size = None,
 subsample_frac=None, random_state=42):
 
-    # Extract gRNA per cell and merge the gRNA targeting the same gene 
-    X = mdata['cNMF'].obsm["guide_assignment"].T
-    df = pd.DataFrame(X.toarray if hasattr(X, "toarray") else X,
-                    index =  mdata['cNMF'].uns["guide_targets"]
-                    )
-    df_merge = df.groupby(df.index).sum()
+    # Find which guide columns target this gene and sum only those (avoids densifying full matrix)
+    guide_targets = np.array(mdata['cNMF'].uns["guide_targets"])
+    target_mask = guide_targets == Target_Gene
 
-    adata = ad.AnnData(X=df_merge.T.values, obs=mdata['rna'].obs ) 
-    adata.var_names = df_merge.index
+    if not target_mask.any():
+        print(f"Gene {Target_Gene} not found in guide assignment")
+        if ax is None:
+            blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
+            img = Image.fromarray(blank_img)
+            if save_path and save_name:
+                full_path = f"{save_path}/{save_name}.png"
+                img.save(full_path)
+            return None
+        else:
+            ax.text(0.5, 0.5, 'No UMAP to display',
+                   ha='center', va='center', transform=ax.transAxes)
+            return ax
+
+    guide_mat = mdata['cNMF'].obsm["guide_assignment"]  # (cells x guides), sparse
+    target_counts = np.asarray(guide_mat[:, target_mask].sum(axis=1)).flatten() # collapse guide all guides for target gene only
+
+    adata = ad.AnnData(X=target_counts.reshape(-1, 1), obs=mdata['rna'].obs) # make adata with only one column cell x target_gene_guide
+    adata.var_names = pd.Index([Target_Gene])
     adata.obsm['X_pca'] = mdata['rna'].obsm['X_pca']
     adata.obsm['X_umap'] = mdata['rna'].obsm['X_umap']
 
@@ -165,13 +179,6 @@ subsample_frac=None, random_state=42):
         indices = np.random.choice(n_cells, size=n_sample, replace=False)
         adata = adata[sorted(indices)].copy()
 
-    # Check if gene exists
-    gene_name_list = adata.var_names.tolist()
-    if Target_Gene not in gene_name_list:
-        raise ValueError(f"Gene {Target_Gene} not found in guide assignment")
-    
-        return None
-    
     # Set color
     colors = ['lightgrey', color]
     n_bins = 100
@@ -215,7 +222,6 @@ subsample_frac=None, random_state=42):
             plt.close(fig)
     
     return ax
-
 
 
 # read the cNMF gene matrix (in txt), plot top x gene in the program 
@@ -395,7 +401,10 @@ def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_na
     # Check if query gene exists
     if Target not in df[tagert_col_name].values:
         print(f"Gene {Target} not found in mdata")
-        return 
+        if ax is not None:
+            ax.text(0.5, 0.5, 'No data to display',
+                   ha='center', va='center', transform=ax.transAxes)
+        return ax, pd.DataFrame()
 
     # Sort by log2FC
     df_sorted = df.loc[df[tagert_col_name] == Target]
@@ -473,7 +482,10 @@ def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_n
     # Check if query gene exists
     if Target not in df[tagert_col_name].values:
         print(f"Gene {Target} not found in mdata")
-        return 
+        if ax is not None:
+            ax.text(0.5, 0.5, 'No data to display',
+                   ha='center', va='center', transform=ax.transAxes)
+        return ax, pd.DataFrame(), []
 
     df_program = df.loc[df[tagert_col_name] == Target]
     
@@ -550,14 +562,14 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
     # make anndata from program loadings
     adata_new = mdata['cNMF']
 
-    gene_list = adata_new.var_names.tolist()
+    program_name_list = adata_new.var_names.tolist() # get all programs 
     
-    if program_list is not None:
-        gene_list = list(map(str, program_list))
+    program_names = list(map(str, program_list)) if program_list is not None else [] # make program str if given 
+    program_names = [program for program in program_names if program in program_name_list]
     
-    if not gene_list:
+    if not program_names:
 
-        print("No significant Gene")
+        print("No significant Programs")
         # Handle empty gene list
         if ax is None:
             blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
@@ -573,13 +585,12 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
                         fontweight='bold', loc='center')
             return ax
 
-    
-    gene_list = gene_list[::-1]
+    program_names = program_names[::-1]
     
     # Create dotplot
     if ax is None:
         # Standalone mode - let scanpy create its own figure
-        dp = sc.pl.dotplot(adata_new, gene_list, groupby=groupby, swap_axes=True, figsize=figsize,
+        dp = sc.pl.dotplot(adata_new, program_names, groupby=groupby, swap_axes=True, figsize=figsize,
                           dendrogram=False, show=False, return_fig=True)
         dp.make_figure()
         fig = dp.fig
@@ -587,7 +598,7 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
     else:
         # Gridspec mode - use provided ax
         fig = ax.get_figure()
-        dp = sc.pl.dotplot(adata_new, gene_list, groupby=groupby, swap_axes=True, figsize=figsize,
+        dp = sc.pl.dotplot(adata_new, program_names, groupby=groupby, swap_axes=True, figsize=figsize,
                           dendrogram=False, show=False, return_fig=True, ax=ax)
         dp.make_figure()
     
@@ -624,7 +635,6 @@ def programs_dotplot(mdata, Target, groupby="sample", program_list=None,
     
     return ax
  
-
 
 # helper method to compute corr for analyze_correlations
 def compute_gene_correlation_matrix(mdata, file_to_dictionary =  None):
@@ -743,33 +753,20 @@ def compute_gene_waterfall_cor(perturb_path):
 
     # Compute correlation matrix using pandas .corr() - handles NaN gracefully
     corr_matrix = pivot_df.T.corr()
+    np.fill_diagonal(corr_matrix.values, np.nan)
 
-    # Convert to dictionary format
-    genes = corr_matrix.index.tolist()
-    correlations = {}
-
-    for target_gene in genes:
-        correlations[target_gene] = {
-            gene: corr_matrix.loc[target_gene, gene]
-            for gene in genes
-            if gene != target_gene
-        }
-
-    return correlations
-
-
-    
+    return corr_matrix
 
 
 
 # plot the waterfall plot for genes that have simliar program loading scores when perturbed 
-def create_gene_correlation_waterfall(waterfall_correlation, Target_Gene, top_num=5, save_path=None, 
+def create_gene_correlation_waterfall(corr_matrix, Target_Gene, top_num=5, save_path=None, 
                          save_name=None, figsize=(3, 5), show=False, ax=None, Day =""):
 
     
     # Convert to DataFrame and sort
-    gene_correlations = waterfall_correlation[Target_Gene] 
-    corr_df = pd.Series(gene_correlations).sort_values(ascending = False) 
+    gene_correlations = corr_matrix.loc[Target_Gene].dropna()
+    corr_df = (gene_correlations).sort_values(ascending = False) 
     
     # Get top N positive and bottom N negative correlations for labeling
     top_positive = corr_df.head(top_num)
@@ -1061,7 +1058,7 @@ def create_comprehensive_plot(
         # Plot 4: Waterfall plot 
         current_ax = axes[ax_index]
         current_ax, text = create_gene_correlation_waterfall(
-            waterfall_correlation=waterfall_correlation[samp],
+            corr_matrix=waterfall_correlation[samp],
             Target_Gene=Target_Gene,
             ax=current_ax,
             Day=samp,
@@ -1103,10 +1100,12 @@ def create_comprehensive_plot(
 
 
 
-def process_single_gene(Target_Gene,     
+def process_single_gene(Target_Gene,
                         mdata,
                         perturb_path_base,
                         file_to_dictionary,
+                        gene_correlation,
+                        waterfall_correlation,
                         top_program=10,
                         groupby='sample',
                         tagert_col_name="target_name",
@@ -1131,6 +1130,8 @@ def process_single_gene(Target_Gene,
             perturb_path_base=perturb_path_base,
             Target_Gene=Target_Gene,
             file_to_dictionary=file_to_dictionary,
+            gene_correlation=gene_correlation,
+            waterfall_correlation=waterfall_correlation,
             top_program=top_program,
             groupby=groupby,
             tagert_col_name=tagert_col_name,
@@ -1156,10 +1157,12 @@ def process_single_gene(Target_Gene,
         return f"Error: {Target_Gene} - {str(e)}"
 
 
-def parallel_gene_processing(perturbed_gene_list, 
+def parallel_gene_processing(perturbed_gene_list,
                         mdata,
                         perturb_path_base,
                         file_to_dictionary,
+                        gene_correlation,
+                        waterfall_correlation,
                         top_program=10,
                         groupby='sample',
                         tagert_col_name="target_name",
@@ -1186,6 +1189,8 @@ def parallel_gene_processing(perturbed_gene_list,
             mdata=mdata,
             perturb_path_base=perturb_path_base,
             file_to_dictionary=file_to_dictionary,
+            gene_correlation=gene_correlation,
+            waterfall_correlation=waterfall_correlation,
             top_program=top_program,
             groupby=groupby,
             tagert_col_name=tagert_col_name,

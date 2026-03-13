@@ -88,15 +88,15 @@ def plot_umap_per_program(mdata, Target_Program, ax=None,
     ax.set_xlabel('UMAP 1', fontsize=10, fontweight = 'bold')
     ax.set_ylabel('UMAP 2', fontsize=10, fontweight = 'bold')
 
-    if ax is None:
+    # Adjust layout (only in standalone mode)
+    if standalone:
         plt.tight_layout()
 
-    # Only save if standalone and save_path provided
-    if standalone and save_path and save_name:
-        fig.savefig(f"{save_path}/{save_name}.svg", format='svg', bbox_inches='tight', dpi=300)
-    
-    # Only show/close if standalone
-    if standalone:
+        # Save if path provided (only in standalone mode)
+        if save_path and save_name:
+            fig.savefig(f'{save_path}/{save_name}.svg', format='svg', bbox_inches='tight', dpi=300)
+
+        # Control whether to display the plot (only in standalone mode)
         if show:
             plt.show()
         else:
@@ -187,8 +187,14 @@ def top_GO_per_program(GO_path, Target_Program, num_term = 5, p_value_name = "Ad
     df = pd.read_csv(GO_path, sep='\t', index_col=0)
 
     # local to a program and isolate Term
-    'program_name' in df.columns
-    df.index.name == 'program_name'
+    if Target_Program not in df.index:
+        print(f"Program {Target_Program} not found in GO data")
+        if ax is None:
+            fig, ax = plt.subplots(figsize=figsize)
+        ax.text(0.5, 0.5, 'No GO data to display',
+               ha='center', va='center', transform=ax.transAxes)
+        return ax, []
+
     df_program = df.loc[Target_Program]
 
     # rename index
@@ -283,10 +289,20 @@ def compute_program_correlation_matrix(mdata):
 def analyze_program_correlations(program_correlation, Target_Program = 0, num_program = 5, 
 save_path=None, save_name = None, figsize = (5, 4),show=False, ax=None):
 
-    # check if gene exists
+    # check if program exists
     if Target_Program not in program_correlation.columns:
-        raise ValueError(f"Program {Target_Program} not found in mdata")
-
+        print(f"Program {Target_Program} not found in mdata")
+        if ax is None:
+            blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
+            img = Image.fromarray(blank_img)
+            if save_path and save_name:
+                full_path = f"{save_path}/{save_name}.png"
+                img.save(full_path)
+            return None
+        else:
+            ax.text(0.5, 0.5, 'No correlation to display',
+                   ha='center', va='center', transform=ax.transAxes)
+            return ax
 
     # Get correlations with the target program
     target_correlations = program_correlation.iloc[Target_Program]
@@ -384,9 +400,11 @@ def plot_violin(mdata, Target_Program, save_path=None, save_name=None, groupby =
     # Create figure/axes if not provided
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
+        standalone = True
     else:
         fig = ax.get_figure()
-    
+        standalone = False
+
     # Make violin plot
     ax = sns.violinplot(
         data=df,
@@ -395,12 +413,12 @@ def plot_violin(mdata, Target_Program, save_path=None, save_name=None, groupby =
         inner="quartile",
         density_norm='width',
         cut=0,
-        ax=ax   
+        ax=ax
     )
-    
+
     # Annotate mean & fraction above violins
     cell_types_order = df['cell_type'].cat.categories if hasattr(df['cell_type'], 'cat') else sorted(df['cell_type'].unique())
-    
+
     for i, row in summary.iterrows():
         # Get x position based on cell type order
         x_pos = list(cell_types_order).index(row['cell_type'])
@@ -410,27 +428,26 @@ def plot_violin(mdata, Target_Program, save_path=None, save_name=None, groupby =
             f"Mean={row['mean_expr']:.2f}\nFrac={row['frac_cells']:.2f}",
             ha="center", va="bottom", fontsize=9, color="black"
         )
-    
+
     # Set labels and title
     ax.set_title(f"Program {Target_Program} Expression by Conditions", fontsize=14, fontweight='bold', loc='center')
     ax.set_ylabel('Program Expression', fontsize=10, fontweight='bold', loc='center')
     ax.set_xlabel('Conditions', fontsize=10, fontweight='bold', loc='center')
-    
+
     # Adjust layout (only in standalone mode)
-    if ax is None:
+    if standalone:
         plt.tight_layout()
-    
-    # Save if path provided (only in standalone mode)
-    if save_path and ax is None:
-        fig.savefig(f'{save_path}/{save_name}.svg', format='svg', bbox_inches='tight', dpi=300)
-    
-    # Control whether to display the plot (only in standalone mode)
-    if ax is None:  # FIX: Corrected indentation
-        if show:  # FIX: Properly indented
+
+        # Save if path provided (only in standalone mode)
+        if save_path and save_name:
+            fig.savefig(f'{save_path}/{save_name}.svg', format='svg', bbox_inches='tight', dpi=300)
+
+        # Control whether to display the plot (only in standalone mode)
+        if show:
             plt.show()
         else:
             plt.close(fig)
-    
+
     return ax
   
 
@@ -447,7 +464,10 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
     # Check if query gene exists
     if Target not in df[tagert_col_name].values:
         print(f"{Target} not found in mdata")
-        return ax, None
+        if ax is not None:
+            ax.text(0.5, 0.5, 'No data to display',
+                   ha='center', va='center', transform=ax.transAxes)
+        return ax, pd.DataFrame()
 
     if gene_list is not None:
         expressed_gene =  set(df[plot_col_name].values).intersection(set(gene_list))
@@ -605,8 +625,10 @@ def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", pl
     # Check if query gene exists
     if Target not in df[tagert_col_name].values:
         print(f"Program {Target} not found in data")
-
-        return ax, None, None
+        if ax is not None:
+            ax.text(0.5, 0.5, 'No data to display',
+                   ha='center', va='center', transform=ax.transAxes)
+        return ax, pd.DataFrame(), []
 
     df_program = df.loc[df[tagert_col_name] == Target]
 
@@ -685,8 +707,9 @@ def perturbed_program_dotplot(mdata, Target_Program, groupby="sample", gene_list
     
 
     adata_gene_list = mdata['rna'].var_names.tolist()
-    
-    # check when there is gene that perturbed this program 
+    gene_list = [gene for gene in gene_list if gene in adata_gene_list] if gene_list else []
+
+    # check when there is gene that perturbed this program
     if not gene_list:
 
         print("No significant Gene or Gene not Found")
@@ -711,7 +734,7 @@ def perturbed_program_dotplot(mdata, Target_Program, groupby="sample", gene_list
         missing = set(gene_list) - set(adata_gene_list)
         print(f"The following regulators are not in adata: {missing}")
     
-    gene_list =  [gene for gene in gene_list if gene in adata_gene_list]
+    
     gene_list = gene_list[::-1]
     
     # Create dotplot
