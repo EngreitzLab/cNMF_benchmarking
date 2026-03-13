@@ -104,10 +104,10 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
                                                                                     sel_thresh = str(i).replace('.','_')))
             # Make mdata
             mdata = muon.MuData({'rna': adata_, 'cNMF': prog_data})
-            #mdata['cNMF'].uns[guide_names_key] = adata_.uns[guide_names_key]
-            #mdata['cNMF'].uns[guide_targets_key] = adata_.uns[guide_targets_key]
-            #mdata['cNMF'].obs[categorical_key] = adata_.obs[categorical_key]
-            #mdata['cNMF'].obsm[guide_assignment_key] = adata_.obsm[guide_assignment_key] 
+            mdata['cNMF'].uns[guide_names_key] = adata_.uns[guide_names_key]
+            mdata['cNMF'].uns[guide_targets_key] = adata_.uns[guide_targets_key]
+            mdata['cNMF'].obs[categorical_key] = adata_.obs[categorical_key]
+            mdata['cNMF'].obsm[guide_assignment_key] = adata_.obsm[guide_assignment_key] 
             #mdata['cNMF'].obsm['X_pca'] = adata_.obsm['X_pca']
             #mdata['cNMF'].obsm['X_umap'] = adata_.obsm['X_umap']
             mdata['rna'].var['var_names'] = adata_.var_names
@@ -198,11 +198,23 @@ def annotate_genes_to_excel(df, species = 'human', output_file='gene_annotations
             returnall=True
         )
         
-        # Process results
-        annotation_list = []
-        for query_gene, gene_info in zip(genes, results['out']):
-            # Handle cases where gene is not found or multiple matches
+        # Build lookup: for each query, keep the highest-scoring hit
+        best_hit = {}
+        for gene_info in results['out']:
+            query = gene_info.get('query', '')
             if 'notfound' in gene_info and gene_info['notfound']:
+                if query not in best_hit:
+                    best_hit[query] = gene_info
+            else:
+                score = gene_info.get('_score', 0)
+                if query not in best_hit or 'notfound' in best_hit[query] or score > best_hit[query].get('_score', 0):
+                    best_hit[query] = gene_info
+
+        # Process results in original gene order
+        annotation_list = []
+        for query_gene in genes:
+            gene_info = best_hit.get(query_gene)
+            if gene_info is None or ('notfound' in gene_info and gene_info['notfound']):
                 annotation_list.append({
                     'Input_Gene': query_gene,
                     'Gene_Symbol': 'NOT FOUND',
