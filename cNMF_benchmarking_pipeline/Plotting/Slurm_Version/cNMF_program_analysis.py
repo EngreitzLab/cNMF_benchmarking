@@ -40,8 +40,8 @@ if __name__ == '__main__':
     parser.add_argument('--top_program', type=int, default=10, help='number of top programs to display')
     parser.add_argument('--top_enrichned_term', type=int, default=10, help='number of top GO enrichment terms to display per program')
     parser.add_argument('--p_value', type=float, default=0.05, help='p-value threshold for significance')
-    parser.add_argument('--down_thred_log', type=float, default=-0.05, help='lower log2FC threshold for volcano plot')
-    parser.add_argument('--up_thred_log', type=float, default=0.05, help='upper log2FC threshold for volcano plot')
+    parser.add_argument('--down_thred_log', type=float, default=-0.00, help='lower log2FC threshold for volcano plot')
+    parser.add_argument('--up_thred_log', type=float, default=0.00, help='upper log2FC threshold for volcano plot')
     parser.add_argument('--pdf_save_path', type=str, required=True, help='directory path to save output plots')
     parser.add_argument('--square_plots', action="store_true", help='use square aspect ratio for plots')
     parser.add_argument('--figsize', type=float, nargs=2, default=(35, 35), help='figure size as width height')
@@ -119,7 +119,7 @@ if __name__ == '__main__':
     
 
 
-    programs_to_plot = args.programs if args.programs is not None else list(range(program_len))
+    programs_to_plot = args.programs if args.programs is not None else list(mdata[args.prog_key].var_names)
     for program in programs_to_plot:
 
         create_comprehensive_program_plot(

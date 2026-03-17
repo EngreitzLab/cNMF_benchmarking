@@ -236,5 +236,5 @@ if __name__ == '__main__':
 
             # Run explained variance
             if args.Perform_explained_variance:
-                compute_explained_variance(cnmf_obj, X, k, output_folder = output_folder, thre = str(sel_thresh) )
+                compute_explained_variance(cnmf_obj, X, k, output_folder = output_folder, thre = str(sel_thresh), program_name=mdata[args.prog_key].var_names )
 

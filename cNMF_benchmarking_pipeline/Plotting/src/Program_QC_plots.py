@@ -114,17 +114,18 @@ def plot_top_gene_per_program(mdata, Target_Program,
                               figsize=(5,8), show=False, file_to_dictionary=None):
     
     # Read cNMF gene program matrix
-    X = mdata["cNMF"].varm["loadings"] 
-    
+    X = mdata["cNMF"].varm["loadings"]
+    gene_names = mdata["cNMF"].uns['var_names']
+
     # Rename genes
     if file_to_dictionary is None:
-        df_renamed = pd.DataFrame(data=X, columns=mdata["rna"].var_names)
+        df_renamed = pd.DataFrame(data=X, columns=gene_names, index=mdata["cNMF"].var_names)
     else:
-        renamed_gene_list = rename_list_gene_dictionary(mdata["rna"].var_names, file_to_dictionary)
-        df_renamed = pd.DataFrame(data=X, columns=renamed_gene_list)
-    
+        renamed_gene_list = rename_list_gene_dictionary(gene_names, file_to_dictionary)
+        df_renamed = pd.DataFrame(data=X, columns=renamed_gene_list, index=mdata["cNMF"].var_names)
+
     # Sort top x genes for the program
-    df_sorted = df_renamed.loc[Target_Program].nlargest(num_gene)
+    df_sorted = df_renamed.loc[str(Target_Program)].nlargest(num_gene)
     df_sorted = df_sorted.sort_values(ascending=True)
     
     # If no axis provided, create new figure
@@ -280,7 +281,7 @@ def compute_program_correlation_matrix(mdata):
     X = mdata['cNMF'].X
     if hasattr(X, 'toarray'):
         X = X.toarray()
-    df =  pd.DataFrame(data=X, index =mdata['cNMF'].obs_names )
+    df =  pd.DataFrame(data=X, index=mdata['cNMF'].obs_names, columns=mdata['cNMF'].var_names)
 
     program_correlation = df.corr()
     program_correlation = program_correlation.fillna(0)
@@ -293,7 +294,7 @@ def analyze_program_correlations(program_correlation, Target_Program = 0, num_pr
 save_path=None, save_name = None, figsize = (5, 4),show=False, ax=None):
 
     # check if program exists
-    if Target_Program not in program_correlation.columns:
+    if str(Target_Program) not in program_correlation.columns:
         print(f"Program {Target_Program} not found in mdata")
         if ax is None:
             blank_img = np.ones((300, 200, 3), dtype=np.uint8) * 255
@@ -308,8 +309,8 @@ save_path=None, save_name = None, figsize = (5, 4),show=False, ax=None):
             return ax
 
     # Get correlations with the target program
-    target_correlations = program_correlation.iloc[Target_Program]
-    target_correlations = target_correlations.drop(target_correlations.index[Target_Program]) # Remove self-correlation
+    target_correlations = program_correlation.loc[str(Target_Program)]
+    target_correlations = target_correlations.drop(str(Target_Program)) # Remove self-correlation
     
     # Sort correlations
     sorted_correlations = target_correlations.sort_values(ascending=True)
@@ -385,12 +386,12 @@ def plot_violin(mdata, Target_Program, save_path=None, save_name=None, groupby =
     X = mdata['cNMF'].X
     if hasattr(X, 'toarray'):
         X = X.toarray()
-    df = pd.DataFrame(data=X, index=mdata['cNMF'].obs_names)
-    
+    df = pd.DataFrame(data=X, index=mdata['cNMF'].obs_names, columns=mdata['cNMF'].var_names)
+
     # Create dataframe with expression and cell type
     df = pd.DataFrame({
-        "expression": df.iloc[:, Target_Program],  # Select column, not row
-        "cell_type": mdata['rna'].obs[groupby].values  
+        "expression": df[str(Target_Program)],
+        "cell_type": mdata['rna'].obs[groupby].values
     })
     
     # Compute summary stats per cell_type
@@ -473,7 +474,7 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
         if ax is not None:
             ax.text(0.5, 0.5, 'No data to display',
                    ha='center', va='center', transform=ax.transAxes)
-        return ax, pd.DataFrame()
+        return ax, pd.DataFrame(columns=df.columns)
 
     if gene_list is not None:
         expressed_gene =  set(df[plot_col_name].values).intersection(set(gene_list))
@@ -509,7 +510,7 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
     ax.set_yticklabels(plot_data[plot_col_name],fontsize=10) 
 
 
-    ax.set_xlabel('Effect on Program Loadings (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel('Effect on Program Loadings',fontsize=10, fontweight='bold', loc='center')
     ax.set_ylabel( "Regulator Name",fontsize=10, fontweight='bold', loc='center')
     ax.set_title(f"Regulator Effect on Program Loadings, \n Program {Target}, {Day}",fontsize=14, fontweight='bold', loc='center')
 
@@ -592,7 +593,7 @@ def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="tar
     ax.set_yticklabels(ax.get_yticklabels(), fontsize=8, rotation=0)
     ax.set_ylabel('Conditions',fontsize=10, fontweight='bold', loc='center')
     ax.set_xlabel( "Regulator Name",fontsize=10, fontweight='bold', loc='center')
-    ax.set_title(f"Heatmap of Regulator Effects on Program {Target_Program} Across Conditions (log2 fold-change)",fontsize=14, fontweight='bold', loc='center')
+    ax.set_title(f"Heatmap of Regulator Effects on Program {Target_Program} Across Conditions",fontsize=14, fontweight='bold', loc='center')
 
     # Add X marks for values with adj_pval < 0.05
     # You'll need to have a separate df with p-values in the same format
@@ -681,7 +682,7 @@ def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", pl
     
     
     # Set labels and lines
-    ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel('Effect on Program Expression',fontsize=10, fontweight='bold', loc='center')
     ax.set_ylabel("-log10 Adjusted p-value ",fontsize=10, fontweight='bold', loc='center')
     ax.axvline(down_thred_log, color="grey", linestyle="--")
     ax.axvline(up_thred_log, color="grey", linestyle="--")
@@ -1046,7 +1047,7 @@ def create_comprehensive_program_plot(
             Day=samp
         )
         ax_index += 1
-        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Effect on Program Expression', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel("Regulator Name", fontsize=14, fontweight='bold', loc='center')
         current_ax.set_title(f"Regulator Effect on Program Expression, \n Program {Target_Program}, {samp}", fontsize=20, fontweight='bold', loc='center')
 
@@ -1068,7 +1069,7 @@ def create_comprehensive_program_plot(
         )
         ax_index += 1
         current_ax.set_title(f"Volcano Plot for Program Expression, \n Program {Target_Program}, {samp}", fontsize=20, fontweight='bold', loc='center')
-        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Effect on Program Expression', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel(" -log10 Adjusted p-value", fontsize=14, fontweight='bold', loc='center')
         for t in text:
             t.set_fontsize(14)
@@ -1078,7 +1079,7 @@ def create_comprehensive_program_plot(
         current_ax = axes[ax_index]
         current_ax = perturbed_program_dotplot(
             mdata=mdata, 
-            gene_list=df["target_name"].tolist(),
+            gene_list=df[plot_col_name].tolist() if not df.empty else [],
             Target_Program=Target_Program,
             groupby=groupby,
             figsize=(5, 3),
@@ -1125,7 +1126,7 @@ def create_comprehensive_program_plot(
     ax22.set_yticklabels(ax22.get_yticklabels(), fontsize=13, rotation=0)
     ax22.set_ylabel('Conditions',fontsize=14, fontweight='bold', loc='center')
     ax22.set_xlabel( "Regulator Name",fontsize=14, fontweight='bold', loc='center')
-    ax22.set_title(f"Heatmap of Regulator Effects on Program {Target_Program} Across Conditions (log2 fold-change)",fontsize=18, fontweight='bold', loc='center')
+    ax22.set_title(f"Heatmap of Regulator Effects on Program {Target_Program} Across Conditions",fontsize=18, fontweight='bold', loc='center')
 
 
 

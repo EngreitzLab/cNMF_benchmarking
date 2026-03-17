@@ -53,7 +53,7 @@ def computeVarianceExplained(X, H, Var_X, i):
     return (1 - numerator / Var_X)
 
 
-def compute_explained_variance(cnmf_obj, X, k, output_folder, thre = '2.0'):
+def compute_explained_variance(cnmf_obj, X, k, output_folder, program_name = range(1, 51), thre = '2.0'):
     """
     Compute explained variance for all gene programs in a cNMF factorization.
     
@@ -69,6 +69,8 @@ def compute_explained_variance(cnmf_obj, X, k, output_folder, thre = '2.0'):
         Directory to save variance results
     thre : str, default '2.0'
         Threshold parameter for consensus matrices
+    program_name: list
+        List of program names 
         
     Returns
     -------
@@ -106,9 +108,10 @@ def compute_explained_variance(cnmf_obj, X, k, output_folder, thre = '2.0'):
 
     ProgramID = ['K' + str(k) + '_' + str(i+1) for i in range(k)]
 
-    # Save variance metrics and summary statistics to files 
+    # Save variance metrics and summary statistics to files
     metrics_df = pd.DataFrame({'VarianceExplained': V_k,
-                                'ProgramID': ProgramID })
+                                'ProgramID': ProgramID,
+                                'program_name': list(program_name) })
 
     metrics_summary = pd.DataFrame({'Sum' : metrics_df['VarianceExplained'].sum(),
                                     'Median' : metrics_df['VarianceExplained'].median(),

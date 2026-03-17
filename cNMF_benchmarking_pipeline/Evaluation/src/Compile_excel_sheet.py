@@ -10,6 +10,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import entropy
+from functools import reduce
 
 
 
@@ -19,17 +20,79 @@ sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking
 
 from Plotting.src import rename_adata_gene_dictionary ,compute_gene_waterfall_cor
 
+#-------------- helper methods compile into excel sheets, not used here --------------
 
-# Compile simple sheets 
+# check matching names in program
+def check_program_name_match(mdata, dataframes, prog_key='cNMF'):
+    """Check that program names in all loaded DataFrames match mdata var_names.
+
+    Parameters
+    ----------
+    mdata : MuData
+        The MuData object containing cNMF results.
+    dataframes : list of DataFrame or None
+        List of DataFrames to check. None values are skipped.
+        Each DataFrame is expected to have a 'program_name' column.
+    prog_key : str
+        Key for the program modality in mdata.
+    """
+    mdata_programs = set(str(v) for v in mdata[prog_key].var_names)
+    try:
+        mdata_sorted = sorted(mdata_programs, key=int)
+    except ValueError:
+        mdata_sorted = sorted(mdata_programs)
+
+    mismatched = []
+    for df in dataframes:
+        if df is None:
+            continue
+        if 'program_name' not in df.columns:
+            continue
+        file_programs = set(str(v) for v in df['program_name'].unique())
+        if file_programs != mdata_programs:
+            try:
+                file_sorted = sorted(file_programs, key=int)
+            except ValueError:
+                file_sorted = sorted(file_programs)
+            mismatched.append(file_sorted)
+
+    if mismatched:
+        print(f"WARNING: Program name mismatch detected!")
+        print(f"  mdata['{prog_key}'].var_names: {mdata_sorted}")
+        for file_sorted in mismatched:
+            print(f"  file programs: {file_sorted}")
+
+# merge to have specificity score added for perturbation results
+def add_specificity_scores_file(save_path, Perturbation_path_base, samp):                                                                                                                                                    
+                                                                                                                                                                                                                     
+      PMI = pd.read_csv(f'{save_path}/specificity_score_{samp}.txt', sep='\t', index_col=0)                                                                                                                          
+      df_perturbation = pd.read_csv(f'{Perturbation_path_base}_{samp}.txt', sep='\t')                                                                                                                                     
+                                                                                                                                                                                                                     
+      # convert PMI to long form
+      df_PMI = PMI.reset_index().melt(id_vars="target_name", var_name="program_name", value_name="specificity_scores")
+
+      # make sure program name is in str form
+      df_PMI["program_name"] = df_PMI["program_name"].astype(str)
+      df_perturbation["program_name"] = df_perturbation["program_name"].astype(str)
+
+      # merge to have specificity score added for perturbation results
+      df_perturbation_merged = df_PMI.merge(df_perturbation, on=["target_name", "program_name"])
+
+      df_perturbation_merged.to_csv(f'{save_path}/perturbation_merged_{samp}.txt', sep='\t')
+
+      return df_perturbation_merged
+
+
+
+
+# Compile simple sheets
 
 #-------------- helper methods for loading sheets--------------
-
 def compile_Program_loading_score_sheet_long(mdata, num_gene = 300):
 
     print('Load program loadings data in long form')
 
-    program_loading_df = pd.DataFrame(data=mdata['cNMF'].varm["loadings"], columns = mdata['rna'].var_names)
-    num_gene = 300
+    program_loading_df = pd.DataFrame(data=mdata['cNMF'].varm["loadings"], columns=mdata['cNMF'].uns['var_names'], index=mdata['cNMF'].var_names)
 
     top_df = program_loading_df.apply(
     lambda row: row.nlargest(num_gene).index.tolist(),
@@ -88,7 +151,7 @@ def compile_Program_loading_score_sheet_flat(mdata, num_gene = 300):
     print('Load program loadings data in flat form')
 
 
-    program_loading_df = pd.DataFrame(data=mdata['cNMF'].varm["loadings"], columns = mdata['rna'].var_names)
+    program_loading_df = pd.DataFrame(data=mdata['cNMF'].varm["loadings"], columns=mdata['cNMF'].uns['var_names'], index=mdata['cNMF'].var_names)
 
     top_df = program_loading_df.apply(
     lambda row: row.nlargest(num_gene).index.tolist(),
@@ -166,11 +229,8 @@ def Compile_Explained_variance(Explained_Variance_path):
 
     print('Load explained variance data')
 
-    df = pd.read_csv(Explained_Variance_path, sep = "\t", index_col = 0)
-    df.reset_index(drop=False, inplace=True)
-    df.drop("ProgramID", axis = 1, inplace=True)
-    df.index = range(len(df))
-    df.index.name = 'program_name'
+    df = pd.read_csv(Explained_Variance_path, sep = "\t")
+    df = df.set_index('program_name') 
 
     return df
 
@@ -217,9 +277,12 @@ def load_simple_sheets(mdata, out_dir, run_name, k, sel_thresh, num_gene = 300, 
     perturbation_files = [f"{Perturbation_path_base}_{samp}.txt" for samp in Sample]
     if any(os.path.exists(f) for f in perturbation_files):
         df_Perturbation = Compile_Perturbation_sheet(Perturbation_path_base, Sample = Sample)
+
+        df_Perturbation_significant_gene_only = df_Perturbation[df_Perturbation['adj_pval'] < 0.05]
     else:
         print(f'No perturbation files found for base: {Perturbation_path_base}')
         df_Perturbation = None
+        df_Perturbation_significant_gene_only = None
 
     # compile association
     if os.path.exists(Association_path):
@@ -235,7 +298,7 @@ def load_simple_sheets(mdata, out_dir, run_name, k, sel_thresh, num_gene = 300, 
         print(f'Explained variance file not found: {Explained_Variance_path}')
         df_Explained_Variance = None
 
-    return df_Program_loading_long, df_Program_loading_flat, df_GO, df_Geneset, df_Trait, df_Perturbation, df_Association, df_Explained_Variance
+    return df_Program_loading_long, df_Program_loading_flat, df_GO, df_Geneset, df_Trait, df_Perturbation, df_Association, df_Explained_Variance, df_Perturbation_significant_gene_only
 
 
 
@@ -419,7 +482,6 @@ def get_guide_cells_per_days(mdata, categorical_key="sample", data_key='rna', pr
 
     return df_merge
 
-
 # Get the gene expression average per day 
 def get_guide_mean_expr_per_day(mdata, categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna', guide_targets_key = "guide_targets"):
                                                                                                                                                                             
@@ -561,7 +623,6 @@ def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2"
 
     return pd.concat(correlation_results_all_days.values(), axis=1)
 
-
 #-------------- helper methods starget summary--------------
 
 # final function to compile target Summary sheet 
@@ -579,40 +640,15 @@ top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna
     df_specificity_program =  get_specificity_program(perturbation_path, Sample=Sample, T = T, save_path = save_path) # save_path for saving specificity scores 
     df_correlation = get_correlation_df(perturbation_path ,Sample=Sample, top_n=top_n, save_path = save_path)
 
-    final_merged_df = pd.merge(
-      df_mean_expr_per_day,
-      df_guide_days,
-      left_index=True,
-      right_index=True,
-      how='outer'
-    )
 
-    final_merged_df = pd.merge(                                                                                                                                                                            
-        final_merged_df,                                                                                                                                                                                  
-        df_significant_program,                                                                                                                                                                          
-        left_index=True,                                                                                                                                                                                 
-        right_index=True,                                                                                                                                                                                 
-        how='outer'                                                                                                                                                                                       
-     ) 
+    dfs = [df_mean_expr_per_day, df_guide_days, df_significant_program, df_specificity_program, df_correlation]
 
-    final_merged_df = pd.merge(                                                                                                                                                                            
-      final_merged_df,                                                                                                                                                                                  
-      df_specificity_program,                                                                                                                                                                          
-       left_index=True,                                                                                                                                                                                 
-       right_index=True,                                                                                                                                                                                 
-       how='outer'                                                                                                                                                                                       
-    )
-    
-    final_merged_df = pd.merge(                                                                                                                                                                            
-      final_merged_df,                                                                                                                                                                                  
-      df_correlation,                                                                                                                                                                          
-       left_index=True,                                                                                                                                                                                 
-       right_index=True,                                                                                                                                                                                 
-       how='outer'                                                                                                                                                                                       
+    final_merged_df = reduce(
+        lambda left, right: left.merge(right, left_index=True, right_index=True, how='outer'),
+        dfs
     ).fillna('')
-
+    
     return final_merged_df
-
 
 
 
@@ -626,12 +662,14 @@ top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna
 def simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance = None, Sample = ["D0", "sample_D1","sample_D2","sample_D3" ]
 , non_tagerting_key = None):
 
+    programs = list(df.index)  # use actual program indices from df, not range(k)
+
     # create GO summary col
     if df_GO is not None:
         df_GO_enriched = df_GO.loc[df_GO['Adjusted P-value']<=0.05]
-        df['Total Enriched GO Terms'] = [df_GO_enriched[df_GO_enriched['program_name']==i].shape[0] for i in range(k)] 
+        df['Total Enriched GO Terms'] = [df_GO_enriched[df_GO_enriched['program_name']==i].shape[0] for i in programs]
 
-    # remove non-targeting off the list of perturbed genes 
+    # remove non-targeting off the list of perturbed genes
     if df_Perturbation is not None:
         if non_tagerting_key is not None:
             df_Perturbation = df_Perturbation[~df_Perturbation['target_name'].isin(non_tagerting_key)]
@@ -646,8 +684,8 @@ def simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Ex
             df_Perturbation_positive = df_Perturbation_enriched.loc[df_Perturbation_enriched['log2FC'] > 0 ]
             df_Perturbation_negative = df_Perturbation_enriched.loc[df_Perturbation_enriched['log2FC'] < 0 ]
 
-            df[f'Regulators with positive effect {condition}'] = [df_Perturbation_positive[df_Perturbation_positive['program_name']==i].shape[0] for i in range(k)] 
-            df[f'Regulators with negative effect {condition}'] = [df_Perturbation_negative[df_Perturbation_negative['program_name']==i].shape[0] for i in range(k)] 
+            df[f'Regulators with positive effect {condition}'] = [df_Perturbation_positive[df_Perturbation_positive['program_name']==i].shape[0] for i in programs]
+            df[f'Regulators with negative effect {condition}'] = [df_Perturbation_negative[df_Perturbation_negative['program_name']==i].shape[0] for i in programs]
 
         # create perturbation gene summary col
         for condition in conditions:
@@ -655,10 +693,10 @@ def simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Ex
             df_Perturbation_D = df_Perturbation_enriched.loc[df_Perturbation_enriched['Sample'] == condition] # make for each condition
 
             targets_list = []
-            for i in range(k):
+            for i in programs:
                 matching = df_Perturbation_D.loc[df_Perturbation_D['program_name'] == i] # for each program
                 unique_indices = matching["target_name"].unique()                                  # find unique programs
-                joined = ';'.join([str(x) for x in unique_indices])                      # join them 
+                joined = ';'.join([str(x) for x in unique_indices])                      # join them
                 targets_list.append(joined)
 
             df[f'sigfdr0.05_targets_sorted_abslog2fcd_{condition}'] = targets_list
@@ -670,7 +708,7 @@ def simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Ex
 
     # create top gene summary col
     if df_Program_loading is not None:
-        df['top10_loaded_genes'] = [';'.join(df_Program_loading.iloc[i][:10]) for i in range(k)]
+        df['top10_loaded_genes'] = [';'.join(df_Program_loading.loc[str(i)][:10]) for i in programs]
 
     # create explained variance summary col
     if df_Explained_Variance is not None:
@@ -680,27 +718,27 @@ def simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Ex
 def get_program_info_Summary_cols(mdata, categorical_key = "sample"):
 
     # create cell info col summary
-    df_cell = pd.DataFrame(data=mdata['cNMF'].X, index=mdata['cNMF'].obs_names)
+    df_cell = pd.DataFrame(data=mdata['cNMF'].X, index=mdata['cNMF'].obs_names, columns=mdata['cNMF'].var_names)
     results = []
 
-    # program #
-    k = df_cell.shape[1]
+    # use actual program names from mdata var_names
+    programs = [int(v) for v in mdata['cNMF'].var_names]
 
-    # Loop through all k values
-    for i in range(k):
+    # Loop through all programs using label-based access
+    for prog in programs:
         df_cell_program = pd.DataFrame({
-            "expression": df_cell.iloc[:, i],
-            "cell_type": mdata['rna'].obs[categorical_key].values  
+            "expression": df_cell[str(prog)],
+            "cell_type": mdata['rna'].obs[categorical_key].values
         })
-        
+
         df_mean = df_cell_program.groupby("cell_type")["expression"].mean()
         df_frac = df_cell_program.groupby("cell_type")["expression"].apply(
             lambda x: (x > x.mean()).mean()
         )
-        
+
         # Store as row with program as index
         results.append({
-            'program_name': i,
+            'program_name': prog,
             **{f'Mean program score {ct}': df_mean[ct] for ct in df_mean.index},
             **{f'Fra cells above mean program score {ct}': df_frac[ct] for ct in df_frac.index}
         })
@@ -741,12 +779,13 @@ categorical_key = "sample",non_tagerting_key=None):
 
     # set program # from mdata (works even if df_GO is None)
     k = mdata['cNMF'].varm["loadings"].shape[0]
+    programs = sorted(int(v) for v in mdata['cNMF'].var_names)
 
     df = pd.DataFrame({
     'manual_annotation_label': [''] * k,
     'manual_timepoint': [''] * k,
     'Notes': [''] * k,
-    'Automatic Timepoint': [''] * k }, index=pd.Index(range(k), name='program_name'))
+    'Automatic Timepoint': [''] * k }, index=pd.Index(programs, name='program_name'))
 
     simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance,  Sample = Sample, non_tagerting_key=non_tagerting_key)
     df_cell_info_cols = get_program_info_Summary_cols(mdata,categorical_key)
@@ -785,22 +824,7 @@ categorical_key = "sample",non_tagerting_key=None):
     return final_merged_df
    
 
-# merge to have specificity score added for perturbation results
-def add_specificity_scores(save_path, Perturbation_path_base, samp):                                                                                                                                                    
-                                                                                                                                                                                                                     
-      PMI = pd.read_csv(f'{save_path}/specificity_score_{samp}.txt', sep='\t', index_col=0)                                                                                                                          
-      df_perturbation = pd.read_csv(f'{Perturbation_path_base}_{samp}.txt', sep='\t')                                                                                                                                     
-                                                                                                                                                                                                                     
-      # convert PMI to long form
-      df_PMI = PMI.reset_index().melt(id_vars="target_name", var_name="program_name", value_name="specificity_scores")
 
-      # make sure program name is in str form
-      df_PMI["program_name"] = df_PMI["program_name"].astype(str)
-      df_perturbation["program_name"] = df_perturbation["program_name"].astype(str)
 
-      # merge to have specificity score added for perturbation results
-      df_perturbation_merged = df_PMI.merge(df_perturbation, on=["target_name", "program_name"])
 
-      df_perturbation_merged.to_csv(f'{save_path}/perturbation_merged_{samp}.txt', sep='\t')
 
-      return df_perturbation_merged

@@ -91,6 +91,7 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
             adata_.obs_names_make_unique()
 
             prog_data = anndata.AnnData(X=scores.values, obs=adata_.obs)
+            prog_data.var_names = scores.columns.values
             prog_data.varm['loadings'] = loadings.values
             prog_data.uns['var_names'] = loadings.columns.values
 
