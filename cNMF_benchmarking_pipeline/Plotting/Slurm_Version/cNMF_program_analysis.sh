@@ -60,6 +60,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --figsize 35 40 \
         --categorical_key "batch" \
         --subsample_frac 0.1 \
+        #--corr_matrix_base 
         #--programs 4 5 6 \
         #--file_to_dictionary \
         #--n_processes 70 \

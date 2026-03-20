@@ -186,9 +186,10 @@ def top_GO_per_program(GO_path, Target_Program, num_term = 5, p_value_name = "Ad
 
     # read txt file
     df = pd.read_csv(GO_path, sep='\t', index_col=0)
+    df.index = df.index.astype(str)
 
     # local to a program and isolate Term
-    if Target_Program not in df.index:
+    if str(Target_Program) not in df.index:
         print(f"Program {Target_Program} not found in GO data")
         if ax is None:
             fig, ax = plt.subplots(figsize=figsize)
@@ -196,7 +197,7 @@ def top_GO_per_program(GO_path, Target_Program, num_term = 5, p_value_name = "Ad
                ha='center', va='center', transform=ax.transAxes)
         return ax, []
 
-    df_program = df.loc[Target_Program]
+    df_program = df.loc[str(Target_Program)]
 
     # rename index
     df_program.index = df_program['Term']
@@ -290,7 +291,7 @@ def compute_program_correlation_matrix(mdata):
     return program_correlation
 
 # find most and least simliar programs
-def analyze_program_correlations(program_correlation, Target_Program = 0, num_program = 5, 
+def analyze_program_correlations(program_correlation, Target_Program , num_program = 5, 
 save_path=None, save_name = None, figsize = (5, 4),show=False, ax=None):
 
     # check if program exists
@@ -467,6 +468,8 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
 
     # read df
     df = pd.read_csv(perturb_path, sep="\t")
+    df['program_name'] = df['program_name'].astype(str)
+
     
     # Check if query gene exists
     if Target not in df[tagert_col_name].values:
@@ -551,7 +554,6 @@ def plot_program_log2FC(perturb_path, Target, tagert_col_name="target_name", plo
 
 
 # plot heatmap for program perturbation on different conditions
-# plot heatmap for program perturbation on different conditions
 def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="target_name", plot_col_name="program_name", sample= ['D0', 'sample_D1', 'sample_D2', 'sample_D3'],
                 log2fc_col='log2FC', p_value=0.05, save_path=None, save_name=None, groupby = 'sample',
                 figsize=(5, 4), show=False, ax=None):
@@ -560,8 +562,10 @@ def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="tar
     perturbed_df_list = [pd.read_csv(f"{perturb_path_base}_{samp}.txt", sep="\t").assign(sample=samp) for samp in sample]
     perturbed_df = pd.concat(perturbed_df_list, ignore_index=True)
 
+    perturbed_df['program_name'] = perturbed_df['program_name'].astype(str)
+
     #sort by target programs
-    df_sorted = perturbed_df.loc[perturbed_df[tagert_col_name] == Target_Program]
+    df_sorted = perturbed_df.loc[perturbed_df[tagert_col_name] == str(Target_Program)]
 
     # Get unique genes that have adj_pval > 0.05 in any sample
     genes_to_keep = df_sorted[df_sorted['adj_pval'] < p_value][plot_col_name].unique()
@@ -628,6 +632,8 @@ def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", pl
                  save_name=None, figsize=(5, 4), show=False, ax=None, Day ="", gene_list = None):
                  
     df = pd.read_csv(perturb_path, sep="\t")
+    df['program_name'] = df['program_name'].astype(str)
+
        
     # Check if query gene exists
     if Target not in df[tagert_col_name].values:
@@ -793,9 +799,16 @@ def perturbed_program_dotplot(mdata, Target_Program, groupby="sample", gene_list
 
 
 # helper method for computing waterfall corr
-def compute_program_waterfall_cor(perturb_path):
-    
+def compute_program_waterfall_cor(perturb_path, precomputed_path=None, save_path=None):
+
+    # Check if a pre-computed correlation matrix exists
+    if precomputed_path is not None and Path(precomputed_path).exists():
+        corr_matrix = pd.read_csv(precomputed_path, sep='\t', index_col=0)
+        return corr_matrix
+
     df = pd.read_csv(perturb_path, sep='\t', index_col=0)
+    df['program_name'] = df['program_name'].astype(str)
+
 
     # Pre-process: create matrix with genes as rows, programs as columns
     pivot_df = df.pivot_table(index='program_name', columns='target_name', values='log2FC')
@@ -803,6 +816,11 @@ def compute_program_waterfall_cor(perturb_path):
     # Compute correlation matrix using numpy - much faster
     corr_matrix = pivot_df.T.corr()
     np.fill_diagonal(corr_matrix.values, np.nan)
+
+    if save_path is not None:
+        corr_matrix.index = corr_matrix.index.astype(str)
+        corr_matrix.columns = corr_matrix.columns.astype(str)
+        corr_matrix.to_csv(save_path, sep='\t')
 
     return corr_matrix
 
@@ -813,9 +831,10 @@ def compute_program_waterfall_cor(perturb_path):
 def create_program_correlation_waterfall(corr_matrix, Target_Program, top_num=5, save_path=None, 
                          save_name=None, figsize=(3, 5), show=False, ax=None, Day =""):
 
-
+    
     # Convert to DataFrame and sort
-    gene_correlations = corr_matrix.loc[Target_Program].dropna()
+    corr_matrix.index = corr_matrix.index.astype(str) # convert type
+    gene_correlations = corr_matrix.loc[str(Target_Program)].dropna()
     corr_df = (gene_correlations).sort_values(ascending = False) 
     
     # Get top N positive and bottom N negative correlations for labeling

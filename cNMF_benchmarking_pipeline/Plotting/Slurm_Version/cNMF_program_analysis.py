@@ -17,10 +17,6 @@ from Plotting.src import plot_umap_per_program, plot_top_gene_per_program, top_G
                               analyze_program_correlations, plot_violin, plot_program_log2FC, plot_program_heatmap, plot_program_volcano, \
                               perturbed_program_dotplot, compute_program_waterfall_cor, create_program_correlation_waterfall, create_comprehensive_program_plot
 
-# reformate if needed 
-def _assign_guide(mdata, mdata_guide):
-        mdata['cNMF'].obsm['guide_assignment'] = mdata_guide['cNMF'].obsm['guide_assignment'].toarray()
-              
 
 if __name__ == '__main__':
     
@@ -50,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample', nargs='*', type=str, default=None, help='list of sample names (default: D0 sample_D1 sample_D2 sample_D3)')
     parser.add_argument('--programs', nargs='+', type=int, default=None, help='specific program numbers to plot (e.g. 4 5 6 ... 100). If omitted, all programs are plotted.')
     parser.add_argument('--subsample_frac', type=float, default=None, help='fraction of cells to subsample for UMAP plots (e.g. 0.1 for 10%%). Default: None (plot all cells)')
+    parser.add_argument('--corr_matrix_path', type=str, default=None, help='base path for precomputed waterfall correlation matrices (e.g. /path/to/corr_matrix). Files are expected as <base>_<sample>.txt. Falls back to computing if not found.')
 
     # keys
     parser.add_argument('--data_key', type=str, default="rna", help='key to access gene expression data in MuData')
@@ -77,7 +74,6 @@ if __name__ == '__main__':
 
     #read mdata
     mdata = mu.read_h5mu(args.mdata_path)
-    _assign_guide(mdata, mdata)
 
 
     # check umap exist 
@@ -111,7 +107,9 @@ if __name__ == '__main__':
     waterfall_correlation = {}
 
     for samp in args.sample:
-        df = compute_program_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt")
+        precomputed = f"{args.corr_matrix_path}/corr_program_matrix_{samp}.txt" if args.corr_matrix_path else None
+        save = f"{args.corr_matrix_path}/corr_program_matrix_{samp}.txt" if args.corr_matrix_path else None
+        df = compute_program_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt", precomputed_path=precomputed, save_path=save)
         waterfall_correlation[samp] = (df)
 
     program_correlation = compute_program_correlation_matrix(mdata)
@@ -127,7 +125,7 @@ if __name__ == '__main__':
             perturb_path_base=args.perturb_path_base,
             GO_path=args.GO_path,
             file_to_dictionary=args.file_to_dictionary,
-            Target_Program=program,
+            Target_Program=str(program),
             program_correlation=program_correlation,
             waterfall_correlation=waterfall_correlation,
             top_program=args.top_program,
