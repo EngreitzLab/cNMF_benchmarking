@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # SLURM job configuration
-#SBATCH --job-name=030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50   # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/logs/%j.out      # Output file (%j = job ID)
-#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/logs/%j.err       # Error file
+#SBATCH --job-name=total_counts_guides_per_cell_pct_counts_mt   # Job name
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/50_0_2/CRT_other_covariates/total_counts_guides_per_cell_pct_counts_mt/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/50_0_2/CRT_other_covariates/total_counts_guides_per_cell_pct_counts_mt/logs/%j.err       # Error file
 #SBATCH --partition=owners,engreitz,bigmem            # partition name
 #SBATCH --time=02:00:00                 # Time limit 
 #SBATCH --nodes=1                       # Number of nodes
@@ -58,11 +58,13 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --number_permutations 5000 \
         --number_guide 6 \
         --components 50 \
-        --sel_thresh 0.2 2.0 \
+        --sel_thresh 0.2 \
         --categorical_key "batch" \
-        --covariates biological_sample \
-        --log_covariates guide_umi_counts n_genes_by_counts total_counts pct_counts_mt \
-        --FDR_method 'StoreyQ'
+        --log_covariates total_counts guides_per_cell \
+        --covariates pct_counts_mt \
+        --FDR_method 'StoreyQ' \
+        --save_dir '/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/50_0_2/CRT_other_covariates/total_counts_guides_per_cell_pct_counts_mt' \
+
 
 
 # Calculate and print elapsed time at the end

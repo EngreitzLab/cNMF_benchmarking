@@ -158,18 +158,17 @@ def run_CRT(adata, k, output_folder, args):
 
         import matplotlib.pyplot as plt
 
+        plt.tight_layout()
 
         if output_folder:
-
             plt.savefig(f"{output_folder}/CRT_{condition}.png", dpi=100)
-            save_result(out, k, output_folder, condition)
+            save_result(out, k, output_folder, condition, args)
 
-        plt.tight_layout()
-        plt.show()
+        plt.close()
 
 
 # save results
-def save_result(out, k, output_folder, condition):
+def save_result(out, k, output_folder, condition, args):
 
     pval_df = out['pvals_skew_df']
     beta_df = out['betas_df']
@@ -242,6 +241,7 @@ if __name__ == "__main__":
     parser.add_argument('--number_permutations', help='Number of calibration iterations to run with (default: 1024)', type=int, default=1024)
     parser.add_argument('--guide_annotation_key', nargs='*', type=str,  help='Name of target for non-targeting/safe-targeting guides,default="non-targeting"', default='non-targeting')
     parser.add_argument('--FDR_method', type=str, choices=['BH', 'StoreyQ'], default='BH', help='FDR correction method: BH (Benjamini-Hochberg) or StoreyQ (Storey Q-value) (default: BH)')
+    parser.add_argument('--save_dir', type=str, default=None, help='Directory to save results and figures. If not provided, defaults to <out_dir>/<run_name>/Eval/<K>_<sel_thresh>/')
 
 
     args = parser.parse_args()
@@ -270,7 +270,10 @@ if __name__ == "__main__":
         for k in args.components:
             print(f"Processing K={k}, sel_thresh={sel_thresh}")
 
-            output_folder = f"{args.out_dir}/{args.run_name}/Eval/{k}_{str(sel_thresh).replace('.','_')}"
+            if args.save_dir:
+                output_folder = args.save_dir
+            else:
+                output_folder = f"{args.out_dir}/{args.run_name}/Eval/{k}_{str(sel_thresh).replace('.','_')}"
             os.makedirs(output_folder, exist_ok=True)
 
             # Load mdata
