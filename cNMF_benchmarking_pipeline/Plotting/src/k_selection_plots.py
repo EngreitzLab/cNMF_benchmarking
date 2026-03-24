@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
 from statsmodels.stats.multitest import fdrcorrection
 from statsmodels.regression.mixed_linear_model import MixedLM
 from joblib import Parallel, delayed
@@ -17,19 +18,62 @@ import scipy.sparse as sp
 import anndata as ad
 
 
-# collect all NMF runs 
+# Publication-quality color palette — one distinct color per plot
+_COLORS = {
+    'primary': '#2c3e50',        # dark slate for line strokes
+    'stability': '#3498db',      # blue
+    'error': '#e74c3c',          # red
+    'go_terms': '#2ecc71',       # green
+    'genesets': '#d35400',       # burnt orange
+    'traits': '#9b59b6',         # purple
+    'perturbation': '#1abc9c',   # teal
+    'explained_var': '#f1c40f',  # yellow
+}
+
+# Qualitative palette for multi-line plots
+_PALETTE = ['#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c', '#e67e22', '#34495e']
+
+
+def _style_ax(ax, xlabel=None, ylabel=None, title=None, hide_top_right=True):
+    """Apply publication-quality styling to an axis."""
+    if hide_top_right:
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_linewidth(0.8)
+    ax.spines['bottom'].set_linewidth(0.8)
+    ax.tick_params(axis='both', which='major', labelsize=9, width=0.8, length=4,
+                   direction='out', color='#333333')
+    ax.tick_params(axis='both', which='minor', width=0.5, length=2,
+                   direction='out', color='#333333')
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=11, fontweight='medium', labelpad=6)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=11, fontweight='medium', labelpad=6)
+    if title:
+        ax.set_title(title, fontsize=12, fontweight='semibold', pad=8)
+
+
+# collect all NMF runs
 # important: i must use the same package inference (torch-nmf or sk-nmf) to call combine here
-def load_stablity_error_data(output_directory,run_name, components = [30, 50, 60, 80, 100, 200, 250, 300]):
+def load_stablity_error_data(output_directory, run_name, components=[30, 50, 60, 80, 100, 200, 250, 300]):
 
-    cnmf_obj = cnmf.cNMF(output_dir=output_directory, name=run_name)
+    cache_path = os.path.join(output_directory, run_name, f'{run_name}_stability_error_cache.tsv')
 
-    stats = []
-    norm_counts = sc.read(cnmf_obj.paths['normalized_counts'])
-    for k in components:
-        stats.append(cnmf_obj.consensus(k, skip_density_and_return_after_stats=True, show_clustering=False, 
-        close_clustergram_fig=True, norm_counts=norm_counts, density_threshold = 2.0,local_neighborhood_size = 0.3).stats)
+    if os.path.exists(cache_path):
+        print(f"Loading cached stability/error data from {cache_path}")
+        stats = pd.read_csv(cache_path, sep='\t')
+    else:
+        cnmf_obj = cnmf.cNMF(output_dir=output_directory, name=run_name)
 
-    stats = pd.DataFrame(stats)
+        stats = []
+        norm_counts = sc.read(cnmf_obj.paths['normalized_counts'])
+        for k in components:
+            stats.append(cnmf_obj.consensus(k, skip_density_and_return_after_stats=True, show_clustering=False,
+            close_clustergram_fig=True, norm_counts=norm_counts, density_threshold = 2.0,local_neighborhood_size = 0.3).stats)
+
+        stats = pd.DataFrame(stats)
+        stats.to_csv(cache_path, sep='\t', index=False)
+        print(f"Saved stability/error data to {cache_path}")
 
     print("min stablity is", stats['silhouette'].min())
     print("max stablity is", stats['silhouette'].max())
@@ -40,35 +84,46 @@ def load_stablity_error_data(output_directory,run_name, components = [30, 50, 60
     return stats
 
 
-# plot NMF stability and error
-def plot_stablity_error(stats, folder_name = None, file_name = None):
-    # Create the plot with two subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 8))
-
-    # Top subplot - Stability (using silhouette as stability metric)
-    ax1.plot(stats['k'], stats['silhouette'], 'k-', linewidth=2)
-    ax1.set_ylabel('Stability', fontsize=12)
-    #ax1.set_xlim(0, 310)
-    #ax1.set_ylim(0.1, 0.4)  # Adjust based on your data range
-    ax1.grid(True, alpha=0.3)
-    ax1.tick_params(axis='both', which='major', labelsize=10)
-
-    # Bottom subplot - Error (using prediction_error)
-    ax2.plot(stats['k'], stats['prediction_error'], 'k-', linewidth=2)
-    ax2.set_xlabel('k', fontsize=12)
-    ax2.set_ylabel('Error', fontsize=12)
-    #ax2.set_xlim(0, 310)
-    ax2.grid(True, alpha=0.3)
-    ax2.tick_params(axis='both', which='major', labelsize=10)
+# plot NMF stability and error — 2 independent square figures
+def plot_stablity_error(stats, folder_name=None, file_name=None, selected_k=None):
+    # --- Stability ---
+    fig1, ax1 = plt.subplots(figsize=(4, 3.5))
+    ax1.plot(stats['k'], stats['silhouette'], color=_COLORS['primary'], linewidth=1.5,
+             marker='o', markersize=4, markerfacecolor=_COLORS['stability'], markeredgecolor=_COLORS['primary'],
+             markeredgewidth=0.8, zorder=3)
+    ax1.fill_between(stats['k'], stats['silhouette'], alpha=0.08, color=_COLORS['stability'])
+    if selected_k is not None:
+        ax1.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+    _style_ax(ax1, xlabel='Number of components (k)', ylabel='Stability (silhouette)',
+              title='Program stability')
 
     if folder_name and file_name:
-        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight" )#  transparent=True)
-    
+        fig1.savefig(f"{folder_name}/{file_name}_stability.svg", bbox_inches="tight")
+        fig1.savefig(f"{folder_name}/{file_name}_stability.png", dpi=300, bbox_inches="tight")
+
     plt.show()
-    plt.close(fig)
+    plt.close(fig1)
+
+    # --- Error ---
+    fig2, ax2 = plt.subplots(figsize=(4, 3.5))
+    ax2.plot(stats['k'], stats['prediction_error'], color=_COLORS['primary'], linewidth=1.5,
+             marker='s', markersize=4, markerfacecolor=_COLORS['error'], markeredgecolor=_COLORS['primary'],
+             markeredgewidth=0.8, zorder=3)
+    ax2.fill_between(stats['k'], stats['prediction_error'], alpha=0.08, color=_COLORS['error'])
+    if selected_k is not None:
+        ax2.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+    _style_ax(ax2, xlabel='Number of components (k)', ylabel='Prediction error',
+              title='Reconstruction error')
+
+    if folder_name and file_name:
+        fig2.savefig(f"{folder_name}/{file_name}_error.svg", bbox_inches="tight")
+        fig2.savefig(f"{folder_name}/{file_name}_error.png", dpi=300, bbox_inches="tight")
+
+    plt.show()
+    plt.close(fig2)
 
 
-    
+
 
 
 # Load data for differeent enrichment test
@@ -121,40 +176,33 @@ def load_enrichment_data(folder, components = [30, 50, 60, 80, 100, 200, 250, 30
     return count_df
 
 
-# plot loaded df
-def plot_enrichment(count_df, folder_name = None, file_name = None):
+# plot loaded df — 3 independent square figures
+def plot_enrichment(count_df, folder_name=None, file_name=None, selected_k=None):
+    enrichment_config = [
+        ('go_terms',  'Unique GO terms',   'GO term enrichment',   _COLORS['go_terms'],  'o'),
+        ('genesets',  'Unique gene sets',   'Gene set enrichment',  _COLORS['genesets'],  's'),
+        ('traits',    'Unique traits', 'Trait enrichment', _COLORS['traits'],   'D'),
+    ]
 
-    # Create the plot with two subplots
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(8, 8))
+    for col, ylabel, title, color, marker in enrichment_config:
+        fig, ax = plt.subplots(figsize=(4, 3.5))
 
-    # Top subplot - Stability (using silhouette as stability metric)
-    ax1.plot(count_df.index, count_df['go_terms'], 'k-', linewidth=2)
-    ax1.set_ylabel('GO Terms', fontsize=12)
-    #ax1.set_xlim(0, 310)
-    ax1.grid(True, alpha=0.3)
-    ax1.tick_params(axis='both', which='major', labelsize=10)
+        vals = count_df[col].astype(float)
+        ax.plot(count_df.index, vals, color=_COLORS['primary'], linewidth=1.5,
+                marker=marker, markersize=4, markerfacecolor=color,
+                markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+        ax.fill_between(count_df.index, vals, alpha=0.08, color=color)
+        if selected_k is not None:
+            ax.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+        _style_ax(ax, xlabel='Number of components (k)', ylabel=ylabel, title=title)
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
 
-    # Bottom subplot - Error (using prediction_error)
-    ax2.plot(count_df.index, count_df['genesets'], 'k-', linewidth=2)
-    ax2.set_xlabel('k', fontsize=12)
-    ax2.set_ylabel('Genesets', fontsize=12)
-    #ax2.set_xlim(0, 310)
-    ax2.grid(True, alpha=0.3)
-    ax2.tick_params(axis='both', which='major', labelsize=10)
+        if folder_name and file_name:
+            fig.savefig(f"{folder_name}/{file_name}_{col}.svg", bbox_inches="tight")
+            fig.savefig(f"{folder_name}/{file_name}_{col}.png", dpi=300, bbox_inches="tight")
 
-    # Bottom subplot - Error (using prediction_error)
-    ax3.plot(count_df.index, count_df['traits'], 'k-', linewidth=2)
-    ax3.set_xlabel('k', fontsize=12)
-    ax3.set_ylabel('Traits', fontsize=12)
-    #ax3.set_xlim(0, 310)
-    ax3.grid(True, alpha=0.3)
-    ax3.tick_params(axis='both', which='major', labelsize=10)
-
-    if folder_name and file_name:
-        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")# transparent=True)
-
-    plt.show()
-    plt.close(fig)
+        plt.show()
+        plt.close(fig)
 
 
 # load perturbation data 
@@ -184,28 +232,61 @@ def load_perturbation_data(folder, pval = 0.000335, components = [30, 50, 60, 80
     return test_stats_df
 
 
-# plot perturbation data
-def plot_perturbation(test_stats_df, pval =0.000335, folder_name = None, file_name = None):
+# plot perturbation data — 2 independent square figures
+def plot_perturbation(test_stats_df, pval=0.000335, folder_name=None, file_name=None, selected_k=None):
+    pval_str = f'{pval:.1e}' if pval < 0.01 else str(pval)
 
-    fig, axs = plt.subplots(ncols=1, nrows=2,figsize=(5, 5))
+    # --- Per-sample plot ---
+    fig1, ax1 = plt.subplots(figsize=(4, 3.5))
 
-    axs[0].set_title(f'Unique regulators of progams per sample (pval <= {str(pval)})', fontsize=10)
-    plotting_df = test_stats_df.loc[test_stats_df.adj_pval<=pval, ['K', 'sample','target_name']].drop_duplicates().groupby(['K', 'sample']).count().reset_index()
-    sns.lineplot(x='K', y='target_name', hue='sample', data=plotting_df, ax=axs[0])
-    axs[0].set_ylabel('# Regulators', fontsize=10)
-    axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-
-
-    axs[1].set_title(f'Unique regulators of progams (pval <= {str(pval)})', fontsize=10)
-    plotting_df = test_stats_df.loc[test_stats_df.adj_pval<=pval, ['K','target_name']].drop_duplicates().groupby(['K']).count().reset_index()
-    sns.lineplot(x='K', y='target_name', data=plotting_df, color='black', ax=axs[1])
-    axs[1].set_ylabel('# Regulators', fontsize=10)
+    plotting_df_sample = (test_stats_df
+        .loc[test_stats_df.adj_pval <= pval, ['K', 'sample', 'target_name']]
+        .drop_duplicates()
+        .groupby(['K', 'sample']).count().reset_index())
+    sns.lineplot(x='K', y='target_name', hue='sample', data=plotting_df_sample,
+                 palette=_PALETTE, linewidth=1.5, marker='o', markersize=4,
+                 ax=ax1, legend='brief')
+    if selected_k is not None:
+        ax1.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+    _style_ax(ax1, xlabel='Number of components (k)', ylabel='No. unique regulators',
+              title=f'Unique regulators per sample') # (adj. p-value \u2264 {pval_str})')
+    ax1.legend(title='Sample', fontsize=8, title_fontsize=9,
+               frameon=True, fancybox=False, edgecolor='#cccccc',
+               bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+    ax1.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
 
     if folder_name and file_name:
-        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")#  transparent=True)
+        fig1.savefig(f"{folder_name}/{file_name}_per_sample.svg", bbox_inches="tight")
+        fig1.savefig(f"{folder_name}/{file_name}_per_sample.png", dpi=300, bbox_inches="tight")
 
     plt.show()
-    plt.close(fig)
+    plt.close(fig1)
+
+    # --- Aggregated plot ---
+    fig2, ax2 = plt.subplots(figsize=(4, 3.5))
+
+    plotting_df = (test_stats_df
+        .loc[test_stats_df.adj_pval <= pval, ['K', 'target_name']]
+        .drop_duplicates()
+        .groupby(['K']).count().reset_index())
+    ax2.plot(plotting_df['K'], plotting_df['target_name'],
+             color=_COLORS['primary'], linewidth=1.5,
+             marker='o', markersize=4, markerfacecolor=_COLORS['perturbation'],
+             markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax2.fill_between(plotting_df['K'], plotting_df['target_name'],
+                     alpha=0.08, color=_COLORS['perturbation'])
+    if selected_k is not None:
+        ax2.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+    _style_ax(ax2, xlabel='Number of components (k)', ylabel='No. unique regulators',
+              title=f'Unique regulators for all samples') #(adj. p-value \u2264 {pval_str})')
+    ax2.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
+
+    if folder_name and file_name:
+        fig2.savefig(f"{folder_name}/{file_name}_all_samples.svg", bbox_inches="tight")
+        fig2.savefig(f"{folder_name}/{file_name}_all_samples.png", dpi=300, bbox_inches="tight")
+
+    plt.show()
+    plt.close(fig2)
 
     return plotting_df
 
@@ -230,25 +311,262 @@ def load_explained_variance_data(folder, components = [30, 50, 60, 80, 100, 200,
 
 
 # plot NMF explained variance
-def plot_explained_variance(stats, folder_name=None, file_name=None):
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(5, 5))
+def plot_explained_variance(stats, folder_name=None, file_name=None, selected_k=None):
+    ks = list(stats.keys())
+    vals = list(stats.values())
 
-    # Plot the data
-    ax.plot(list(stats.keys()), list(stats.values()), 'k-', linewidth=2)
-    ax.set_xlabel('Components')
-    ax.set_ylabel('TotalExplained Variance')
-    #ax.set_xlim(0, 310)
-    ax.grid(True, alpha=0.3)
-    ax.tick_params(axis='both', which='major', labelsize=10)
-    
-    # Save the figure if folder and file names are provided
+    fig, ax = plt.subplots(figsize=(4, 3.5))
+
+    ax.plot(ks, vals, color=_COLORS['primary'], linewidth=1.5,
+            marker='o', markersize=4, markerfacecolor=_COLORS['explained_var'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(ks, vals, alpha=0.08, color=_COLORS['explained_var'])
+    if selected_k is not None:
+        ax.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='Total explained variance',
+              title='Explained variance')
+
     if folder_name and file_name:
-        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight") # transparent=True)
-    
+        fig.savefig(f"{folder_name}/{file_name}.svg", bbox_inches="tight")
+        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")
+
     plt.show()
     plt.close(fig)
 
+
+
+# Combined panel figure: 3 rows x 3 columns
+# Row 1: Stability, Error, Explained variance
+# Row 2: GO terms, Gene sets, Traits
+# Row 3: Regulators (all samples), Regulators (per sample)
+def plot_k_selection_panel(stability_stats, count_df, test_stats_df, explained_var_stats,
+                           pval=0.05, folder_name=None, file_name=None, selected_k=None):
+
+    # Keep text as editable text in SVG (for Adobe Illustrator)
+    plt.rcParams['svg.fonttype'] = 'none'
+    plt.rcParams['pdf.fonttype'] = 42
+
+    fig, axes = plt.subplots(3, 3, figsize=(13, 10.5))
+    fig.subplots_adjust(hspace=0.45, wspace=0.35)
+
+    pval_str = f'{pval:.1e}' if pval < 0.01 else str(pval)
+
+    def _add_vline(ax):
+        if selected_k is not None:
+            ax.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+
+    # --- Row 1, Col 0: Stability ---
+    ax = axes[0, 0]
+    ax.plot(stability_stats['k'], stability_stats['silhouette'], color=_COLORS['primary'], linewidth=1.5,
+            marker='o', markersize=4, markerfacecolor=_COLORS['stability'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(stability_stats['k'], stability_stats['silhouette'], alpha=0.08, color=_COLORS['stability'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='Stability (silhouette)', title='Program stability')
+
+    # --- Row 1, Col 1: Error ---
+    ax = axes[0, 1]
+    ax.plot(stability_stats['k'], stability_stats['prediction_error'], color=_COLORS['primary'], linewidth=1.5,
+            marker='s', markersize=4, markerfacecolor=_COLORS['error'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(stability_stats['k'], stability_stats['prediction_error'], alpha=0.08, color=_COLORS['error'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='Prediction error', title='Reconstruction error')
+
+    # --- Row 1, Col 2: Explained variance ---
+    ax = axes[0, 2]
+    ev_ks = list(explained_var_stats.keys())
+    ev_vals = list(explained_var_stats.values())
+    ax.plot(ev_ks, ev_vals, color=_COLORS['primary'], linewidth=1.5,
+            marker='o', markersize=4, markerfacecolor=_COLORS['explained_var'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(ev_ks, ev_vals, alpha=0.08, color=_COLORS['explained_var'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='Total explained variance', title='Explained variance')
+
+    # --- Row 2: Enrichment (GO, genesets, traits) ---
+    enrichment_config = [
+        (0, 'go_terms',  'Unique GO terms',   'GO term enrichment',   _COLORS['go_terms'],  'o'),
+        (1, 'genesets',  'Unique gene sets',   'Gene set enrichment',  _COLORS['genesets'],  's'),
+        (2, 'traits',    'Unique traits',      'Trait enrichment',     _COLORS['traits'],    'D'),
+    ]
+    for col_idx, col, ylabel, title, color, marker in enrichment_config:
+        ax = axes[1, col_idx]
+        vals = count_df[col].astype(float)
+        ax.plot(count_df.index, vals, color=_COLORS['primary'], linewidth=1.5,
+                marker=marker, markersize=4, markerfacecolor=color,
+                markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+        ax.fill_between(count_df.index, vals, alpha=0.08, color=color)
+        _add_vline(ax)
+        _style_ax(ax, xlabel='Number of components (k)', ylabel=ylabel, title=title)
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
+
+    # --- Row 3, Col 0: Regulators (all samples) ---
+    ax = axes[2, 0]
+    plotting_df = (test_stats_df
+        .loc[test_stats_df.adj_pval <= pval, ['K', 'target_name']]
+        .drop_duplicates()
+        .groupby(['K']).count().reset_index())
+    ax.plot(plotting_df['K'], plotting_df['target_name'], color=_COLORS['primary'], linewidth=1.5,
+            marker='o', markersize=4, markerfacecolor=_COLORS['perturbation'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(plotting_df['K'], plotting_df['target_name'], alpha=0.08, color=_COLORS['perturbation'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='No. unique regulators',
+              title='Unique regulators for all samples')
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
+
+    # --- Row 3, Col 1: Regulators (per sample) ---
+    ax = axes[2, 1]
+    plotting_df_sample = (test_stats_df
+        .loc[test_stats_df.adj_pval <= pval, ['K', 'sample', 'target_name']]
+        .drop_duplicates()
+        .groupby(['K', 'sample']).count().reset_index())
+    sns.lineplot(x='K', y='target_name', hue='sample', data=plotting_df_sample,
+                 palette=_PALETTE, linewidth=1.5, marker='o', markersize=4,
+                 ax=ax, legend='brief')
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='No. unique regulators',
+              title='Unique regulators per sample')
+    ax.legend(title='Sample', fontsize=7, title_fontsize=8,
+              frameon=True, fancybox=False, edgecolor='#cccccc',
+              bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
+
+    # --- Row 3, Col 2: hide empty panel ---
+    axes[2, 2].set_visible(False)
+
+    # Add panel labels (A, B, C, ...)
+    panel_labels = 'ABCDEFGH'
+    visible_axes = [axes[r, c] for r in range(3) for c in range(3) if axes[r, c].get_visible()]
+    for label, ax in zip(panel_labels, visible_axes):
+        ax.text(-0.15, 1.12, label, transform=ax.transAxes,
+                fontsize=14, fontweight='bold', va='top', ha='left')
+
+    if folder_name and file_name:
+        fig.savefig(f"{folder_name}/{file_name}.svg", bbox_inches="tight")
+        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")
+
+    plt.show()
+    plt.close(fig)
+
+
+# Combined panel figure: 3 rows x 3 columns (no trait enrichment)
+# Row 1: Stability, Error, Explained variance
+# Row 2: GO terms, Gene sets
+# Row 3: Regulators (all samples), Regulators (per sample)
+def plot_k_selection_panel_no_traits(stability_stats, count_df, test_stats_df, explained_var_stats,
+                                     pval=0.05, folder_name=None, file_name=None, selected_k=None):
+
+    # Keep text as editable text in SVG (for Adobe Illustrator)
+    plt.rcParams['svg.fonttype'] = 'none'
+    plt.rcParams['pdf.fonttype'] = 42
+
+    fig, axes = plt.subplots(3, 3, figsize=(13, 10.5))
+    fig.subplots_adjust(hspace=0.45, wspace=0.35)
+
+    pval_str = f'{pval:.1e}' if pval < 0.01 else str(pval)
+
+    def _add_vline(ax):
+        if selected_k is not None:
+            ax.axvline(x=selected_k, color='red', linestyle='--', linewidth=1, zorder=2)
+
+    # --- Row 1, Col 0: Stability ---
+    ax = axes[0, 0]
+    ax.plot(stability_stats['k'], stability_stats['silhouette'], color=_COLORS['primary'], linewidth=1.5,
+            marker='o', markersize=4, markerfacecolor=_COLORS['stability'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(stability_stats['k'], stability_stats['silhouette'], alpha=0.08, color=_COLORS['stability'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='Stability (silhouette)', title='Program stability')
+
+    # --- Row 1, Col 1: Error ---
+    ax = axes[0, 1]
+    ax.plot(stability_stats['k'], stability_stats['prediction_error'], color=_COLORS['primary'], linewidth=1.5,
+            marker='s', markersize=4, markerfacecolor=_COLORS['error'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(stability_stats['k'], stability_stats['prediction_error'], alpha=0.08, color=_COLORS['error'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='Prediction error', title='Reconstruction error')
+
+    # --- Row 1, Col 2: Explained variance ---
+    ax = axes[0, 2]
+    ev_ks = list(explained_var_stats.keys())
+    ev_vals = list(explained_var_stats.values())
+    ax.plot(ev_ks, ev_vals, color=_COLORS['primary'], linewidth=1.5,
+            marker='o', markersize=4, markerfacecolor=_COLORS['explained_var'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(ev_ks, ev_vals, alpha=0.08, color=_COLORS['explained_var'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='Total explained variance', title='Explained variance')
+
+    # --- Row 2: Enrichment (GO, genesets) — no traits ---
+    enrichment_config = [
+        (0, 'go_terms',  'Unique GO terms',   'GO term enrichment',   _COLORS['go_terms'],  'o'),
+        (1, 'genesets',  'Unique gene sets',   'Gene set enrichment',  _COLORS['genesets'],  's'),
+    ]
+    for col_idx, col, ylabel, title, color, marker in enrichment_config:
+        ax = axes[1, col_idx]
+        vals = count_df[col].astype(float)
+        ax.plot(count_df.index, vals, color=_COLORS['primary'], linewidth=1.5,
+                marker=marker, markersize=4, markerfacecolor=color,
+                markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+        ax.fill_between(count_df.index, vals, alpha=0.08, color=color)
+        _add_vline(ax)
+        _style_ax(ax, xlabel='Number of components (k)', ylabel=ylabel, title=title)
+        ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
+
+    # --- Row 2, Col 2: hide empty panel ---
+    axes[1, 2].set_visible(False)
+
+    # --- Row 3, Col 0: Regulators (all samples) ---
+    ax = axes[2, 0]
+    plotting_df = (test_stats_df
+        .loc[test_stats_df.adj_pval <= pval, ['K', 'target_name']]
+        .drop_duplicates()
+        .groupby(['K']).count().reset_index())
+    ax.plot(plotting_df['K'], plotting_df['target_name'], color=_COLORS['primary'], linewidth=1.5,
+            marker='o', markersize=4, markerfacecolor=_COLORS['perturbation'],
+            markeredgecolor=_COLORS['primary'], markeredgewidth=0.8, zorder=3)
+    ax.fill_between(plotting_df['K'], plotting_df['target_name'], alpha=0.08, color=_COLORS['perturbation'])
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='No. unique regulators',
+              title='Unique regulators for all samples')
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
+
+    # --- Row 3, Col 1: Regulators (per sample) ---
+    ax = axes[2, 1]
+    plotting_df_sample = (test_stats_df
+        .loc[test_stats_df.adj_pval <= pval, ['K', 'sample', 'target_name']]
+        .drop_duplicates()
+        .groupby(['K', 'sample']).count().reset_index())
+    sns.lineplot(x='K', y='target_name', hue='sample', data=plotting_df_sample,
+                 palette=_PALETTE, linewidth=1.5, marker='o', markersize=4,
+                 ax=ax, legend='brief')
+    _add_vline(ax)
+    _style_ax(ax, xlabel='Number of components (k)', ylabel='No. unique regulators',
+              title='Unique regulators per sample')
+    ax.legend(title='Sample', fontsize=7, title_fontsize=8,
+              frameon=True, fancybox=False, edgecolor='#cccccc',
+              bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+    ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=5))
+
+    # --- Row 3, Col 2: hide empty panel ---
+    axes[2, 2].set_visible(False)
+
+    # Add panel labels (A, B, C, ...)
+    panel_labels = 'ABCDEFG'
+    visible_axes = [axes[r, c] for r in range(3) for c in range(3) if axes[r, c].get_visible()]
+    for label, ax in zip(panel_labels, visible_axes):
+        ax.text(-0.15, 1.12, label, transform=ax.transAxes,
+                fontsize=14, fontweight='bold', va='top', ha='left')
+
+    if folder_name and file_name:
+        fig.savefig(f"{folder_name}/{file_name}.svg", bbox_inches="tight")
+        fig.savefig(f"{folder_name}/{file_name}.png", dpi=300, bbox_inches="tight")
+
+    plt.show()
+    plt.close(fig)
 
 
 ''' Faster stability + error calculation & error calculation is a bit off 
