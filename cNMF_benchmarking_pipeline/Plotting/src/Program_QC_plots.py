@@ -573,7 +573,7 @@ def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="tar
     # Filter df to keep only those genes
     df_filtered = df_sorted[df_sorted['target_name'].isin(genes_to_keep)]
 
-    df_pivot = df_filtered.pivot(columns = "target_name", index = groupby, values = "log2FC")
+    df_pivot = df_filtered.pivot(columns = "target_name", index = groupby, values = log2fc_col)
     df_pivot_pval = df_filtered.pivot(columns = "target_name", index = groupby, values = "adj_pval")
 
 
@@ -627,8 +627,8 @@ def plot_program_heatmap(perturb_path_base, Target_Program, tagert_col_name="tar
 
 
 # plot one volcone plot given perturbation analysis, return genes in df
-def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
-                 down_thred_log=-0.05, up_thred_log=0.05, p_value=0.05, save_path=None, 
+def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name",
+                 log2fc_col='log2FC', down_thred_log=-0.05, up_thred_log=0.05, p_value=0.05, save_path=None,
                  save_name=None, figsize=(5, 4), show=False, ax=None, Day ="", gene_list = None):
                  
     df = pd.read_csv(perturb_path, sep="\t")
@@ -657,30 +657,30 @@ def plot_program_volcano(perturb_path, Target, tagert_col_name="target_name", pl
         fig = ax.get_figure()
     
     # Plot all points
-    ax.scatter(x=df_program['log2FC'], 
-               y=df_program['adj_pval'].apply(lambda x: -np.log10(x)), 
+    ax.scatter(x=df_program[log2fc_col],
+               y=df_program['adj_pval'].apply(lambda x: -np.log10(x)),
                s=10, label="Not significant", color="grey")
-    
+
     # Highlight down- or up-regulated genes
-    down = df_program[(df_program['log2FC'] <= down_thred_log) & 
+    down = df_program[(df_program[log2fc_col] <= down_thred_log) &
                       (df_program['adj_pval'] <= p_value)]
-    up = df_program[(df_program['log2FC'] >= up_thred_log) & 
+    up = df_program[(df_program[log2fc_col] >= up_thred_log) &
                     (df_program['adj_pval'] <= p_value)]
-    
-    ax.scatter(x=down['log2FC'], 
-               y=down['adj_pval'].apply(lambda x: -np.log10(x)), 
+
+    ax.scatter(x=down[log2fc_col],
+               y=down['adj_pval'].apply(lambda x: -np.log10(x)),
                s=10, label="Down-regulated", color="blue")
-    ax.scatter(x=up['log2FC'], 
-               y=up['adj_pval'].apply(lambda x: -np.log10(x)), 
+    ax.scatter(x=up[log2fc_col],
+               y=up['adj_pval'].apply(lambda x: -np.log10(x)),
                s=10, label="Up-regulated", color="red")
-    
+
     # Add text labels
     texts = []
     for i, r in up.iterrows():
-        texts.append(ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), 
+        texts.append(ax.text(x=r[log2fc_col], y=-np.log10(r['adj_pval']),
                             s=r[plot_col_name], fontsize=10, zorder=10))
     for i, r in down.iterrows():
-        texts.append(ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), 
+        texts.append(ax.text(x=r[log2fc_col], y=-np.log10(r['adj_pval']),
                             s=r[plot_col_name], fontsize=10, zorder=10))
     
     # Adjust text to avoid overlaps
@@ -799,7 +799,7 @@ def perturbed_program_dotplot(mdata, Target_Program, groupby="sample", gene_list
 
 
 # helper method for computing waterfall corr
-def compute_program_waterfall_cor(perturb_path, precomputed_path=None, save_path=None):
+def compute_program_waterfall_cor(perturb_path, precomputed_path=None, save_path=None, log2fc_col='log2FC'):
 
     # Check if a pre-computed correlation matrix exists
     if precomputed_path is not None and Path(precomputed_path).exists():
@@ -811,7 +811,7 @@ def compute_program_waterfall_cor(perturb_path, precomputed_path=None, save_path
 
 
     # Pre-process: create matrix with genes as rows, programs as columns
-    pivot_df = df.pivot_table(index='program_name', columns='target_name', values='log2FC')
+    pivot_df = df.pivot_table(index='program_name', columns='target_name', values=log2fc_col)
 
     # Compute correlation matrix using numpy - much faster
     corr_matrix = pivot_df.T.corr()
@@ -1054,11 +1054,12 @@ def create_comprehensive_program_plot(
 
         # Plot 1: Log2FC plot
         current_ax = axes[ax_index]
-        current_ax, df = plot_program_log2FC( 
-            perturb_path=file_name, 
-            Target=Target_Program, 
-            tagert_col_name=tagert_col_name, 
-            plot_col_name=plot_col_name, 
+        current_ax, df = plot_program_log2FC(
+            perturb_path=file_name,
+            Target=Target_Program,
+            tagert_col_name=tagert_col_name,
+            plot_col_name=plot_col_name,
+            log2fc_col=log2fc_col,
             p_value=p_value,
             figsize=(4, 3),
             gene_list=gene_list,
@@ -1074,14 +1075,15 @@ def create_comprehensive_program_plot(
         # Plot 2: Volcano plot
         current_ax = axes[ax_index]
         current_ax, program, text = plot_program_volcano(
-            perturb_path=file_name, 
-            Target=Target_Program, 
-            down_thred_log=down_thred_log, 
-            up_thred_log=up_thred_log, 
-            tagert_col_name=tagert_col_name, 
+            perturb_path=file_name,
+            Target=Target_Program,
+            log2fc_col=log2fc_col,
+            down_thred_log=down_thred_log,
+            up_thred_log=up_thred_log,
+            tagert_col_name=tagert_col_name,
             plot_col_name=plot_col_name,
             p_value=p_value,
-            figsize=(5, 3), 
+            figsize=(5, 3),
             gene_list=gene_list,
             ax=current_ax,
             Day=samp

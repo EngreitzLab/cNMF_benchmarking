@@ -35,8 +35,8 @@ def _assign_guide(mdata,_data_guide):
     #mdata[args.prog_key].uns[args.guide_targets_key] = _data_guide.uns[args.guide_targets_key] 
     #mdata[args.data_key].uns[args.guide_names_key] = _data_guide.uns[args.guide_names_key] 
     #mdata[args.data_key].uns[args.guide_targets_key] = _data_guide.uns[args.guide_targets_key] 
-    mdata['cNMF'].uns['var_names'] = _data_guide['rna'].var['gene_name']
-    mdata['rna'].var_names = _data_guide['rna'].var['gene_name'].astype(str)
+    mdata['cNMF'].uns['var_names'] = _data_guide['rna'].var['symbol']
+    mdata['rna'].var_names = _data_guide['rna'].var['symbol'].astype(str)
     
     
     

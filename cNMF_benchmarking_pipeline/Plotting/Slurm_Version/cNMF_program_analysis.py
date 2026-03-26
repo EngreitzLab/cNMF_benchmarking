@@ -109,7 +109,7 @@ if __name__ == '__main__':
     for samp in args.sample:
         precomputed = f"{args.corr_matrix_path}/corr_program_matrix_{samp}.txt" if args.corr_matrix_path else None
         save = f"{args.corr_matrix_path}/corr_program_matrix_{samp}.txt" if args.corr_matrix_path else None
-        df = compute_program_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt", precomputed_path=precomputed, save_path=save)
+        df = compute_program_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt", precomputed_path=precomputed, save_path=save, log2fc_col=args.log2fc_col)
         waterfall_correlation[samp] = (df)
 
     program_correlation = compute_program_correlation_matrix(mdata)

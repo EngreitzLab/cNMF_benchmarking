@@ -50,7 +50,9 @@ if __name__ == '__main__':
     parser.add_argument('--sample', nargs='*', type=str, default=None, help='list of sample names (default: D0 sample_D1 sample_D2 sample_D3)')
     parser.add_argument('--dot_size', type=int, default=10, help='dot size use to plot UMAP')
     parser.add_argument('--expressed_only', action="store_true", help='only plot perturbed genes found in the gene expression matrix (default: plot all perturbed genes)')
+    parser.add_argument('--gene_list_file', type=str, default=None, help='path to a file with one gene name per line to process (overrides automatic perturbed gene detection)')
     parser.add_argument('--subsample_frac', type=float, default=None, help='fraction of cells to subsample for UMAP plots (e.g. 0.1 for 10%%). Default: None (plot all cells)')
+    parser.add_argument('--corr_matrix_path', type=str, default=None, help='directory for precomputed gene waterfall correlation matrices. Files are expected as <dir>/corr_gene_matrix_<sample>.txt. Falls back to computing if not found.')
 
     # keys
     parser.add_argument('--data_key', type=str, default="rna", help='key to access gene expression data in MuData')
@@ -101,7 +103,11 @@ if __name__ == '__main__':
     print(f"there are {len(perturbed_gene_found)} perturbed genes found in expression matrix")
     print(f"there are {len(perturbed_gene_not_found)} perturbed genes NOT found in expression matrix: {perturbed_gene_not_found}")
 
-    if args.expressed_only:
+    if args.gene_list_file is not None:
+        with open(args.gene_list_file, 'r') as f:
+            genes_to_plot = sorted([line.strip() for line in f if line.strip()])
+        print(f"Using {len(genes_to_plot)} genes from {args.gene_list_file}")
+    elif args.expressed_only:
         genes_to_plot = perturbed_gene_found
     else:
         genes_to_plot = sorted(perturbed_gene.tolist())
@@ -112,7 +118,9 @@ if __name__ == '__main__':
 
     waterfall_correlation = {}
     for samp in args.sample:
-        df = compute_gene_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt")
+        precomputed = f"{args.corr_matrix_path}/corr_gene_matrix_{samp}.txt" if args.corr_matrix_path else None
+        save = f"{args.corr_matrix_path}/corr_gene_matrix_{samp}.txt" if args.corr_matrix_path else None
+        df = compute_gene_waterfall_cor(f"{args.perturb_path_base}_{samp}.txt", log2fc_col=args.log2fc_col, precomputed_path=precomputed, save_path=save)
         waterfall_correlation[samp] = (df)
 
 

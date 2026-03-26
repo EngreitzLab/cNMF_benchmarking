@@ -473,7 +473,7 @@ def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_na
 
 
 # plot one volcone plot given perturbation analysis, return genes in df
-def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", 
+def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_name="program_name", log2fc_col = 'log2FC',
                  down_thred_log=-0.05, up_thred_log=0.05, p_value=0.05, save_path=None, 
                  save_name=None, figsize=(5, 4), show=False, ax=None, Day =""):
                  
@@ -496,30 +496,30 @@ def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_n
         fig = ax.get_figure()
     
     # Plot all points
-    ax.scatter(x=df_program['log2FC'], 
+    ax.scatter(x=df_program[log2fc_col], 
                y=df_program['adj_pval'].apply(lambda x: -np.log10(x)), 
                s=10, label="Not significant", color="grey")
     
     # Highlight down- or up-regulated genes
-    down = df_program[(df_program['log2FC'] <= down_thred_log) & 
+    down = df_program[(df_program[log2fc_col] <= down_thred_log) & 
                       (df_program['adj_pval'] <= p_value)]
-    up = df_program[(df_program['log2FC'] >= up_thred_log) & 
+    up = df_program[(df_program[log2fc_col] >= up_thred_log) &
                     (df_program['adj_pval'] <= p_value)]
     
-    ax.scatter(x=down['log2FC'], 
+    ax.scatter(x=down[log2fc_col], 
                y=down['adj_pval'].apply(lambda x: -np.log10(x)), 
                s=10, label="Down-regulated", color="blue")
-    ax.scatter(x=up['log2FC'], 
+    ax.scatter(x=up[log2fc_col], 
                y=up['adj_pval'].apply(lambda x: -np.log10(x)), 
                s=10, label="Up-regulated", color="red")
     
     # Add text labels
     texts = []
     for i, r in up.iterrows():
-        texts.append(ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), 
+        texts.append(ax.text(x=r[log2fc_col], y=-np.log10(r['adj_pval']), 
                             s=r[plot_col_name], fontsize=10, zorder=10))
     for i, r in down.iterrows():
-        texts.append(ax.text(x=r['log2FC'], y=-np.log10(r['adj_pval']), 
+        texts.append(ax.text(x=r[log2fc_col], y=-np.log10(r['adj_pval']), 
                             s=r[plot_col_name], fontsize=10, zorder=10))
     
     # Adjust text to avoid overlaps
@@ -745,15 +745,27 @@ def analyze_correlations(gene_correlation, Target, top_num=5, save_path=None,
 
 
 # helper method for computing waterfall corr
-def compute_gene_waterfall_cor(perturb_path):
+def compute_gene_waterfall_cor(perturb_path, log2fc_col = 'log2FC', precomputed_path = None,  save_path=None):
+
+    # Check if a pre-computed correlation matrix exists
+    if precomputed_path is not None and Path(precomputed_path).exists():
+        corr_matrix = pd.read_csv(precomputed_path, sep='\t', index_col=0)
+        return corr_matrix
+
     df = pd.read_csv(perturb_path, sep='\t', index_col=0)
 
     # Pre-process: create matrix with genes as rows, programs as columns
-    pivot_df = df.pivot_table(index='target_name', columns='program_name', values='log2FC')
+    pivot_df = df.pivot_table(index='target_name', columns='program_name', values=log2fc_col)
 
     # Compute correlation matrix using pandas .corr() - handles NaN gracefully
     corr_matrix = pivot_df.T.corr()
     np.fill_diagonal(corr_matrix.values, np.nan)
+
+
+    if save_path is not None:
+        corr_matrix.index = corr_matrix.index.astype(str)
+        corr_matrix.columns = corr_matrix.columns.astype(str)
+        corr_matrix.to_csv(save_path, sep='\t')
 
     return corr_matrix
 
@@ -1004,11 +1016,12 @@ def create_comprehensive_plot(
 
         # Plot 1: Log2FC plot
         current_ax = axes[ax_index]
-        current_ax, df = plot_log2FC( 
-            perturb_path=file_name, 
-            Target=Target_Gene, 
-            tagert_col_name=tagert_col_name, 
-            plot_col_name=plot_col_name, 
+        current_ax, df = plot_log2FC(
+            perturb_path=file_name,
+            Target=Target_Gene,
+            tagert_col_name=tagert_col_name,
+            plot_col_name=plot_col_name,
+            log2fc_col=log2fc_col,
             p_value=p_value,
             figsize=(4, 3),
             ax=current_ax,
@@ -1022,12 +1035,13 @@ def create_comprehensive_plot(
         # Plot 2: Volcano plot
         current_ax = axes[ax_index]
         current_ax, program, text = plot_volcano(
-            perturb_path=file_name, 
-            Target=Target_Gene, 
-            down_thred_log=down_thred_log, 
-            up_thred_log=up_thred_log, 
+            perturb_path=file_name,
+            Target=Target_Gene,
+            log2fc_col=log2fc_col,
+            down_thred_log=down_thred_log,
+            up_thred_log=up_thred_log,
             p_value=p_value,
-            figsize=(5, 3), 
+            figsize=(5, 3),
             ax=current_ax,
             Day=samp
         )
