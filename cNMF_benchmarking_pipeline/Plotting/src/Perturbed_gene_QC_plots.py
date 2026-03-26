@@ -435,7 +435,7 @@ def plot_log2FC(perturb_path, Target, tagert_col_name="target_name", plot_col_na
     ax.set_yticklabels(plot_data[plot_col_name],fontsize=10) 
 
 
-    ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel('Effect on Program Expression',fontsize=10, fontweight='bold', loc='center')
     ax.set_ylabel( "Name",fontsize=10, fontweight='bold', loc='center')
     ax.set_title(f"Log2 Fold-Change with {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
 
@@ -528,7 +528,7 @@ def plot_volcano(perturb_path, Target, tagert_col_name="target_name", plot_col_n
     
     # Set labels and lines
     ax.set_title(f"Volcano Plot for {Target} {Day}",fontsize=14, fontweight='bold', loc='center')
-    ax.set_xlabel('Effect on Program Expression (log2 fold-change)',fontsize=10, fontweight='bold', loc='center')
+    ax.set_xlabel('Effect on Program Expression',fontsize=10, fontweight='bold', loc='center')
     ax.set_ylabel("Adjusted p-value, -log10",fontsize=10, fontweight='bold', loc='center')
     ax.axvline(down_thred_log, color="grey", linestyle="--")
     ax.axvline(up_thred_log, color="grey", linestyle="--")
@@ -1028,7 +1028,7 @@ def create_comprehensive_plot(
             Day=samp
         )
         ax_index += 1
-        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Effect on Program Expression', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel("Program Name", fontsize=14, fontweight='bold', loc='center')
         current_ax.set_title(f"Program Log2 Fold-Change, {samp} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
 
@@ -1047,7 +1047,7 @@ def create_comprehensive_plot(
         )
         ax_index += 1
         current_ax.set_title(f"Volcano Plot, {samp} \n {Target_Gene}", fontsize=20, fontweight='bold', loc='center')
-        current_ax.set_xlabel('Effect on Program Expression (log2 fold-change)', fontsize=14, fontweight='bold', loc='center')
+        current_ax.set_xlabel('Effect on Program Expression', fontsize=14, fontweight='bold', loc='center')
         current_ax.set_ylabel("Adjusted p-value, -log10", fontsize=14, fontweight='bold', loc='center')
         for t in text:
             t.set_fontsize(14)

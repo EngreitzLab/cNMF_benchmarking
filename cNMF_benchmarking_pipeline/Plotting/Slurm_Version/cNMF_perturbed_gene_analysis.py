@@ -105,8 +105,13 @@ if __name__ == '__main__':
 
     if args.gene_list_file is not None:
         with open(args.gene_list_file, 'r') as f:
-            genes_to_plot = sorted([line.strip() for line in f if line.strip()])
-        print(f"Using {len(genes_to_plot)} genes from {args.gene_list_file}")
+            genes_requested = sorted([line.strip() for line in f if line.strip()])
+        genes_valid = sorted(set(genes_requested) & set(gene_list))
+        genes_missing = sorted(set(genes_requested) - set(gene_list))
+        if genes_missing:
+            print(f"WARNING: {len(genes_missing)} genes from {args.gene_list_file} not found in expression matrix: {genes_missing}")
+        genes_to_plot = genes_valid
+        print(f"Using {len(genes_to_plot)}/{len(genes_requested)} genes from {args.gene_list_file}")
     elif args.expressed_only:
         genes_to_plot = perturbed_gene_found
     else:
