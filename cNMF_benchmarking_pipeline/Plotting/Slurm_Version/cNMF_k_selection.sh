@@ -55,7 +55,8 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --groupby "batch" \
         --K 30 50 60 \
         --sel_threshs 2.0 0.4 \
-        --samples 1 2 3
+        --samples 1 2 3 \
+        --selected_k 50
 
 
 # Calculate and print elapsed time at the end

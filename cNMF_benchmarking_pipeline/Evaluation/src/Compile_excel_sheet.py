@@ -308,14 +308,14 @@ def load_simple_sheets(mdata, out_dir, run_name, k, sel_thresh, num_gene = 300, 
 
 #-------------- helper methods for specicicity scores--------------
 
-## helper methods for specicicity score calcualtion 
-def Compute_regulator_zscore(perturb_df):
+# helper methods for specicicity score calcualtion 
+def Compute_regulator_zscore(perturb_df, effect_size='log2FC'):
 
         # Pivot to get program × gene log2FC table
         pivot_table = perturb_df.pivot_table(
             index='target_name',
             columns='program_name',
-            values='log2FC',
+            values=effect_size,
             aggfunc='first'
         )
 
@@ -323,12 +323,12 @@ def Compute_regulator_zscore(perturb_df):
         # pivot_table_abs = pivot_table.abs()
 
         # Compute z-scores row-wise
-        median = pivot_table.median(axis=0)
-        mad = (pivot_table - median).abs().median(axis=0)
+        median = pivot_table.median(axis=1)
+        mad = pivot_table.sub(median, axis=0).abs().median(axis=1) 
         epsilon = 1e-10
 
-        z_score_table = (pivot_table - median) / (1.4826 * mad + epsilon)
-
+        z_score_table = pivot_table.sub(median, axis=0).div(1.4826 * mad + epsilon, axis=0) 
+        
         return z_score_table
 
 def softmax_with_temperature(effects_df, T=1.0):
@@ -393,48 +393,64 @@ def compute_pointwise_mutual_information(P_tp, P_t, P_p):
 #-------------- helper methods specicicity scores--------------
 
 # get specific programs and scores 
-def get_specificity_program(Perturbation_path, Sample = ["D0", "sample_D1", "sample_D2", "sample_D3"], T=0.5, save_path = None):
+def get_specificity_program(Perturbation_path, Sample = ["D0", "sample_D1", "sample_D2", "sample_D3"], T=0.5, save_path = 
+  None, effect_size='log2FC'):                                                                                                  
+                  
+      print("Calculate specificity scores for program")                                                                         
+                  
+      all_specificity = []
 
-    print("Calculate specificity scores for program")
+      for samp in Sample:
+          df = pd.read_csv(f"{Perturbation_path}_{samp}.txt", sep="\t")
+          df['program_name'] = df['program_name'].astype(str)
 
-    all_specificity = []
+          z_score_table = Compute_regulator_zscore(df, effect_size=effect_size)
+          weights = softmax_with_temperature(z_score_table, T=T)
+          P_tp, P_t, P_p = compute_joint_distribution(weights)
+          PMI = compute_pointwise_mutual_information(P_tp, P_t, P_p)
 
-    for samp in Sample:
-        df = pd.read_csv(f"{Perturbation_path}_{samp}.txt", sep="\t")
-        # df = df[df['adj_pval'] <= adj_pval_threshold].copy()   
+          if save_path is not None:
+              PMI.to_csv(f'{save_path}/specificity_score_{samp}.txt', sep = '\t')
 
-        z_score_table = Compute_regulator_zscore(df)                # compute into robust row z-score
-        weights = softmax_with_temperature(z_score_table, T=T)    # compute softmax with T
-        P_tp, P_t, P_p = compute_joint_distribution(weights)        # compute joint/marginal probability
-        PMI = compute_pointwise_mutual_information(P_tp, P_t, P_p)  # compute pointwise MI
+          # Fix #3: Ensure PMI columns are strings to match sig_mask columns
+          PMI.columns = PMI.columns.astype(str)
 
-        if save_path is not None:
-            PMI.to_csv(f'{save_path}/specificity_score_{samp}.txt', sep = '\t')
+          # Fix #4: Deduplicate PMI index to prevent .loc returning a DataFrame
+          PMI = PMI[~PMI.index.duplicated(keep='first')]
 
-        program_specificity = []
-        for i in range(len(PMI)):
-            gene_name = PMI.index[i]
-            row = PMI.iloc[i]
+          # Build a mask of significant gene-program pairs (adj_pval < 0.1)
+          sig_mask = df[df['adj_pval'] < 0.1].pivot_table(
+              index='target_name', columns='program_name', values='adj_pval', aggfunc='first'
+          ).notna()
 
-            top_5 = row.dropna().nlargest(5)
-            top_5_programs = ', '.join(top_5.index.astype(str)) if len(top_5) > 0 else ''
-            top_5_scores = ', '.join([f"{score:.4f}" for score in top_5.values]) if len(top_5) > 0 else ''
+          # Mask PMI: keep only significant target-program pairs, NaN the rest
+          sig_mask_aligned = sig_mask.reindex(index=PMI.index, columns=PMI.columns, fill_value=False)
+          PMI_filtered = PMI.where(sig_mask_aligned)
 
-            program_specificity.append({
-                'target_name': gene_name,
-                f'top 5 specific programs {samp}': top_5_programs,
-                f'top5 specificity scores {samp}': top_5_scores,
-            })
+          # For each target, get top 5 programs by PMI score
+          program_specificity = []
+          for gene_name in PMI_filtered.index:
+              top_5 = PMI_filtered.loc[gene_name].dropna().nlargest(5)
+              top_5_programs = ', '.join(top_5.index.astype(str)) if len(top_5) > 0 else ''
+              top_5_scores = ', '.join([f"{score:.4f}" for score in top_5.values]) if len(top_5) > 0 else ''
 
-        df_specificity = pd.DataFrame(program_specificity).set_index('target_name')
-        all_specificity.append(df_specificity)
+              program_specificity.append({
+                  'target_name': gene_name,
+                  f'top 5 specific programs (FDR < 0.1) {samp}': top_5_programs,
+                  f'top 5 specificity scores (FDR < 0.1) {samp}': top_5_scores,
+              })
 
-    # Merge all results by index (gene)
-    merged_df = pd.concat(all_specificity, axis=1)
-    
-    return merged_df
+          df_specificity = pd.DataFrame(program_specificity).set_index('target_name')
+          all_specificity.append(df_specificity)
 
+      # Fix #5: Guard against empty Sample list
+      if not all_specificity:
+          return pd.DataFrame()
 
+      # Merge all results by index (gene)
+      merged_df = pd.concat(all_specificity, axis=1)
+
+      return merged_df
 
 
 
@@ -512,7 +528,7 @@ def get_guide_mean_expr_per_day(mdata, categorical_key = "sample", prog_key = 'c
     return mean_expr_per_day
 
 # Function to get significant programs for each gene across all days
-def get_significant_programs(Perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold=0.05):
+def get_significant_programs(Perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold=0.05, effect_size='log2FC'):
 
     print('Compute significant programs')
     
@@ -538,12 +554,12 @@ def get_significant_programs(Perturbation_path, Sample = ["D0", "sample_D1","sam
     return significant_programs
 
 # get signifcant programs 
-def get_significant_programs_df(Perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold=0.05):
+def get_significant_programs_df(Perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold=0.05, effect_size='log2FC'):
 
     print('Compile significant programs')
 
     # Get significant programs
-    significant_programs = get_significant_programs(Perturbation_path, Sample, adj_pval_threshold)
+    significant_programs = get_significant_programs(Perturbation_path, Sample, adj_pval_threshold, effect_size=effect_size)
 
     # Convert to DataFrame format for easier viewing
     sig_prog_data = []
@@ -567,7 +583,7 @@ def get_significant_programs_df(Perturbation_path, Sample = ["D0", "sample_D1","
     return df_significant_programs
 
 # Get top correlation terms 
-def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2", "sample_D3"], top_n=5, save_path = None):
+def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2", "sample_D3"], top_n=5, save_path = None, effect_size='log2FC'):
 
     correlation_results_all_days = {}
 
@@ -577,7 +593,7 @@ def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2"
 
         # Read and pivot directly
         df = pd.read_csv(perturb_path, sep='\t', index_col=0)
-        pivot_df = df.pivot_table(index='target_name', columns='program_name', values='log2FC')
+        pivot_df = df.pivot_table(index='target_name', columns='program_name', values=effect_size)
 
         # Compute correlation matrix (genes x genes) — vectorized
         corr_matrix = pivot_df.T.corr()
@@ -586,8 +602,8 @@ def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2"
         np.fill_diagonal(corr_matrix.values, np.nan)
 
         if save_path is not None:
-            corr_matrix.to_csv(f"{save_path}/corr_matrix_{day}.txt", sep="\t")
-            corr_matrix.to_csv(f"{save_path}/corr_matrix_{day}.txt.gz", sep="\t", compression="gzip")
+            corr_matrix.to_csv(f"{save_path}/corr_gene_matrix_{day}.txt", sep="\t")
+            corr_matrix.to_csv(f"{save_path}/corr_gene_matrix_{day}.txt.gz", sep="\t", compression="gzip")
 
         genes = corr_matrix.index.values
         vals = corr_matrix.values  # numpy array
@@ -626,8 +642,8 @@ def get_correlation_df(perturbation_path, Sample=["D0", "sample_D1", "sample_D2"
 #-------------- helper methods starget summary--------------
 
 # final function to compile target Summary sheet 
-def Compile_Target_Summary_sheet(mdata, perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold= 0.05, 
-top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna', guide_targets_key = "guide_targets", guide_assignment_key = "guide_assignment", save_path = None):
+def Compile_Target_Summary_sheet(mdata, perturbation_path, Sample = ["D0", "sample_D1","sample_D2","sample_D3"], adj_pval_threshold= 0.05,
+top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna', guide_targets_key = "guide_targets", guide_assignment_key = "guide_assignment", save_path = None, effect_size='log2FC'):
 
     print('Generate target summary sheet')
 
@@ -636,9 +652,9 @@ top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna
     guide_targets_key=guide_targets_key)
     df_guide_days = get_guide_cells_per_days(mdata,  categorical_key=categorical_key, guide_assignment_key=guide_assignment_key, prog_key=prog_key, 
     data_key=data_key, guide_targets_key=guide_targets_key)
-    df_significant_program = get_significant_programs_df(perturbation_path ,Sample=Sample, adj_pval_threshold=adj_pval_threshold)
-    df_specificity_program =  get_specificity_program(perturbation_path, Sample=Sample, T = T, save_path = save_path) # save_path for saving specificity scores 
-    df_correlation = get_correlation_df(perturbation_path ,Sample=Sample, top_n=top_n, save_path = save_path)
+    df_significant_program = get_significant_programs_df(perturbation_path ,Sample=Sample, adj_pval_threshold=adj_pval_threshold, effect_size=effect_size)
+    df_specificity_program =  get_specificity_program(perturbation_path, Sample=Sample, T = T, save_path = save_path, effect_size=effect_size) # save_path for saving specificity scores
+    df_correlation = get_correlation_df(perturbation_path ,Sample=Sample, top_n=top_n, save_path = save_path, effect_size=effect_size)
 
 
     dfs = [df_mean_expr_per_day, df_guide_days, df_significant_program, df_specificity_program, df_correlation]
@@ -659,61 +675,99 @@ top_n=5, T= 0.5 , categorical_key = "sample", prog_key = 'cNMF', data_key = 'rna
 #-------------- helper methods summary--------------
 
 # get simply items ready in the summary sheet
-def simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance = None, Sample = ["D0", "sample_D1","sample_D2","sample_D3" ]
-, non_tagerting_key = None):
+def simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance = None, specicicity_path = None, Sample = ["D0", 
+  "sample_D1","sample_D2","sample_D3" ],
+  non_tagerting_key = None, effect_size='log2FC'):                                                                                                   
+   
+      programs = list(df.index)  # use actual program indices from df, not range(k)                                                                  
+                  
+      # Fix #2: Cast programs to str for consistent comparisons with program_name columns
+      programs_str = [str(p) for p in programs]
 
-    programs = list(df.index)  # use actual program indices from df, not range(k)
+      # create GO summary col
+      if df_GO is not None:
+          df_GO_enriched = df_GO.loc[df_GO['Adjusted P-value']<=0.05]
+          df['Total Enriched GO Terms'] = [df_GO_enriched[df_GO_enriched['program_name'].astype(str)==i].shape[0] for i in programs_str]
 
-    # create GO summary col
-    if df_GO is not None:
-        df_GO_enriched = df_GO.loc[df_GO['Adjusted P-value']<=0.05]
-        df['Total Enriched GO Terms'] = [df_GO_enriched[df_GO_enriched['program_name']==i].shape[0] for i in programs]
+      # remove non-targeting off the list of perturbed genes
+      if df_Perturbation is not None:
+          if non_tagerting_key is not None:
+              df_Perturbation = df_Perturbation[~df_Perturbation['target_name'].isin(non_tagerting_key)]
 
-    # remove non-targeting off the list of perturbed genes
-    if df_Perturbation is not None:
-        if non_tagerting_key is not None:
-            df_Perturbation = df_Perturbation[~df_Perturbation['target_name'].isin(non_tagerting_key)]
+          # Fix #2: Cast program_name to str for consistent comparisons
+          df_Perturbation = df_Perturbation.copy()
+          df_Perturbation['program_name'] = df_Perturbation['program_name'].astype(str)
 
-        # compute # regulator per condition for + and -
-        conditions = (df_Perturbation['Sample']).unique()
-        for condition in conditions:
-            df_Perturbation_ = df_Perturbation[df_Perturbation['Sample'] == condition]
+          # compute # regulator per condition for + and -
+          conditions = (df_Perturbation['Sample']).unique()
+          for condition in conditions:
+              df_Perturbation_ = df_Perturbation[df_Perturbation['Sample'] == condition]
 
-            # create perturbation program summary col
-            df_Perturbation_enriched = df_Perturbation_.loc[df_Perturbation_['adj_pval']<=0.05]
-            df_Perturbation_positive = df_Perturbation_enriched.loc[df_Perturbation_enriched['log2FC'] > 0 ]
-            df_Perturbation_negative = df_Perturbation_enriched.loc[df_Perturbation_enriched['log2FC'] < 0 ]
+              # create perturbation program summary col
+              df_Perturbation_enriched = df_Perturbation_.loc[df_Perturbation_['adj_pval']<=0.05]
+              df_Perturbation_positive = df_Perturbation_enriched.loc[df_Perturbation_enriched[effect_size] > 0 ]
+              df_Perturbation_negative = df_Perturbation_enriched.loc[df_Perturbation_enriched[effect_size] < 0 ]
 
-            df[f'Regulators with positive effect {condition}'] = [df_Perturbation_positive[df_Perturbation_positive['program_name']==i].shape[0] for i in programs]
-            df[f'Regulators with negative effect {condition}'] = [df_Perturbation_negative[df_Perturbation_negative['program_name']==i].shape[0] for i in programs]
+              df[f'Significant regulators with positive effect {condition}'] = [df_Perturbation_positive[df_Perturbation_positive['program_name']==i].shape[0] for i in programs_str]
+              df[f'Significant regulators with negative effect {condition}'] = [df_Perturbation_negative[df_Perturbation_negative['program_name']==i].shape[0] for i in programs_str]
 
-        # create perturbation gene summary col
-        for condition in conditions:
-            df_Perturbation_enriched = df_Perturbation.loc[df_Perturbation['adj_pval']<=0.05]
-            df_Perturbation_D = df_Perturbation_enriched.loc[df_Perturbation_enriched['Sample'] == condition] # make for each condition
+          # create perturbation gene summary col
+          for condition in conditions:
+              df_Perturbation_enriched = df_Perturbation.loc[df_Perturbation['adj_pval']<=0.05]
+              df_Perturbation_D = df_Perturbation_enriched.loc[df_Perturbation_enriched['Sample'] == condition]
 
-            targets_list = []
-            for i in programs:
-                matching = df_Perturbation_D.loc[df_Perturbation_D['program_name'] == i] # for each program
-                unique_indices = matching["target_name"].unique()                                  # find unique programs
-                joined = ';'.join([str(x) for x in unique_indices])                      # join them
-                targets_list.append(joined)
+              targets_list = []
+              for i in programs_str:
+                  matching = df_Perturbation_D.loc[df_Perturbation_D['program_name'] == i]
+                  unique_indices = matching["target_name"].unique()
+                  joined = ';'.join([str(x) for x in unique_indices])
+                  targets_list.append(joined)
 
-            df[f'sigfdr0.05_targets_sorted_abslog2fcd_{condition}'] = targets_list
+              df[f'sigfdr0.05_targets_sorted_abslog2fcd_{condition}'] = targets_list
 
-    # create motif summary col
-    df['Total Enriched Enhancer Motifs'] = [''] * k
-    df['Total Enriched Promoter Motifs'] = [''] * k
+      # Fix #5: Moved specificity block outside df_Perturbation guard
+      if specicicity_path is not None:
+          if df_Perturbation is not None:
+              conditions = df_Perturbation['Sample'].unique()
+          else:
+              conditions = Sample
 
+          for condition in conditions:
+              specificity_score_df = pd.read_csv(os.path.join(specicicity_path, f"specificity_score_{condition}.txt"), sep="\t", index_col=0)
 
-    # create top gene summary col
-    if df_Program_loading is not None:
-        df['top10_loaded_genes'] = [';'.join(df_Program_loading.loc[str(i)][:10]) for i in programs]
+              col = {}
+              for prog in specificity_score_df.columns:
+                  if df_Perturbation is not None:
+                      df_Perturbation_cond = df_Perturbation[df_Perturbation['Sample'] == condition]
+                      prog_perturb = df_Perturbation_cond[df_Perturbation_cond['program_name'] == (prog)]
+                      sig_genes = prog_perturb[prog_perturb['adj_pval'] < 0.1]['target_name'].values
+                      filtered_scores = specificity_score_df.loc[specificity_score_df.index.isin(sig_genes), prog]
+                  else:
+                      filtered_scores = specificity_score_df[prog].dropna()
 
-    # create explained variance summary col
-    if df_Explained_Variance is not None:
-        df['variance_explained'] = df_Explained_Variance
+                  top5 = filtered_scores.nlargest(5).index.tolist()
+                  # Fix #3: Cast key to match df.index dtype
+                  try:
+                      col_key = type(programs[0])(prog)
+                  except (ValueError, TypeError):
+                      col_key = prog
+                  col[col_key] = ";".join(str(g) for g in top5)
+              # Fix #4: Typo FRD -> FDR
+              df[f"Top 5 specific regulators (FDR<0.1) {condition}"] = col
 
+      # Fix #1: Use len(programs) instead of k
+      df['Total Enriched Enhancer Motifs'] = [''] * len(programs)
+      df['Total Enriched Promoter Motifs'] = [''] * len(programs)
+
+      # create top gene summary col
+      if df_Program_loading is not None:
+          df['top10_loaded_genes'] = [';'.join(df_Program_loading.loc[str(i)][:10]) for i in programs]
+          df['top30_loaded_genes'] = [';'.join(df_Program_loading.loc[str(i)][:30]) for i in programs]
+
+      # create explained variance summary col
+      if df_Explained_Variance is not None:
+          df['variance_explained'] = df_Explained_Variance
+          
 # make the program info in summary sheet
 def get_program_info_Summary_cols(mdata, categorical_key = "sample"):
 
@@ -754,11 +808,13 @@ def get_top_terms_Summary_cols(df_GO,df_Geneset):
     top_Geneset = None
 
     if df_GO is not None:
-        top_GO = df_GO.groupby('program_name').apply(
+        df_GO_filtered = df_GO[df_GO['Adjusted P-value'] < 0.05]
+        top_GO = df_GO_filtered.groupby('program_name').apply(
             lambda x: ';'.join(x.sort_values('Adjusted P-value').index[:10])
         )
     if df_Geneset is not None:
-        top_Geneset = df_Geneset.groupby('program_name').apply(
+        df_Geneset_filtered = df_Geneset[df_Geneset['Adjusted P-value'] < 0.05]
+        top_Geneset = df_Geneset_filtered.groupby('program_name').apply(
                 lambda x: ';'.join(x.sort_values('Adjusted P-value').index[:10])
             )
 
@@ -772,8 +828,8 @@ def get_top_terms_Summary_cols(df_GO,df_Geneset):
 #-------------- helper methods summary--------------
 
 # compile summry sheet
-def Compile_Summary_sheet(mdata, df_GO, df_Geneset, df_Perturbation, df_Program_loading, df_Explained_Variance , Sample = ["D0", "sample_D1","sample_D2","sample_D3"],
-categorical_key = "sample",non_tagerting_key=None):
+def Compile_Summary_sheet(mdata, df_GO, df_Geneset, df_Perturbation, df_Program_loading, df_Explained_Variance , specicicity_path = None, Sample = ["D0", "sample_D1","sample_D2","sample_D3"],
+categorical_key = "sample",non_tagerting_key=None, effect_size='log2FC'):
 
     print('complie summary sheet')
 
@@ -787,7 +843,7 @@ categorical_key = "sample",non_tagerting_key=None):
     'Notes': [''] * k,
     'Automatic Timepoint': [''] * k }, index=pd.Index(programs, name='program_name'))
 
-    simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance,  Sample = Sample, non_tagerting_key=non_tagerting_key)
+    simple_Summary_cols(df, k, df_GO, df_Perturbation, df_Program_loading, df_Explained_Variance, specicicity_path = specicicity_path, Sample = Sample, non_tagerting_key=non_tagerting_key, effect_size=effect_size)
     df_cell_info_cols = get_program_info_Summary_cols(mdata,categorical_key)
     df_top_terms = get_top_terms_Summary_cols(df_GO, df_Geneset)
 

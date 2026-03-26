@@ -196,6 +196,8 @@ def save_result(out, k, output_folder, condition, args):
     # Reorder columns
     result_df = result_df[[ 'target_name', 'program_name', 'log2FC', 'p-value']]
 
+    # effect size of CRT is not log2fc, its approx_log2FC = [K / (K - 1)] * beta_hat / ln(2)
+    #result_df['log2FC'] = result_df['log2FC']/np.log(2)
 
     # Correct for multiple testing
     if args.FDR_method == 'BH':
@@ -257,7 +259,7 @@ if __name__ == "__main__":
     # save comfigs used         
     args_dict = vars(args)
     job_id = os.environ.get('SLURM_JOB_ID')
-    with open(f'{args.out_dir}/{args.run_name}/Eval/config_{job_id}.yml', 'w') as f:
+    with open(f'{args.save_dir}/config_{job_id}.yml', 'w') as f:
         yaml.dump(args_dict, f, default_flow_style=False, width=1000)
 
 
