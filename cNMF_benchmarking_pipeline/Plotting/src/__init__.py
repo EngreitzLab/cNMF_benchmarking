@@ -24,8 +24,9 @@ from .k_quality_plots import program_corr,program_euclidean, top_genes_overlap,s
 from .Perturbed_gene_QC_plots import  plot_umap_per_gene, plot_top_program_per_gene, perturbed_gene_dotplot,\
                                       plot_log2FC, plot_volcano, programs_dotplot, analyze_correlations, \
                                       create_comprehensive_plot,create_gene_correlation_waterfall,\
-                                      plot_umap_per_gene_guide, process_single_gene, parallel_gene_processing,\
-                                        compute_gene_correlation_matrix, compute_gene_waterfall_cor
+                                      plot_umap_per_gene_guide, process_single_gene, _process_gene_worker, parallel_gene_processing,\
+                                      compute_gene_correlation_matrix, compute_gene_waterfall_cor, \
+                                      plot_perturbation_vs_control
 
 
 
