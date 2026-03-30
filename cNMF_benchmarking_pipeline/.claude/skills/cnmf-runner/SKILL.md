@@ -252,14 +252,40 @@ Report the job ID and explain monitoring:
   - Inference/Plotting: `<out_dir>/<run_name>/logs/<job_id>.out` and `.err`
   - Evaluation/Calibration: `<out_dir>/<run_name>/Eval/logs/<job_id>.out` and `.err`
 
-### Step 7: Post-Submission Guidance
+### Step 7: Generate h5mu Structure Files
+
+After inference completes (or when the user has existing .h5mu output), generate structure summary files for all output MuData files. These provide a quick human-readable overview of the h5mu contents (modalities, X matrices, obs/var columns, uns, obsm, layers, varm, etc.) in a tree format.
+
+**For all .h5mu files in the adata directory (recommended):**
+
+```bash
+eval "$(conda shell.bash hook)" && conda activate sk-cNMF && python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/.claude/skills/cnmf-runner/scripts/generate_h5mu_structure.py dummy --adata_dir <out_dir>/<run_name>/adata
+```
+
+**For a single .h5mu file:**
+
+```bash
+eval "$(conda shell.bash hook)" && conda activate sk-cNMF && python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/.claude/skills/cnmf-runner/scripts/generate_h5mu_structure.py <out_dir>/<run_name>/adata/cNMF_<K>_<sel_thresh>.h5mu
+```
+
+This produces `_structure.txt` files alongside each `.h5mu` file (e.g., `cNMF_50_0_5_structure.txt` next to `cNMF_50_0_5.h5mu`).
+
+**When to run this step:**
+- After inference completes and .h5mu files are generated in `<out_dir>/<run_name>/adata/`
+- When the user asks to inspect or summarize a .h5mu file
+- Before evaluation or plotting, so the user can verify the output structure
+
+Always offer to run this step after inference completes or when the user has .h5mu output files.
+
+### Step 8: Post-Submission Guidance
 
 After inference completes, guide the user through the next stages:
-1. **Evaluation** — run statistical tests on programs
-2. **K-selection plot** — visualize stability and error across K values
-3. **Program analysis** — per-program detailed plots
-4. **Perturbed gene analysis** — per-gene detailed plots
-5. **Calibration** — U-test or CRT calibration
+1. **Generate h5mu structure files** — summarize output MuData contents (Step 7 above)
+2. **Evaluation** — run statistical tests on programs
+3. **K-selection plot** — visualize stability and error across K values
+4. **Program analysis** — per-program detailed plots
+5. **Perturbed gene analysis** — per-gene detailed plots
+6. **Calibration** — U-test or CRT calibration
 
 ## Important Notes
 
@@ -267,7 +293,8 @@ After inference completes, guide the user through the next stages:
 - For torch-cNMF, the generator auto-adds `--gres=gpu:1` and `-C GPU_SKU:V100S_PCIE`
 - The pipeline saves config YAMLs automatically; no need to create them manually
 - Run name convention: `MMDDYY_<short_description>`
-- Output MuData files are at `<out_dir>/<run_name>/adata/cNMF_<K>_<sel_thresh>.h5mu`
+- Output MuData files are at `<out_dir>/<run_name>/adata/cNMF_<K>_<sel_thresh>.h5mu` with corresponding `_structure.txt` summaries
+- Generated SLURM scripts for inference stages automatically run h5mu structure generation after the pipeline completes. Pass `--no_structure` to `generate_slurm.py` to skip this
 - The generated script creates log directories automatically via `mkdir -p`
 - Known typos in pipeline argparse (use as-is): `--run_complie_annotation` (not compile), `--tagert_col_name` (not target), `--top_enrichned_term` (not enriched)
 - sk-cNMF `--tol` default is `1e4` (likely a bug; the torch-cNMF default `1e-4` is correct). Consider passing `--tol 1e-4` for sk-cNMF runs.

@@ -12,6 +12,7 @@ import sys
 import textwrap
 
 PIPELINE_ROOT = "/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline"
+SKILL_SCRIPTS = os.path.join(PIPELINE_ROOT, ".claude/skills/cnmf-runner/scripts")
 EMAIL = "ymo@stanford.edu"
 
 # Stage definitions: script path (relative), conda env, whether GPU is needed
@@ -198,6 +199,26 @@ def generate_script(args, passthrough_args):
             'nvidia-smi 2>/dev/null || echo "GPU not available"',
         ])
 
+    # For inference stages, generate h5mu structure files after pipeline completes
+    if args.stage.startswith("inference") and not args.no_structure:
+        h5mu_script = os.path.join(SKILL_SCRIPTS, "generate_h5mu_structure.py")
+        lines.extend([
+            '',
+            '# Generate h5mu structure summary files',
+            'if [ $EXIT_CODE -eq 0 ]; then',
+            f'    ADATA_DIR="{args.output_dir}/{args.run_name}/adata"',
+            '    if [ -d "$ADATA_DIR" ]; then',
+            '        echo "Generating h5mu structure files..."',
+            f'        python3 {h5mu_script} dummy --adata_dir "$ADATA_DIR"',
+            '        echo "h5mu structure generation complete"',
+            '    else',
+            '        echo "WARNING: adata directory not found at $ADATA_DIR, skipping structure generation"',
+            '    fi',
+            'else',
+            '    echo "Skipping h5mu structure generation due to pipeline error"',
+            'fi',
+        ])
+
     lines.extend([
         '',
         '# Elapsed time',
@@ -267,6 +288,10 @@ def main():
     parser.add_argument(
         '--script_output_path', type=str, default=None,
         help='Where to write the generated .sh file (default: stdout)'
+    )
+    parser.add_argument(
+        '--no_structure', action='store_true',
+        help='Skip h5mu structure file generation after inference'
     )
 
     # Parse only known args; the rest are passthrough to the pipeline script
