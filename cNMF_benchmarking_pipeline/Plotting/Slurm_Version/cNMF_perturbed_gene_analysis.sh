@@ -48,22 +48,34 @@ echo "Python path: $(which python)"
 echo "Running Python script..."
 python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Plotting/Slurm_Version/cNMF_perturbed_gene_analysis.py \
         --mdata_path "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/adata/cNMF_50_0_2.h5mu" \
-        --perturb_path_base "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/50_0_2/50_CRT"\
-        --top_program 10 \
-        --tagert_col_name "target_name" \
-        --plot_col_name "program_name" \
-        --log2fc_col "log2FC" \
-        --pdf_save_path "$LOG_DIR" \
+        --perturb_path_base "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Result/030526_100k_cells_100iter_allHVG_torch_halsvar_batch_e7_50/Eval/50_0_2/50_CRT" \
+        --top_n_programs 10 \
+        --perturb_target_col "target_name" \
+        --perturb_program_col "program_name" \
+        --perturb_log2fc_col "log2FC" \
+        --top_corr_genes 5 \
+        --significance_threshold 0.05 \
+        --volcano_log2fc_min -0.00 \
+        --volcano_log2fc_max 0.00 \
+        --save_path "$LOG_DIR" \
         --square_plots \
         --figsize 35 35 \
         --sample D0 D1 D2 D3 \
         --PDF \
-        --data_key 'rna'\
+        --n_processes -1 \
+        --umap_dot_size 10 \
+        --data_key 'rna' \
         --prog_key 'cNMF' \
         --categorical_key 'batch' \
         --gene_name_key 'gene_names' \
         --subsample_frac 0.1 \
-        #--expressed_only \
+        --parallel
+        # --expressed_only
+        # --show
+        # --ensembl_to_symbol_file None
+        # --reference_gtf_path None
+        # --gene_list_file None
+        # --corr_matrix_path None
 
 
 
