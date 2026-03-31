@@ -54,6 +54,24 @@ sys.path.append('/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking
 from .utilities import convert_adata_with_mygene, convert_with_mygene, rename_list_gene_dictionary, rename_adata_gene_dictionary
 
 
+def _blank_ax(ax, gene, message=None):
+    """Turn *ax* into a clean blank panel with a 'No Guide Found' message.
+
+    Hides spines, ticks, and tick labels, then centres a message.
+    """
+    if message is None:
+        message = f'No Guide Found\nfor {gene}'
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.text(0.5, 0.5, message,
+            ha='center', va='center', transform=ax.transAxes,
+            fontsize=12, color='grey')
+    return ax
+
 
 
 def plot_umap_per_gene(mdata, Target_Gene, ensembl_to_symbol_file = None, ax=None,
@@ -1226,7 +1244,8 @@ def create_gene_correlation_waterfall(corr_matrix, Target_Gene, top_corr_genes=5
 
 
 
-def plot_perturbation_vs_control(mdata, target_gene, gene_name_key='symbol', ax=None, figsize=(3.2, 5.0)):
+def plot_perturbation_vs_control(mdata, target_gene, gene_name_key='symbol', ax=None, figsize=(3.2, 5.0),
+                                 control_target_name='non-targeting'):
     """
     Bar plot comparing expression of a targeted gene in perturbed vs non-targeting control cells,
     normalized to control mean (displayed as %).
@@ -1245,6 +1264,8 @@ def plot_perturbation_vs_control(mdata, target_gene, gene_name_key='symbol', ax=
         Axis to plot on. If None, creates a new figure.
     figsize : tuple
         Figure size (only used in standalone mode when ax is None).
+    control_target_name : str
+        Name of the non-targeting control in guide_targets (e.g. 'non-targeting', 'CTRL').
     """
     from scipy import sparse
 
@@ -1278,7 +1299,7 @@ def plot_perturbation_vs_control(mdata, target_gene, gene_name_key='symbol', ax=
     gene_expr_norm = (gene_expr / row_sums) * 1e4
 
     # Non-targeting control cells
-    nt_idx = np.where(guide_targets == 'non-targeting')[0]
+    nt_idx = np.where(guide_targets == control_target_name)[0]
     control_mask = np.array(ga[:, nt_idx].sum(axis=1)).flatten() > 0
 
     # Perturbed cells
@@ -1305,6 +1326,13 @@ def plot_perturbation_vs_control(mdata, target_gene, gene_name_key='symbol', ax=
 
     n_pert = len(pert_expr)
     n_ctrl = len(ctrl_expr)
+
+    if n_pert == 0 or n_ctrl == 0 or ctrl_mean == 0:
+        if ax is not None:
+            ax.text(0.5, 0.5, f'Insufficient data\n(n_pert={n_pert}, n_ctrl={n_ctrl})',
+                   ha='center', va='center', transform=ax.transAxes, fontsize=10)
+            return ax
+        return None
 
     # ── Style ────────────────────────────────────────────────────────────────
     COLOR_PERT = '#D62728'
@@ -1341,8 +1369,12 @@ def plot_perturbation_vs_control(mdata, target_gene, gene_name_key='symbol', ax=
     ], fontsize=10)
 
     ax.set_ylabel(f'{target_gene} Expression', fontsize=11, labelpad=8)
-    ax.set_title(f'CRISPRi knockdown:\n>{int(round((1 - norm_means[0]) * 100))}% effect',
-                 fontsize=12, fontweight='bold', pad=12)
+    effect_pct = (1 - norm_means[0]) * 100
+    if np.isnan(effect_pct):
+        title_str = 'CRISPRi knockdown:\neffect N/A'
+    else:
+        title_str = f'CRISPRi knockdown:\n>{int(round(effect_pct))}% effect'
+    ax.set_title(title_str, fontsize=12, fontweight='bold', pad=12)
 
     ax.tick_params(axis='y', labelsize=10)
     ax.spines['top'].set_visible(False)
@@ -1386,7 +1418,8 @@ def create_comprehensive_plot(
     PDF=True,
     umap_dot_size = None,
     umap_subsample_frac=None,
-    gene_name_key='symbol'
+    gene_name_key='symbol',
+    control_target_name='non-targeting'
 ):
     """Create a comprehensive multi-panel figure for one perturbed gene.
 
@@ -1459,6 +1492,9 @@ def create_comprehensive_plot(
     gene_name_key : str or None
         Column in ``mdata['rna'].var`` for gene symbol lookup. Passed to
         ``plot_perturbation_vs_control``.
+    control_target_name : str
+        Name of the non-targeting control in guide_targets (e.g. 'non-targeting', 'CTRL').
+        Passed to ``plot_perturbation_vs_control``.
     """
     
     # Set default samples if not provided
@@ -1543,7 +1579,8 @@ def create_comprehensive_plot(
         mdata=mdata,
         target_gene=Target_Gene,
         gene_name_key=gene_name_key,
-        ax=ax_target_kd
+        ax=ax_target_kd,
+        control_target_name=control_target_name
     )
 
     # Row 0, Plot 4: Top program
@@ -1717,7 +1754,8 @@ def process_single_gene(Target_Gene,
                         PDF=True,
                         gene_name_key='symbol',
                         umap_dot_size=None,
-                        umap_subsample_frac=None):
+                        umap_subsample_frac=None,
+                        control_target_name='non-targeting'):
     """Wrapper around ``create_comprehensive_plot`` for a single gene with error handling.
 
     Catches exceptions so that one failing gene does not abort a batch run.
@@ -1764,7 +1802,8 @@ def process_single_gene(Target_Gene,
             PDF=PDF,
             gene_name_key=gene_name_key,
             umap_dot_size=umap_dot_size,
-            umap_subsample_frac=umap_subsample_frac
+            umap_subsample_frac=umap_subsample_frac,
+            control_target_name=control_target_name
         )
 
         return f"Success: {Target_Gene}"
@@ -1822,6 +1861,7 @@ def _process_gene_worker(Target_Gene):
         gene_name_key=d['gene_name_key'],
         umap_dot_size=d['umap_dot_size'],
         umap_subsample_frac=d['umap_subsample_frac'],
+        control_target_name=d['control_target_name'],
     )
 
 
@@ -1849,7 +1889,8 @@ def parallel_gene_processing(perturbed_gene_list,
                         n_processes=-1,
                         gene_name_key='symbol',
                         umap_dot_size=None,
-                        umap_subsample_frac=None):
+                        umap_subsample_frac=None,
+                        control_target_name='non-targeting'):
     """Process multiple genes in parallel using fork-based multiprocessing.
 
     Stores all shared data (mdata, correlation matrices, etc.) in the
@@ -1906,6 +1947,7 @@ def parallel_gene_processing(perturbed_gene_list,
         'gene_name_key': gene_name_key,
         'umap_dot_size': umap_dot_size,
         'umap_subsample_frac': umap_subsample_frac,
+        'control_target_name': control_target_name,
     }
 
     print(f"Starting parallel processing of {len(perturbed_gene_list)} genes using {n_processes} processes...")

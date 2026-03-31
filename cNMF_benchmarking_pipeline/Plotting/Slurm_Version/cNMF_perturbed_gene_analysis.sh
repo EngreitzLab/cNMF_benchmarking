@@ -68,6 +68,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --prog_key 'cNMF' \
         --categorical_key 'batch' \
         --gene_name_key 'gene_names' \
+        --control_target_name 'non-targeting' \
         --subsample_frac 0.1 \
         --parallel
         # --expressed_only

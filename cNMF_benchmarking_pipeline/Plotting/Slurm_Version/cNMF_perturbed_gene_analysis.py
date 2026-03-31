@@ -56,6 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--prog_key', type=str, default="cNMF", help='key to access cNMF programs in MuData')
     parser.add_argument('--gene_name_key', type=str, default="gene_names", help='key to access gene names in var')
     parser.add_argument('--categorical_key', type=str, default="sample", help='key to access sample/condition labels in obs')
+    parser.add_argument('--control_target_name', type=str, default="non-targeting", help='name of non-targeting control in guide_targets (e.g. non-targeting, CTRL)')
 
     
     args = parser.parse_args()
@@ -76,7 +77,7 @@ if __name__ == '__main__':
 
     #read mdata
     mdata = mu.read_h5mu(args.mdata_path)
- 
+
     # check umap exist 
     if 'X_umap' not in mdata[args.prog_key].obsm:
         import scanpy as sc
@@ -157,7 +158,8 @@ if __name__ == '__main__':
                 n_processes=args.n_processes,
                 gene_name_key=args.gene_name_key,
                 umap_dot_size=args.umap_dot_size,
-                umap_subsample_frac=args.subsample_frac
+                umap_subsample_frac=args.subsample_frac,
+                control_target_name=args.control_target_name
             )
             print(f"Parallel processing completed. Results: {len(result) if result else 'None'}")
         except Exception as e:
@@ -189,7 +191,8 @@ if __name__ == '__main__':
                 PDF=True,
                 umap_dot_size=args.umap_dot_size,
                 umap_subsample_frac=args.subsample_frac,
-                gene_name_key=args.gene_name_key
+                gene_name_key=args.gene_name_key,
+                control_target_name=args.control_target_name
             )
 
     # merge pdf 
