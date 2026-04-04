@@ -242,22 +242,23 @@ def process_enrichment_data(
 
 
 def compute_trait_enrichment(
-    mdata, 
-    gwas_data, 
-    prog_key='prog', 
-    prog_name=None, 
-    data_key='rna', 
-    library='OT_GWAS', 
-    n_jobs=1, 
-    inplace=False, 
+    mdata,
+    gwas_data,
+    prog_key='prog',
+    prog_name=None,
+    data_key='rna',
+    library='OT_GWAS',
+    n_jobs=1,
+    inplace=False,
     key_column='trait_efos',
-    gene_column='gene_name', 
-    method='fisher', 
+    gene_column='gene_name',
+    method='fisher',
     min_size=0,
     max_size=2000,
-    n_top=500, 
-    low_cutoff=-np.inf, 
+    n_top=500,
+    low_cutoff=-np.inf,
     use_loadings_gene=False,
+    gene_names_key=None,
     **kwargs
 ):
     """Compute Trait enrichment using open-targets GWAS"""
@@ -272,22 +273,23 @@ def compute_trait_enrichment(
     gmt = create_geneset_dict(df, key_column=key_column, gene_column=gene_column)
 
     return (compute_geneset_enrichment(
-        mdata=mdata, 
-        prog_key=prog_key, 
-        data_key=data_key, 
-        prog_name=prog_name, 
-        method=method, 
+        mdata=mdata,
+        prog_key=prog_key,
+        data_key=data_key,
+        prog_name=prog_name,
+        method=method,
         organism="human",
-        library=library, 
-        database=None, 
+        library=library,
+        database=None,
         user_geneset=gmt,
         min_size=min_size,
         max_size=max_size,
         low_cutoff=low_cutoff,
         n_top=n_top,
-        n_jobs=n_jobs, 
-        inplace=inplace, 
+        n_jobs=n_jobs,
+        inplace=inplace,
         use_loadings_gene=use_loadings_gene,
+        gene_names_key=gene_names_key,
         **kwargs
     ))
 

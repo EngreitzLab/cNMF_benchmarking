@@ -132,6 +132,8 @@ if __name__ == '__main__':
     parser.add_argument('--guide_names_key', type=str, default='guide_names')
     parser.add_argument('--guide_targets_key', type=str, default='guide_targets')
     parser.add_argument('--guide_assignment_key', type=str, default='guide_assignment')
+    parser.add_argument('--gene_names_key', type=str, default=None,
+                        help="Column in adata.var with gene names to use in compiled results (e.g. 'symbol'). If None, uses var_names.")
 
     # --- Step selection ---
     parser.add_argument('--run_factorize', action='store_true',
@@ -252,7 +254,8 @@ if __name__ == '__main__':
                         guide_names_key=args.guide_names_key,
                         guide_targets_key=args.guide_targets_key,
                         categorical_key=args.categorical_key,
-                        guide_assignment_key=args.guide_assignment_key)
+                        guide_assignment_key=args.guide_assignment_key,
+                        gene_names_key=args.gene_names_key)
 
         os.makedirs(f'{args.output_directory}/{args.run_name}/Annotation', exist_ok=True)
         for i in args.sel_thresh:

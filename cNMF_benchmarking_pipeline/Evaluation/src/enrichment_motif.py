@@ -301,6 +301,7 @@ def compute_motif_enrichment(
     correlation: str='pearsonr',
     n_jobs: int=1,
     inplace: bool=True,
+    gene_names_key: Optional[str]=None,
     **kwargs
 ):
     
@@ -369,14 +370,15 @@ def compute_motif_enrichment(
                                data_key: mdata[data_key].copy()})
 
     # Get gene names in MuData
-    if 'var_names' in mdata[prog_key].uns.keys():
+    if gene_names_key is not None and gene_names_key in mdata[data_key].var.columns:
+        gene_names = mdata[data_key].var[gene_names_key].astype(str).tolist()
+    elif 'var_names' in mdata[prog_key].uns.keys():
         gene_names = mdata[prog_key].uns['var_names']
     else:
         try: assert mdata[prog_key].varm['loadings'].shape[1]==mdata[data_key].var.shape[0]
         except: raise ValueError('Different number of genes present in data and program loadings')
         gene_names = mdata[data_key].var_names
-    
-    # 
+
     if ':ens' in gene_names[0].lower():
         gene_names = [name.split(':')[0] for name in gene_names]
 

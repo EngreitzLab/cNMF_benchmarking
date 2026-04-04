@@ -23,20 +23,8 @@ from Evaluation.src import (
 )
 
 
-from Inference.src import (
-    check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_format )
-
-
-def _assign_guide(mdata,_data_guide):
-    #mdata[args.data_key].obsm[args.guide_assignment_key] = _data_guide.obsm[args.guide_assignment_key].toarray()
-    #mdata[args.prog_key].obsm[args.guide_assignment_key] = _data_guide.obsm[args.guide_assignment_key].toarray()
-
-    #mdata[args.prog_key].uns[args.guide_names_key] = _data_guide.uns[args.guide_names_key] 
-    #mdata[args.prog_key].uns[args.guide_targets_key] = _data_guide.uns[args.guide_targets_key] 
-    #mdata[args.data_key].uns[args.guide_names_key] = _data_guide.uns[args.guide_names_key] 
-    #mdata[args.data_key].uns[args.guide_targets_key] = _data_guide.uns[args.guide_targets_key] 
-    mdata['cNMF'].uns['var_names'] = _data_guide['rna'].var['symbol']
-    mdata['rna'].var_names = _data_guide['rna'].var['symbol'].astype(str)
+def _assign_guide(mdata, _data_guide, gene_names_key='symbol'):
+    mdata['rna'].var_names = _data_guide['rna'].var[gene_names_key].astype(str)
     
     
     
@@ -63,14 +51,15 @@ if __name__ == '__main__':
     # resources
     parser.add_argument('--X_normalized_path', type=str,  help='Path to normalized cell x gene matrix (.h5ad) from cNMF pipeline (required for explained variance)', default=None)
     parser.add_argument('--guide_annotation_path', type=str,  help='Path to tab-separated file with guide annotations including "targeting" column to identify non-targeting controls (optional)')
-    parser.add_argument('--gwas_data_path', type=str,  help='Path to GWAS data file for trait enrichment analysis (required for trait enrichment)', required=True)
-    parser.add_argument('--reference_gtf_path', type=str,  help='Path to reference GTF file for validating gene names during format checking (optional)')
+    parser.add_argument('--gwas_data_path', type=str,  help='Path to GWAS data file for trait enrichment analysis (required for trait enrichment)', default=None)
     parser.add_argument('--data_guide_path', type=str,  help='Path to mdata that contains additional information (optional)', default = None)
+    
 
     # keys
     parser.add_argument('--data_key', help='Key to access gene expression data in MuData object (default: rna)', type=str, default="rna")
     parser.add_argument('--prog_key', help='Key to access cNMF programs in MuData object (default: cNMF)', type=str, default="cNMF")
     parser.add_argument('--categorical_key', help='Key in .obs to access cell condition/sample labels for categorical association (default: sample)', type=str, default="sample")
+    parser.add_argument('--gene_names_key', type=str, help='Column in data_guide["rna"].var containing gene names (default: symbol)', default='symbol')
     parser.add_argument('--guide_names_key', help='Key in .uns to access guide names (default: guide_names)', type=str, default="guide_names")
     parser.add_argument('--guide_targets_key', help='Key in .uns to access guide target genes (default: guide_targets)', type=str, default="guide_targets")
     parser.add_argument('--guide_assignment_key', help='Key in .obsm to access guide assignment matrix (default: guide_assignment)', type=str, default="guide_assignment")
@@ -81,12 +70,10 @@ if __name__ == '__main__':
     parser.add_argument('--FDR_method', help='Method for FDR correction in perturbation association (default: StoreyQ)', type=str, default="StoreyQ")  
     parser.add_argument('--n_top', type = int, help='Number of top loaded genes use to perform enrichment test(default: 300)',  default=300)  
 
-   # check format
-    parser.add_argument('--check_format', help='If set, validate MuData format and check for all necessary keys and annotations before running evaluation', action="store_true")
-
-
     args = parser.parse_args()
 
+    if args.Perform_trait and args.gwas_data_path is None:
+        parser.error("--gwas_data_path is required when --Perform_trait is set")
 
     # either change the array here or run each component in parallel
     if args.K is None:
@@ -139,18 +126,9 @@ if __name__ == '__main__':
                                                                                     k=k,
                                                                                     sel_thresh = str(sel_thresh).replace('.','_'))) 
 
-             # assign information 
-            if args.data_guide_path is not None:                                                                     
-                _assign_guide(mdata,_data_guide)
-
-
-
-            #check format is right
-            if args.check_format:
-                valid = check_mdata_format(mdata, guide_names_key = args.guide_names_key, prog_key = args.prog_key, data_key = args.data_key, guide_targets_key = args.guide_targets_key, 
-                categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
-                if not valid['is_valid']:
-                    raise ValueError("Format is incorrect")
+             # assign information
+            if args.data_guide_path is not None:
+                _assign_guide(mdata, _data_guide, gene_names_key=args.gene_names_key)
 
 
             # Run categorical assocation
@@ -177,28 +155,31 @@ if __name__ == '__main__':
 
             # Gene-set enrichment
             if args.Perform_geneset:
-                pre_res = compute_geneset_enrichment(mdata, prog_key=args.prog_key, data_key=args.data_key, prog_nam=None,
+                pre_res = compute_geneset_enrichment(mdata, prog_key=args.prog_key, data_key=args.data_key, prog_name=None,
                                                     organism=args.organism, library='Reactome_2022', method="fisher",
-                                                    database='enrichr', n_top=args.n_top, n_jobs=-1, 
-                                                    inplace=False, user_geneset=None, use_loadings_gene=False) # use_loadings_gene:use all background genes 
+                                                    database='enrichr', n_top=args.n_top, n_jobs=-1,
+                                                    inplace=False, user_geneset=None, use_loadings_gene=False,
+                                                    gene_names_key=args.gene_names_key) # use_loadings_gene:use all background genes
                 pre_res.to_csv('{}/{}_geneset_enrichment.txt'.format(output_folder,k), sep='\t', index=False)
 
 
                 # GO Term enrichment
-                pre_res = compute_geneset_enrichment(mdata, prog_key=args.prog_key, data_key=args.data_key, prog_nam=None,
+                pre_res = compute_geneset_enrichment(mdata, prog_key=args.prog_key, data_key=args.data_key, prog_name=None,
                                                     organism=args.organism, library='GO_Biological_Process_2023', method="fisher",
-                                                    database='enrichr', n_top=args.n_top, n_jobs=-1, 
-                                                    inplace=False, user_geneset=None, use_loadings_gene=False) # use_loadings_gene: use all background genes 
+                                                    database='enrichr', n_top=args.n_top, n_jobs=-1,
+                                                    inplace=False, user_geneset=None, use_loadings_gene=False,
+                                                    gene_names_key=args.gene_names_key) # use_loadings_gene: use all background genes
                 pre_res.to_csv('{}/{}_GO_term_enrichment.txt'.format(output_folder,k), sep='\t', index=False)
 
 
             # Run trait enrichment
             if args.Perform_trait:
-                pre_res_trait = compute_trait_enrichment(mdata, gwas_data=args.gwas_data_path, 
-                                                        prog_key=args.prog_key, prog_nam=None, data_key=args.data_key, 
-                                                        library='OT_GWAS', n_jobs=-1, inplace=False, 
-                                                        key_column='trait_efos', gene_column='gene_name', 
-                                                        method='fisher', n_top=args.n_top, use_loadings_gene=True) # use_loadings_gene:use all background genes inter. expressed gene
+                pre_res_trait = compute_trait_enrichment(mdata, gwas_data=args.gwas_data_path,
+                                                        prog_key=args.prog_key, prog_name=None, data_key=args.data_key,
+                                                        library='OT_GWAS', n_jobs=-1, inplace=False,
+                                                        key_column='trait_efos', gene_column='gene_name',
+                                                        method='fisher', n_top=args.n_top, use_loadings_gene=True,
+                                                        gene_names_key=args.gene_names_key) # use_loadings_gene:use all background genes inter. expressed gene
                 pre_res_trait.to_csv('{}/{}_trait_enrichment.txt'.format(output_folder,k), sep='\t', index=False)
 
 
@@ -215,7 +196,7 @@ if __name__ == '__main__':
                     
                         loci_file = '/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/scE2G_links/EnhancerPredictionsAllPutative.ForVariantOverlap.shrunk150bp_{}_{}.tsv'.format(samp, class_)
                         motif_match_df, motif_count_df, motif_enrichment_df = compute_motif_enrichment(
-                            mdata, 
+                            mdata,
                             prog_key='cNMF',
                             data_key='rna',
                             motif_file='/oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Evaluation/Resources/hocomoco_meme.meme',
@@ -226,7 +207,8 @@ if __name__ == '__main__':
                             eps=1e-4,
                             n_top=2000,
                             n_jobs=-1,
-                            inplace=False
+                            inplace=False,
+                            gene_names_key=args.gene_names_key
                         )
 
                         motif_match_df.to_csv(os.path.join(args.out_dir, f'cNMF_{class_}_pearson_topn2000_{samp}_motif_match.txt'), sep='\t', index=False)

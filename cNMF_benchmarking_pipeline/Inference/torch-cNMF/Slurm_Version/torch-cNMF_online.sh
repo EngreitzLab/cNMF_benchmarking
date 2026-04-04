@@ -127,6 +127,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         #--remove_noncoding \
         #--ensembl_prefix "ENSG" \
         #--gene_symbol_key "symbol" \
+        #--gene_names_key "symbol" \
 
 # After the python command
 if [ $? -ne 0 ]; then

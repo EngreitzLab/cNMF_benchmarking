@@ -70,10 +70,12 @@ def get_idconversion(var_names, organism='human', chunk_size=100):
 
     return gene_names
         
-def get_program_gene_loadings(mdata, prog_key='prog', prog_nam=None, data_key='rna', organism='human'):
+def get_program_gene_loadings(mdata, prog_key='prog', prog_nam=None, data_key='rna', organism='human', gene_names_key=None):
     """Get gene loadings for each program in the mudata object."""
 
-    if 'var_names' in mdata[prog_key].uns.keys():
+    if gene_names_key is not None and gene_names_key in mdata[data_key].var.columns:
+        gene_names = mdata[data_key].var[gene_names_key].astype(str).str.upper().tolist()
+    elif 'var_names' in mdata[prog_key].uns.keys():
         gene_names = get_idconversion(mdata[prog_key].uns['var_names'], organism=organism)
     else:
         assert mdata[prog_key].varm['loadings'].shape[1] == mdata[data_key].var.shape[0]
@@ -326,7 +328,7 @@ def compute_geneset_enrichment(
     prog_name: Optional[str] = None,
     method: Literal['gsea', 'fisher'] = 'gsea',
     organism: Literal['human', 'mouse'] = 'human',
-    library: str = 'Reactome_2022', 
+    library: str = 'Reactome_2022',
     database: Literal['msigdb', 'enrichr'] = 'enrichr',
     user_geneset: Optional[Dict[str, List[str]]] = None,
     min_size: int = 0,
@@ -335,7 +337,8 @@ def compute_geneset_enrichment(
     n_top: int = 2000,
     n_jobs: int = 1,
     inplace: bool = True,
-    use_loadings_gene = False, # False = use all oncology gene, True = use interact expresseed gene 
+    use_loadings_gene = False, # False = use all oncology gene, True = use interact expresseed gene
+    gene_names_key: Optional[str] = None,
     **kwargs
 ) -> Optional[pd.DataFrame]:
 
@@ -410,11 +413,12 @@ def compute_geneset_enrichment(
      
     # get the gene loadings for each program
     loadings = get_program_gene_loadings(
-        mdata, 
-        prog_key=prog_key, 
+        mdata,
+        prog_key=prog_key,
         prog_nam=prog_name,
-        data_key=data_key, 
+        data_key=data_key,
         organism=organism,
+        gene_names_key=gene_names_key,
     )
     
     # run enrichment

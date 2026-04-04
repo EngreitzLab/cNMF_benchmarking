@@ -7,7 +7,7 @@ import scanpy as sc
 from pathlib import Path
 import anndata
 import muon 
-import cnmf
+from torch_cnmf import cNMF
 import os
 import sys
 import mygene
@@ -28,7 +28,7 @@ def run_cnmf_consensus(cnmf_obj=None, output_dir=None, name=None,
         density_thresholds: List of density threshold values for consensus
     """
     if cnmf_obj is None:
-        cnmf_obj = cnmf.init_cnmf_obj(output_dir=output_dir, name=name)
+        cnmf_obj = cNMF(output_dir=output_dir, name=name)
 
     for k in tqdm(components, desc='Running cNMF'):
         for thresh in density_thresholds:
@@ -36,7 +36,8 @@ def run_cnmf_consensus(cnmf_obj=None, output_dir=None, name=None,
 
 
 def compile_results(output_directory, run_name, sel_threshs = [2.0], components = [30, 50, 60, 80, 100, 200, 250, 300],
- guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch', guide_assignment_key ="guide_assignment" ):
+ guide_names_key = "guide_names", guide_targets_key = "guide_targets", categorical_key= 'batch', guide_assignment_key ="guide_assignment",
+ gene_names_key = None ):
     """
     Compile cNMF results into correct format for downstream evaluation pipeline.
     
@@ -93,7 +94,13 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
             prog_data = anndata.AnnData(X=scores.values, obs=adata_.obs)
             prog_data.var_names = scores.columns.values
             prog_data.varm['loadings'] = loadings.values
-            prog_data.uns['var_names'] = loadings.columns.values
+            # Use gene_names_key column if provided, otherwise fall back to var_names / loadings columns
+            if gene_names_key is not None and gene_names_key in adata_.var.columns:
+                gene_names = adata_.var[gene_names_key].values
+            else:
+                gene_names = loadings.columns.values
+
+            prog_data.uns['var_names'] = gene_names
 
 
             # Make adata
@@ -108,10 +115,14 @@ def compile_results(output_directory, run_name, sel_threshs = [2.0], components 
             mdata['cNMF'].uns[guide_names_key] = adata_.uns[guide_names_key]
             mdata['cNMF'].uns[guide_targets_key] = adata_.uns[guide_targets_key]
             mdata['cNMF'].obs[categorical_key] = adata_.obs[categorical_key]
-            mdata['cNMF'].obsm[guide_assignment_key] = adata_.obsm[guide_assignment_key] 
-            #mdata['cNMF'].obsm['X_pca'] = adata_.obsm['X_pca']
-            #mdata['cNMF'].obsm['X_umap'] = adata_.obsm['X_umap']
-            mdata['rna'].var['var_names'] = adata_.var_names
+            mdata['cNMF'].obsm[guide_assignment_key] = adata_.obsm[guide_assignment_key]
+            mdata['cNMF'].obsm['X_pca'] = adata_.obsm['X_pca']
+            mdata['cNMF'].obsm['X_umap'] = adata_.obsm['X_umap']
+
+            if gene_names_key is not None and gene_names_key in adata_.var.columns:
+                mdata['rna'].var['var_names'] = adata_.var[gene_names_key].values
+            else:
+                mdata['rna'].var['var_names'] = adata_.var_names
 
 
             os.makedirs((f'{output_directory}/{run_name}/adata'), exist_ok=True)

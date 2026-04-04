@@ -52,7 +52,9 @@ if __name__ == '__main__':
     parser.add_argument('--categorical_key', help='Key in .obs to access cell condition/sample labels (default: sample)', type=str, default="sample")
     parser.add_argument('--guide_names_key', help='Key in .uns to access guide names (default: guide_names)', type=str, default="guide_names")
     parser.add_argument('--guide_targets_key', help='Key in .uns to access guide target genes (default: guide_targets)', type=str, default="guide_targets")
-    parser.add_argument('--guide_assignment_key', help='Key in .obsm to access guide assignment matrix (default: guide_assignment_key)', type=str, default="guide_assignment_key") 
+    parser.add_argument('--guide_assignment_key', help='Key in .obsm to access guide assignment matrix (default: guide_assignment_key)', type=str, default="guide_assignment_key")
+    parser.add_argument('--gene_names_key', type=str, default=None,
+                        help="Column in adata.var with gene names to use in compiled results (e.g. 'symbol'). If None, uses var_names.")
 
 
 
@@ -136,8 +138,8 @@ if __name__ == '__main__':
 
         # Save all cNMF scores in separate mudata objects
         compile_results(args.output_directory, args.run_name, components= args.K, sel_threshs = args.sel_thresh,
-        guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, categorical_key= args.categorical_key, 
-        guide_assignment_key = args.guide_assignment_key )
+        guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, categorical_key= args.categorical_key,
+        guide_assignment_key = args.guide_assignment_key, gene_names_key = args.gene_names_key )
 
         # annotation for all K
         os.makedirs((f'{args.output_directory}/{args.run_name}/Annotation'), exist_ok=True)
