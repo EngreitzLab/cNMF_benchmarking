@@ -74,8 +74,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --run_refit \
         --run_complie_annotation \
         --run_factorize \
-        --nmf_seedsnmf_seeds "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/10_seeds_14_${K}.npy"
-        #--check_format \
+        --nmf_seeds_path "/oak/stanford/groups/engreitz/Users/ymo/IGVF_ccperturbseq/Data/10_seeds_14_${K}.npy"
 
 
 # Calculate and print elapsed time at the end

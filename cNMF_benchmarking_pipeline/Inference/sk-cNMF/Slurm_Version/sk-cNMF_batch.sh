@@ -64,9 +64,7 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         --species "human" \
         --run_complie_annotation \
         --run_refit \
-        --run_factorize \
-        --check_format \
-        --nmf_seeds_path None 
+        --run_factorize
 
 
 # Calculate and print elapsed time at the end

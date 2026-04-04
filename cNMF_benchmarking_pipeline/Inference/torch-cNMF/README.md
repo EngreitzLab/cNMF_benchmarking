@@ -2,8 +2,8 @@
 
 * GPU powered cNMF
 * Individual NMF inference using: [NMF-Torch](https://github.com/lilab-bcb/nmf-torch)
-* consensus NMF using: [torch-cNMF](https://github.com/ymo6/torch_based_cNMF) 
-* To run torch-cNMF, create a new conda environment with `conda env create -f environment.yml --name torch-cNMF` with the provided yml file, then run `pip install git+https://github.com/ymo6/torch_based_cNMF.git` and `pip install git+https://github.com/ymo6/nmf-torch.git` in the terminal
+* consensus NMF using: [torch-cNMF](https://github.com/ymo6/torch_based_cNMF)
+* To run torch-cNMF, create a new conda environment with `conda env create -f environment.yml` with the provided yml file, then run `pip install git+https://github.com/ymo6/torch_based_cNMF.git` and `pip install git+https://github.com/ymo6/nmf-torch.git` in the terminal
 * Singularity Container can be found in https://hub.docker.com/r/igvf/torch-cnmf/tags
 
 ## Required I/O Parameters
@@ -18,43 +18,63 @@
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| K | list of int | [30, 50, 60, 80, 100, 200, 250, 300] | Values of K (number of components) to run NMF for |
+| K | list of int | [5, 7, 10] | Values of K (number of components) to run NMF for |
 | numiter | int | 10 | Number of NMF iterations per K value |
 | densify | flag | False | Densify sparse matrix before factorization |
 | tpm_fn | str | None | Path to TPM normalized data (optional) |
 | seed | int | 14 | Random seed for reproducibility |
-| loss | str | "frobenius" | Loss function: "frobenius" (L2), "kullback-leibler" (KL), "itakura-saito" (IS), or float |
-| numhvgenes | int | 5451 | Number of highly variable genes to use for factorization |
+| loss | str | "frobenius" | Loss function: "frobenius", "kullback-leibler", or "itakura-saito" |
+| numhvgenes | int | 2000 | Number of highly variable genes to use for factorization |
 | genes_file | str | None | Path to file containing list of genes to use instead of HVG selection |
-| alpha_usage | float | 0.0 | Regularization parameter for usage matrix (alpha_W) |
-| alpha_spectra | float | 0.0 | Regularization parameter for spectra matrix (alpha_H) |
 | use_gpu | flag | False | Use GPU acceleration if available |
-| mode | str | "batch" | Learning mode: "batch", "online", or "dataloader". Online/dataloader only works when beta=2.0 |
-| algo | str | "mu" | Algorithm choice: "mu" (multiplicative update), "halsvar" |
-| init | str | "random" | Initialization method: "random", "nndsvd", "nndsvda", "nndsvdar" |
+| algo | str | "halsvar" | Algorithm: "mu" (multiplicative update), "hals", "halsvar" (HALS variant mimicking BPP), "bpp" (Block Principal Pivoting) |
+| mode | str | "batch" | Learning mode: "batch", "minibatch", or "dataloader". minibatch/dataloader only work with frobenius loss |
+| init | str | "random" | Initialization method: "random" or "nndsvd" |
 | tol | float | 1e-4 | Tolerance for convergence check |
-| n_jobs | int | -1 | Number of CPU threads (-1 uses all available cores) |
-| l1_ratio_usage | float | 0.0 | L1 ratio for usage regularization (0=L2 only, 1=L1 only) |
-| l1_ratio_spectra | float | 0.0 | L1 ratio for spectra regularization (0=L2 only, 1=L1 only) |
+| n_jobs | int | -1 | Number of CPU threads for PyTorch (-1 uses PyTorch default) |
 | fp_precision | str | "float" | Numeric precision: "float" (32-bit) or "double" (64-bit) |
-| batch_max_iter | int | 500 | Maximum iterations for batch learning |
-| batch_hals_tol | float | 0.05 | Tolerance for HALS - maximal relative change threshold |
-| batch_hals_max_iter | int | 200 | Maximum HALS iterations. Set to 1 for standard HALS |
-| online_max_pass | int | 20 | Maximum number of online passes through all data |
-| online_chunk_size | int | 5000 | Chunk/mini-batch size for online learning |
-| online_chunk_max_iter | int | 200 | Maximum iterations per chunk in online mode |
-| online_usage_tol | float | 0.05 | Tolerance for usage updates in online learning |
-| online_spectra_tol | float | 0.05 | Tolerance for spectra updates in online learning |
-| shuffle_cells | flag | False | Shuffle cells before factorization (recommended for online learning) |
-| sk_cd_refit | flag | False | Use scikit-learn coordinate descent for refitting |
-| sel_thresh | list of float | [0.4, 0.8, 2.0] | Density threshold(s) for consensus selection |
 | nmf_seeds_path | str | None | Path to .npy file containing custom NMF seeds for reproducibility |
+| sel_thresh | list of float | [2.0] | Density threshold(s) for consensus selection |
+
+## Regularization Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| alpha_usage | float | 0.0 | Regularization strength on usage matrix W |
+| alpha_spectra | float | 0.0 | Regularization strength on spectra matrix H |
+| l1_ratio_usage | float | 0.0 | L1 penalty ratio on W (0=L2 only, 1=L1 only) |
+| l1_ratio_spectra | float | 0.0 | L1 penalty ratio on H (0=L2 only, 1=L1 only) |
+
+## Batch Mode Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| batch_max_epoch | int | 500 | Maximum epochs for batch learning |
+| batch_hals_tol | float | 0.05 | HALS tolerance for halsvar algorithm |
+| batch_hals_max_iter | int | 200 | Maximum HALS iterations per H/W update |
+
+## Minibatch Mode Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| minibatch_max_epoch | int | 20 | Maximum passes over all data |
+| minibatch_size | int | 5000 | Size of mini-batches |
+| minibatch_max_iter | int | 200 | Maximum iterations for H/W update per mini-batch |
+| minibatch_usage_tol | float | 0.05 | Convergence tolerance for usage updates |
+| minibatch_spectra_tol | float | 0.05 | Convergence tolerance for spectra updates |
+| minibatch_shuffle | flag | False | Enable shuffling of samples across mini-batches each epoch |
+
+## Refit Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| sk_cd_refit | flag | False | Use scikit-learn coordinate descent for refitting |
 
 ## Preprocessing Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| remove_noncoding | flag | False | Remove non-coding genes whose symbol starts with an Ensembl ID prefix before factorization |
+| remove_noncoding | flag | False | Remove non-coding genes whose symbol starts with an Ensembl ID prefix |
 | ensembl_prefix | str | "ENSG" | Ensembl ID prefix used to identify non-coding genes |
 | gene_symbol_key | str | "symbol" | Column in adata.var containing gene symbols |
 
@@ -63,14 +83,11 @@
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | species | str | - | Species for gene annotation (required) |
-| check_format | flag | False | Validate input data format before running |
 | parallel_running | flag | False | Compile files after parallel mode for multiple K values |
 | num_gene | int | 300 | Number of top genes to include in annotation |
-| run_refit | flag | False | Run the refit step (combine, k_selection_plot, and consensus) |
-| run_complie_annotation | flag | False | Run the compilation and annotation step |
 | run_factorize | flag | False | Run the NMF factorization step |
-| guide_annotation_path | str | None | Path to file containing guide information |
-| reference_gtf_path | str | None | Path to reference GTF file for gene name validation |
+| run_refit | flag | False | Run the refit step (combine, k_selection_plot, and consensus) |
+| run_compile_annotation | flag | False | Run the compilation and annotation step |
 
 ## Data Access Keys
 

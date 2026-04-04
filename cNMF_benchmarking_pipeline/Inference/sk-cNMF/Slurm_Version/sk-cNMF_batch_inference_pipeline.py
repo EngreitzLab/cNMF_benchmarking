@@ -4,7 +4,6 @@ import cnmf
 import yaml
 import os
 import pandas as pd
-import muon as mu
 import numpy as np
 
 # Change path to wherever you have repo locally
@@ -14,9 +13,6 @@ from Inference.src import (
     run_cnmf_consensus, get_top_indices_fast, annotate_genes_to_excel, \
     rename_and_move_files_NMF, rename_all_NMF, compile_results
 )
-
-from Inference.src import (
-    check_data_format, check_guide_names, _validate_against_reference_gtf, check_mdata_format )
 
     
 if __name__ == '__main__':
@@ -44,16 +40,11 @@ if __name__ == '__main__':
 
     # annotation parameters
     parser.add_argument('--species', type=str, required=True, help='Species for gene annotation (e.g., human, mouse)')
-    parser.add_argument('--check_format', action="store_true", help='If set, validate input data format before running cNMF')
     parser.add_argument('--parallel_running', action="store_true", help='If set, enables parallel processing mode for combining results from multiple K values')
     parser.add_argument('--num_gene', type = int, default = 300, help='Number of top genes to use for program annotation (default: 300)')
     parser.add_argument('--run_refit', action="store_true", help='If set, run the combine and consensus steps after factorization')
     parser.add_argument('--run_complie_annotation', action="store_true", help='If set, compile results and generate gene annotations for all K values')
     parser.add_argument('--run_factorize', action="store_true", help='If set, run the NMF factorization step')
-
-    # resources
-    parser.add_argument('--guide_annotation_path', type=str,  help='Path to file with guide annotations and metadata (optional)',  default=None)
-    parser.add_argument('--reference_gtf_path', type=str,  help='Path to reference GTF file for validating gene names (optional)', default=None)
 
     # keys
     parser.add_argument('--data_key', help='Key to access gene expression data in MuData object (default: rna)', type=str, default="rna")
@@ -118,14 +109,6 @@ if __name__ == '__main__':
 
     with open(f'{args.output_directory}/{args.run_name}/config_{job_id}.yml', 'w') as f:
         yaml.dump(config_to_save, f, default_flow_style=False, width=1000)
-
-    # check data format 
-    if args.check_format:
-        adata = mu.read(args.counts_fn)
-        valid = check_guide_names(adata, guide_names_key = args.guide_names_key, guide_targets_key = args.guide_targets_key, 
-        categorical_key= args.categorical_key, reference_gtf_path=args.reference_gtf_path, guide_annotation_path = args.guide_annotation_path)
-        if not valid['is_valid']:
-            raise ValueError("Format is incorrect")
 
     # running cnmf 
     cnmf_obj = cnmf.cNMF(output_dir=args.output_directory, name=args.run_name)
