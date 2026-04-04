@@ -92,26 +92,21 @@ free -h
 echo "Initial GPU status:"
 nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 
-# Run the Python script (CPU-only for now)
+# Run the Python script
 echo "Running Python script with (K=$K)..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_inference_pipeline.py \
-        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Data/eRZ53_56_filtered_cNMF.h5ad"\
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch_cnmf_inference_pipeline.py \
+        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/Ronghao_100K_sample/Data/eRZ53_56_filtered_cNMF.h5ad" \
         --output_directory "$OUT_DIR/$RUN_NAME" \
         --run_name "${RUN_NAME}_${K}" \
         --K $K \
-        --algo "halsvar"\
-        --mode "batch"\
+        --algo "halsvar" \
+        --mode "batch" \
         --init "random" \
         --tol 1e-7 \
-        --batch_max_iter 1000 \
+        --batch_max_epoch 1000 \
         --batch_hals_max_iter 1000 \
         --batch_hals_tol 0.005 \
-        --online_chunk_size 200000 \
-        --online_max_pass 1000 \
-        --online_chunk_max_iter 1000 \
         --numiter 20 \
-        --online_usage_tol 0.005 \
-        --online_spectra_tol 0.005 \
         --use_gpu \
         --numhvgenes 17538 \
         --run_factorize \
@@ -119,7 +114,8 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         #--nmf_seeds_path \
         #--densify \
         #--run_refit \
-        #--run_complie_annotation \
+        #--run_compile_annotation \
+        #--sk_cd_refit \
         #--data_key "rna" \
         #--prog_key "cNMF" \
         #--sel_thresh 2.0 \
@@ -127,16 +123,10 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         #--guide_names_key "guide_names" \
         #--guide_targets_key "guide_targets" \
         #--guide_assignment_key "guide_assignment" \
-        #--check_format \
         #--remove_noncoding \
         #--ensembl_prefix "ENSG" \
         #--gene_symbol_key "symbol" \
-        #--sk_cd_refit \
-        #--shuffle_cells \
-        #--guide_annotation_path \
-        #--reference_gtf_path \
         #--parallel_running \
-        #--run_complie_annotation \
 
 
 

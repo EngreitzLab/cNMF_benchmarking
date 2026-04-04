@@ -2,10 +2,10 @@
 
 # SLURM job configuration
 #SBATCH --job-name=100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit     # Job name
-#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.out      # Output file (%j = job ID)
+#SBATCH --output=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/040226_dataloader_halsvar_/logs/%j.out      # Output file (%j = job ID)
 #SBATCH --error=/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Results/torch-cNMF_evaluation/skrefit/100625_100k_cells_10iter_torch_halsvar_batch_e7_v100s_skrefit/logs/%j.err       # Error file
-#SBATCH --partition=engreitz                # partition name
-#SBATCH --time=15:00:00                # Time limit 
+#SBATCH --partition=gpu,owners                # partition name
+#SBATCH --time=01:00:00                # Time limit 
 #SBATCH --nodes=1                      # Number of nodes
 #SBATCH --ntasks=1                     # Number of tasks
 #SBATCH --cpus-per-task=1              # CPUs per task
@@ -88,34 +88,29 @@ nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_inference_pipeline.py\
-        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad"\
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch_cnmf_inference_pipeline.py \
+        --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/100k_250genes_withguide.h5ad" \
         --output_directory "$OUT_DIR" \
         --run_name "$RUN_NAME" \
-        --algo "halsvar"\
-        --mode "batch"\
+        --algo "halsvar" \
+        --mode "batch" \
         --init "random" \
         --tol 1e-7 \
-        --batch_max_iter 1000 \
+        --batch_max_epoch 1000 \
         --batch_hals_max_iter 1000 \
         --batch_hals_tol 0.005 \
-        --online_chunk_size 200000 \
-        --online_max_pass 1000 \
-        --online_chunk_max_iter 1000 \
         --numiter 100 \
-        --online_usage_tol 0.005 \
-        --online_spectra_tol 0.005 \
         --species "human" \
         --use_gpu \
         --run_factorize \
         --run_refit \
-        --run_complie_annotation \
+        --run_compile_annotation \
         --sel_thresh 0.2 2.0 \
         --numhvgenes 17538 \
         --K 50 \
         #--nmf_seeds_path \
         #--densify \
-        #--check_format \
+        #--sk_cd_refit \
         #--data_key "rna" \
         #--prog_key "cNMF" \
         #--categorical_key "sample" \
@@ -125,9 +120,6 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         #--remove_noncoding \
         #--ensembl_prefix "ENSG" \
         #--gene_symbol_key "symbol" \
-        #--shuffle_cells \
-        #--guide_annotation_path \
-        #--reference_gtf_path \
 
 
 

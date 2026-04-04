@@ -89,34 +89,35 @@ nvidia-smi 2>/dev/null || echo "GPU monitoring not available"
 
 # Run the Python script
 echo "Running Python script..."
-python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch-cNMF_inference_pipeline.py \
+python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_benchmarking_pipeline/Inference/torch-cNMF/Slurm_Version/torch_cnmf_inference_pipeline.py \
         --counts_fn "/oak/stanford/groups/engreitz/Users/ymo/NMF_re-inplementing/Cell_data/shuffled_100K_250genes.h5ad" \
         --output_directory "$OUT_DIR" \
         --run_name "$RUN_NAME" \
-        --algo "halsvar"\
-        --mode "online"\
+        --algo "halsvar" \
+        --mode "minibatch" \
         --init "random" \
         --tol 1e-7 \
-        --batch_max_iter 1000 \
+        --batch_max_epoch 1000 \
         --batch_hals_max_iter 1000 \
         --batch_hals_tol 0.005 \
-        --online_chunk_size 200000 \
-        --online_max_pass 1000 \
-        --online_chunk_max_iter 1000 \
+        --minibatch_size 5000 \
+        --minibatch_max_epoch 1000 \
+        --minibatch_max_iter 1000 \
+        --minibatch_usage_tol 0.005 \
+        --minibatch_spectra_tol 0.005 \
+        --minibatch_shuffle \
         --numiter 100 \
-        --online_usage_tol 0.005 \
-        --online_spectra_tol 0.005 \
         --species "human" \
         --use_gpu \
         --run_factorize \
         --run_refit \
-        --run_complie_annotation \
+        --run_compile_annotation \
         --sel_thresh 0.2 2.0 \
         --numhvgenes 17538 \
         --K 50 \
         #--nmf_seeds_path \
         #--densify \
-        #--check_format \
+        #--sk_cd_refit \
         #--data_key "rna" \
         #--prog_key "cNMF" \
         #--categorical_key "sample" \
@@ -126,9 +127,6 @@ python3 /oak/stanford/groups/engreitz/Users/ymo/Tools/cNMF_benchmarking/cNMF_ben
         #--remove_noncoding \
         #--ensembl_prefix "ENSG" \
         #--gene_symbol_key "symbol" \
-        #--shuffle_cells \
-        #--guide_annotation_path \
-        #--reference_gtf_path \
 
 # After the python command
 if [ $? -ne 0 ]; then
