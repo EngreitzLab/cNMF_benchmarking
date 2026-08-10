@@ -1,5 +1,29 @@
 # Assessing difference between different NMF and cNMF methods 
 
+> [!IMPORTANT]
+> **This is the older version of this pipeline.** Active development has moved to
+> **[PerturbNMF](https://github.com/EngreitzLab/PerturbNMF)**, which reorganises the
+> same inference / evaluation / interpretation stages into a packaged, tested layout.
+> New users should start there.
+>
+> This repository is kept for reference and for work that still depends on the original
+> layout. The current PerturbNMF release is pinned here as a submodule in
+> [`PerturbNMF/`](PerturbNMF), so clone with:
+>
+> ```bash
+> git clone --recurse-submodules https://github.com/EngreitzLab/cNMF_benchmarking.git
+> ```
+>
+> (or run `git submodule update --init` after a plain clone).
+>
+> | | This repo | PerturbNMF |
+> |---|---|---|
+> | `Inference/` | ✔ | `src/Stage1_Inference/` |
+> | `Evaluation/` | ✔ | `src/Stage2_Evaluation/A_Metrics/` |
+> | `Calibration/` | ✔ | `src/Stage2_Evaluation/B_Calibration/` |
+> | `Interpretation/Plotting/` | ✔ | `src/Stage3_Interpretation/A_Plotting/` |
+> | `Interpretation/Summary_table/` | ✔ | `src/Stage3_Interpretation/B_Summarization/` |
+> | Annotation module | — | `src/Stage3_Interpretation/C_Annotation/` |
 
 Gene programs inferred from single-cell genomic data (scRNASeq., scATACseq., multi-omics and Perturb-seq.) are useful in discovering contextual biological mechanisms. These programs can be viewed as data-driven hypotheses of gene interactions. We aim to implement a flexible framework to evaluate the plausibility of programs inferred by computational methods. 
 
